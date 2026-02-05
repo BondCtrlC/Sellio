@@ -1,0 +1,373 @@
+@import "tailwindcss";
+
+/* ============================================
+   Clean Theme - White Background, Black Primary
+   Force Light Mode Only
+   ============================================ */
+:root {
+  color-scheme: light;
+  
+  /* Background - White */
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+  
+  /* Card/Surface */
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  
+  /* Muted */
+  --muted: #f5f5f5;
+  --muted-foreground: #737373;
+  
+  /* Primary - Black */
+  --primary: #1a1a1a;
+  --primary-foreground: #ffffff;
+  --primary-hover: #333333;
+  
+  /* Secondary - Light Gray */
+  --secondary: #f5f5f5;
+  --secondary-foreground: #1a1a1a;
+  
+  /* Accent */
+  --accent: #f5f5f5;
+  --accent-foreground: #1a1a1a;
+  
+  /* Destructive */
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  
+  /* Success */
+  --success: #22c55e;
+  --success-foreground: #ffffff;
+  
+  /* Warning */
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  
+  /* Border & Input */
+  --border: #e5e5e5;
+  --input: #e5e5e5;
+  --ring: #1a1a1a;
+  
+  /* Radius */
+  --radius: 0.75rem;
+  
+  /* Sidebar - Gray */
+  --sidebar: #f3f4f6;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-border: #e5e7eb;
+  --sidebar-active: #1a1a1a;
+  --sidebar-active-foreground: #ffffff;
+  --sidebar-hover: #e5e7eb;
+}
+
+/* ============================================
+   Tailwind Theme Configuration
+   ============================================ */
+@theme inline {
+  /* Colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  /* Sidebar colors */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
+  --color-sidebar-hover: var(--sidebar-hover);
+  
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+  --font-sarabun: var(--font-sarabun), 'Sarabun', ui-sans-serif, sans-serif;
+  --font-prompt: var(--font-prompt), 'Prompt', ui-sans-serif, sans-serif;
+  --font-noto: var(--font-noto), 'Noto Sans Thai', ui-sans-serif, sans-serif;
+  --font-ibm: var(--font-ibm), 'IBM Plex Sans Thai', ui-sans-serif, sans-serif;
+  --font-pridi: var(--font-pridi), 'Pridi', ui-serif, serif;
+  
+  /* Border Radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+  --radius-full: 9999px;
+}
+
+/* ============================================
+   Base Styles - Force Light Mode
+   ============================================ */
+* {
+  border-color: var(--border);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background-color: #ffffff !important;
+  color: #1a1a1a !important;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   Focus Styles
+   ============================================ */
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   Scrollbar Styles
+   ============================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a3a3a3;
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+.text-balance {
+  text-wrap: balance;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================
+   Font Family Classes
+   ============================================ */
+.font-default {
+  font-family: var(--font-sans);
+}
+
+.font-sarabun {
+  font-family: var(--font-sarabun);
+}
+
+.font-prompt {
+  font-family: var(--font-prompt);
+}
+
+.font-noto {
+  font-family: var(--font-noto);
+}
+
+.font-ibm {
+  font-family: var(--font-ibm);
+}
+
+.font-pridi {
+  font-family: var(--font-pridi);
+}
+
+/* ============================================
+   Prose Description Styles - For Rich Text Content
+   ============================================ */
+
+/* Base spacing for paragraphs */
+.prose p {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose p:first-child {
+  margin-top: 0;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+/* Lists */
+.prose ul,
+.prose ol {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+}
+
+.prose li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Headings */
+.prose h1,
+.prose h2,
+.prose h3 {
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+/* Images - rounded corners with spacing */
+.prose img {
+  border-radius: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Videos - rounded corners with spacing */
+.prose video {
+  border-radius: 1rem !important;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  max-width: 100%;
+}
+
+/* iframes (YouTube, Loom embeds) */
+.prose iframe {
+  border-radius: 1rem !important;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+/* Video embed wrapper from rich text editor */
+.prose .video-embed {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.prose .video-embed video,
+.prose .video-embed iframe {
+  margin: 0;
+  border-radius: 1rem !important;
+}
+
+/* Extra spacing between consecutive media elements */
+.prose img + img,
+.prose img + video,
+.prose img + .video-embed,
+.prose video + img,
+.prose video + video,
+.prose video + .video-embed,
+.prose .video-embed + img,
+.prose .video-embed + video,
+.prose .video-embed + .video-embed,
+.prose iframe + iframe,
+.prose img + iframe,
+.prose iframe + img {
+  margin-top: 1.5rem;
+}
+
+/* Ensure media after paragraphs have proper spacing */
+.prose p + img,
+.prose p + video,
+.prose p + .video-embed,
+.prose p + iframe {
+  margin-top: 1rem;
+}
+
+/* Ensure paragraphs after media have proper spacing */
+.prose img + p,
+.prose video + p,
+.prose .video-embed + p,
+.prose iframe + p {
+  margin-top: 1rem;
+}
+
+/* ============================================
+   Landing Page Animations
+   ============================================ */
+
+/* Blob Animation */
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Float Animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animation-delay-1000 {
+  animation-delay: 1s;
+}
+
+/* Smooth Scroll */
+html {
+  scroll-behavior: smooth;
+}
