@@ -91,53 +91,73 @@ export async function GET(request: NextRequest) {
     const results: { orderId: string; status: string; error?: string }[] = [];
 
     for (const order of orders) {
-      // Construct booking datetime
-      const bookingDatetime = new Date(`${order.booking_date}T${order.booking_time}:00+07:00`);
-      
-      // Check if booking is within our reminder window
-      if (bookingDatetime < minTime || bookingDatetime > maxTime) {
-        continue; // Skip if not in the window
-      }
-
-      console.log(`[Booking Reminder] Processing order ${order.id} - booking at ${bookingDatetime.toISOString()}`);
-
-      // Get fulfillment content for meeting details
-      const fulfillment = order.fulfillment?.[0];
-      const fulfillmentContent = fulfillment?.content as { meeting_url?: string; meeting_platform?: string; location?: string } | null;
-      const typeConfig = (order.product as any).type_config as { duration_minutes?: number } | null;
-
-      // Send reminder email
-      const emailResult = await sendBookingReminderEmail({
-        orderId: order.id,
-        buyerName: order.buyer_name,
-        buyerEmail: order.buyer_email,
-        productTitle: (order.product as any).title,
-        creatorName: (order.creator as any).display_name || (order.creator as any).username,
-        bookingDate: order.booking_date!,
-        bookingTime: order.booking_time!,
-        durationMinutes: typeConfig?.duration_minutes || 60,
-        meetingUrl: fulfillmentContent?.meeting_url,
-        meetingPlatform: fulfillmentContent?.meeting_platform,
-        location: fulfillmentContent?.location,
-      });
-
-      if (emailResult.success) {
-        // Mark reminder as sent
-        const { error: updateError } = await supabase
-          .from('orders')
-          .update({ reminder_sent: true })
-          .eq('id', order.id);
-
-        if (updateError) {
-          console.error(`[Booking Reminder] Failed to update reminder_sent for order ${order.id}:`, updateError);
+      try {
+        // Validate booking_date and booking_time format
+        if (!order.booking_date || !order.booking_time) {
+          console.log(`[Booking Reminder] Skipping order ${order.id} - missing date/time`);
+          continue;
         }
 
-        sentCount++;
-        results.push({ orderId: order.id, status: 'sent' });
-        console.log(`[Booking Reminder] ✅ Sent reminder for order ${order.id}`);
-      } else {
-        results.push({ orderId: order.id, status: 'failed', error: emailResult.error });
-        console.error(`[Booking Reminder] ❌ Failed to send reminder for order ${order.id}:`, emailResult.error);
+        // Ensure time format is correct (HH:mm or HH:mm:ss)
+        const timeStr = order.booking_time.length === 5 ? `${order.booking_time}:00` : order.booking_time;
+        
+        // Construct booking datetime
+        const bookingDatetime = new Date(`${order.booking_date}T${timeStr}+07:00`);
+        
+        // Check if date is valid
+        if (isNaN(bookingDatetime.getTime())) {
+          console.log(`[Booking Reminder] Skipping order ${order.id} - invalid date: ${order.booking_date} ${order.booking_time}`);
+          continue;
+        }
+        
+        // Check if booking is within our reminder window
+        if (bookingDatetime < minTime || bookingDatetime > maxTime) {
+          continue; // Skip if not in the window
+        }
+
+        console.log(`[Booking Reminder] Processing order ${order.id} - booking at ${bookingDatetime.toISOString()}`);
+
+        // Get fulfillment content for meeting details
+        const fulfillment = order.fulfillment?.[0];
+        const fulfillmentContent = fulfillment?.content as { meeting_url?: string; meeting_platform?: string; location?: string } | null;
+        const typeConfig = (order.product as any).type_config as { duration_minutes?: number } | null;
+
+        // Send reminder email
+        const emailResult = await sendBookingReminderEmail({
+          orderId: order.id,
+          buyerName: order.buyer_name,
+          buyerEmail: order.buyer_email,
+          productTitle: (order.product as any).title,
+          creatorName: (order.creator as any).display_name || (order.creator as any).username,
+          bookingDate: order.booking_date!,
+          bookingTime: order.booking_time!,
+          durationMinutes: typeConfig?.duration_minutes || 60,
+          meetingUrl: fulfillmentContent?.meeting_url,
+          meetingPlatform: fulfillmentContent?.meeting_platform,
+          location: fulfillmentContent?.location,
+        });
+
+        if (emailResult.success) {
+          // Mark reminder as sent
+          const { error: updateError } = await supabase
+            .from('orders')
+            .update({ reminder_sent: true })
+            .eq('id', order.id);
+
+          if (updateError) {
+            console.error(`[Booking Reminder] Failed to update reminder_sent for order ${order.id}:`, updateError);
+          }
+
+          sentCount++;
+          results.push({ orderId: order.id, status: 'sent' });
+          console.log(`[Booking Reminder] ✅ Sent reminder for order ${order.id}`);
+        } else {
+          results.push({ orderId: order.id, status: 'failed', error: emailResult.error });
+          console.error(`[Booking Reminder] ❌ Failed to send reminder for order ${order.id}:`, emailResult.error);
+        }
+      } catch (orderError) {
+        console.error(`[Booking Reminder] Error processing order ${order.id}:`, orderError);
+        results.push({ orderId: order.id, status: 'error', error: String(orderError) });
       }
     }
 
