@@ -14,7 +14,7 @@ export const productSchema = z.object({
     .optional()
     .or(z.literal('')),
   price: z
-    .number({ invalid_type_error: 'กรุณากรอกราคา' })
+    .number({ error: 'กรุณากรอกราคา' })
     .min(0, 'ราคาต้องไม่ต่ำกว่า 0'),
   is_published: z.boolean().optional().default(true),
   
