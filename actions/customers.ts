@@ -84,9 +84,10 @@ export async function getCustomers() {
   orders?.forEach(order => {
     const email = order.buyer_email.toLowerCase();
     const existing = customerMap.get(email);
-    const productTitle = Array.isArray(order.product) 
-      ? order.product[0]?.title 
-      : order.product?.title;
+    const product = order.product as { title?: string } | { title?: string }[] | null;
+    const productTitle = Array.isArray(product) 
+      ? product[0]?.title 
+      : product?.title;
     const isConfirmed = order.status === 'confirmed';
 
     if (existing) {
