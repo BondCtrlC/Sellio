@@ -147,10 +147,8 @@ export function ProductsList({ initialProducts }: ProductsListProps) {
 }
 
 function ProductRow({ product }: { product: Product }) {
-  // Handle legacy "live" type as "booking"
-  const displayType = product.type === 'live' ? 'booking' : product.type;
-  const typeInfo = PRODUCT_TYPES[displayType as keyof typeof PRODUCT_TYPES] || PRODUCT_TYPES.booking;
-  const TypeIcon = TYPE_FILTERS.find(f => f.value === displayType)?.icon || Package;
+  const typeInfo = PRODUCT_TYPES[product.type as keyof typeof PRODUCT_TYPES] || PRODUCT_TYPES.booking;
+  const TypeIcon = TYPE_FILTERS.find(f => f.value === product.type)?.icon || Package;
 
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
