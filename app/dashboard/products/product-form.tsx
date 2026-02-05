@@ -27,7 +27,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const isEditing = !!product;
 
   // Parse type_config
-  const typeConfig = product?.type_config as Record<string, unknown> || {};
+  const typeConfig = (product?.type_config as unknown as Record<string, unknown>) || {};
 
   const {
     register,
