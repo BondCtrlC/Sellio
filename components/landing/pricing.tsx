@@ -32,7 +32,7 @@ const plans = [
       'คูปองส่วนลดไม่จำกัด',
       'ระบบรีวิวและเรตติ้ง',
       'Dashboard วิเคราะห์ขั้นสูง',
-      'ลบ Branding CreatorShop',
+      'ลบ Branding Sellio',
       'รองรับ Custom Domain',
       'Email แจ้งเตือนอัตโนมัติ',
     ],

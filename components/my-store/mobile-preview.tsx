@@ -276,7 +276,7 @@ export function MobilePreview({ creator, sections, unsectionedItems, design }: M
 
         {/* Footer */}
         <div className="text-center py-4 text-xs text-muted-foreground border-t">
-          Powered by Thai Creator Store
+          Powered by Sellio
         </div>
       </div>
     </MobileFrame>

@@ -1,5 +1,5 @@
 // App Configuration
-export const APP_NAME = 'Thai Creator Store';
+export const APP_NAME = 'Sellio';
 export const APP_DESCRIPTION = 'ขายของออนไลน์ผ่านลิงก์เดียว สำหรับ Content Creator ไทย';
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 

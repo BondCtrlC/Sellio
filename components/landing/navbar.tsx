@@ -17,7 +17,7 @@ export function Navbar() {
             <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-xl">CreatorShop</span>
+            <span className="font-bold text-xl">Sellio</span>
           </Link>
 
           {/* Desktop Navigation */}

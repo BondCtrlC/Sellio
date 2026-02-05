@@ -4,7 +4,7 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Default from email (must be verified in Resend)
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Thai Creator Store <noreply@resend.dev>';
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Sellio <noreply@resend.dev>';
 
 interface OrderEmailData {
   orderId: string;
@@ -82,7 +82,7 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
             <!-- Footer -->
             <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                ขอบคุณที่ใช้บริการ Thai Creator Store
+                ขอบคุณที่ใช้บริการ Sellio
               </p>
             </div>
           </div>
@@ -166,7 +166,7 @@ export async function sendPaymentRejectionEmail(
             <!-- Footer -->
             <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                Thai Creator Store
+                Sellio
               </p>
             </div>
           </div>
@@ -265,7 +265,7 @@ export async function sendRefundNotificationEmail(
             <!-- Footer -->
             <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                Thai Creator Store
+                Sellio
               </p>
             </div>
           </div>
@@ -339,7 +339,7 @@ export async function sendNewOrderNotificationEmail(
             <!-- Footer -->
             <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                Thai Creator Store
+                Sellio
               </p>
             </div>
           </div>

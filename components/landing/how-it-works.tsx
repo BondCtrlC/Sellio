@@ -87,7 +87,7 @@ export function HowItWorks() {
                 ดูการใช้งานจริง
               </h3>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                ลองดูว่าการสร้างร้านค้าและเริ่มขายสินค้าบน CreatorShop 
+                ลองดูว่าการสร้างร้านค้าและเริ่มขายสินค้าบน Sellio 
                 ง่ายแค่ไหน ไม่ต้องมีความรู้ด้านเทคนิคเลย
               </p>
               <ul className="space-y-3">

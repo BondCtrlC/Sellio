@@ -43,7 +43,7 @@ const pridi = Pridi({
 });
 
 export const metadata: Metadata = {
-  title: "Thai Creator Store",
+  title: "Sellio",
   description: "ขายของออนไลน์ผ่านลิงก์เดียว สำหรับ Content Creator ไทย",
 };
 

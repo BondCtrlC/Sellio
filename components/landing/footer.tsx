@@ -60,7 +60,7 @@ export function Footer() {
                 <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-bold text-xl">CreatorShop</span>
+                <span className="font-bold text-xl">Sellio</span>
               </Link>
               <p className="text-gray-600 text-sm mb-6 max-w-xs">
                 แพลตฟอร์มขายสินค้าดิจิทัลที่ออกแบบมาสำหรับ Content Creator ไทย
@@ -107,7 +107,7 @@ export function Footer() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Copyright */}
             <p className="text-sm text-gray-500">
-              © 2026 CreatorShop. All rights reserved.
+              © 2026 Sellio. All rights reserved.
             </p>
 
             {/* Social Links */}

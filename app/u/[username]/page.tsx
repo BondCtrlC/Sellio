@@ -164,7 +164,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   // Use SEO settings if available, fallback to defaults
-  const title = creator.seo_title || `${creator.display_name || creator.username} | Thai Creator Store`;
+  const title = creator.seo_title || `${creator.display_name || creator.username} | Sellio`;
   const description = creator.seo_description || creator.bio || `ร้านค้าของ ${creator.display_name || creator.username}`;
   const keywords = creator.seo_keywords || undefined;
   const ogImage = creator.og_image_url || creator.avatar_url;
@@ -243,7 +243,7 @@ export default async function StorePage({ params }: PageProps) {
 
       {/* Footer */}
       <footer className="text-center py-6 text-sm text-muted-foreground border-t">
-        <p>Powered by Thai Creator Store</p>
+        <p>Powered by Sellio</p>
       </footer>
     </StoreWrapper>
   );
