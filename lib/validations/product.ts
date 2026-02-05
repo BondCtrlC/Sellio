@@ -16,7 +16,7 @@ export const productSchema = z.object({
   price: z
     .number({ invalid_type_error: 'กรุณากรอกราคา' })
     .min(0, 'ราคาต้องไม่ต่ำกว่า 0'),
-  is_published: z.boolean().default(true),
+  is_published: z.boolean().optional().default(true),
   
   // Booking specific
   duration_minutes: z.number().optional(),
