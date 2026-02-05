@@ -133,7 +133,7 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
         {product.image_url ? (
           <img
             src={product.image_url}
-            alt={product.title}
+            alt={String(product.title)}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -152,11 +152,11 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
         </span>
 
         {/* Title */}
-        <h1 className="text-2xl font-bold">{product.title}</h1>
+        <h1 className="text-2xl font-bold">{String(product.title)}</h1>
 
         {/* Description - Memoized to prevent video reload on slot change */}
         {product.description && (
-          <ProductDescription html={product.description} />
+          <ProductDescription html={String(product.description)} />
         )}
 
         {/* Type-specific info */}
@@ -176,8 +176,8 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
         {/* Share Buttons */}
         <ShareButtons
           url={`/u/${creator.username}/${product.id}`}
-          title={product.title}
-          description={product.description || undefined}
+          title={String(product.title)}
+          description={product.description ? String(product.description) : undefined}
         />
       </div>
 
