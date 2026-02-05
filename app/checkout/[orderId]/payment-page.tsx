@@ -18,7 +18,6 @@ import {
 import { formatPrice, formatDate } from '@/lib/utils';
 import { uploadSlip } from '@/actions/orders';
 import { generatePromptPayQR } from '@/lib/promptpay';
-import { getStripe } from '@/lib/stripe-client';
 
 interface OrderDetails {
   id: string;
@@ -103,14 +102,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        // Fallback to using Stripe.js
-        const stripe = await getStripe();
-        if (stripe && data.sessionId) {
-          const { error } = await stripe.redirectToCheckout({ sessionId: data.sessionId });
-          if (error) {
-            throw error;
-          }
-        }
+        throw new Error('ไม่สามารถสร้างหน้าชำระเงินได้');
       }
     } catch (err) {
       console.error('Stripe checkout error:', err);
