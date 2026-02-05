@@ -44,12 +44,11 @@ export function ProductsList({ initialProducts }: ProductsListProps) {
     return products;
   }, [initialProducts, activeFilter, searchQuery]);
 
-  // Count products by type (treat "live" as "booking")
+  // Count products by type
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = { all: initialProducts.length };
     initialProducts.forEach(p => {
-      const productType = p.type === 'live' ? 'booking' : p.type;
-      counts[productType] = (counts[productType] || 0) + 1;
+      counts[p.type] = (counts[p.type] || 0) + 1;
     });
     return counts;
   }, [initialProducts]);
