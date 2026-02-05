@@ -13,7 +13,7 @@ export async function updateSettings(data: SettingsInput): Promise<SettingsResul
   // Validate input
   const parsed = settingsSchema.safeParse(data);
   if (!parsed.success) {
-    return { success: false, error: parsed.error.errors[0].message };
+    return { success: false, error: parsed.error.issues[0].message };
   }
 
   const supabase = await createClient();

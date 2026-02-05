@@ -14,7 +14,7 @@ export async function login(data: LoginInput): Promise<AuthResult> {
   // Validate input
   const parsed = loginSchema.safeParse(data);
   if (!parsed.success) {
-    return { success: false, error: parsed.error.errors[0].message };
+    return { success: false, error: parsed.error.issues[0].message };
   }
 
   const supabase = await createClient();
@@ -40,7 +40,7 @@ export async function signup(data: SignupInput): Promise<AuthResult> {
   // Validate input
   const parsed = signupSchema.safeParse(data);
   if (!parsed.success) {
-    return { success: false, error: parsed.error.errors[0].message };
+    return { success: false, error: parsed.error.issues[0].message };
   }
 
   const supabase = await createClient();

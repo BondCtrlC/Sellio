@@ -30,7 +30,7 @@ async function getCreatorId() {
 export async function createProduct(data: ProductInput): Promise<ProductResult> {
   const parsed = productSchema.safeParse(data);
   if (!parsed.success) {
-    return { success: false, error: parsed.error.errors[0].message };
+    return { success: false, error: parsed.error.issues[0].message };
   }
 
   const creatorId = await getCreatorId();
@@ -92,7 +92,7 @@ export async function createProduct(data: ProductInput): Promise<ProductResult> 
 export async function updateProduct(productId: string, data: ProductInput): Promise<ProductResult> {
   const parsed = productSchema.safeParse(data);
   if (!parsed.success) {
-    return { success: false, error: parsed.error.errors[0].message };
+    return { success: false, error: parsed.error.issues[0].message };
   }
 
   const creatorId = await getCreatorId();
