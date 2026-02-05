@@ -9,6 +9,7 @@ import { CopyLinkButton } from './copy-link-button';
 import { DownloadButton } from './download-button';
 import { ReviewSection } from './review-section';
 import { AddToCalendar } from './add-to-calendar';
+import { ManageBooking } from './manage-booking';
 
 interface PageProps {
   params: Promise<{ orderId: string }>;
@@ -307,6 +308,14 @@ export default async function SuccessPage({ params }: PageProps) {
                     meetingUrl={(fulfillment.content as any).meeting_url}
                     location={(fulfillment.content as any).location}
                     creatorName={order.creator.display_name || order.creator.username}
+                  />
+                  
+                  {/* Manage Booking (Cancel/Reschedule) */}
+                  <ManageBooking
+                    orderId={orderId}
+                    canManage={isConfirmed || isPendingConfirmation}
+                    currentDate={order.booking_date}
+                    currentTime={order.booking_time}
                   />
                 </div>
               )}

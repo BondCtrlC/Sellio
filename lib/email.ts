@@ -631,3 +631,169 @@ export async function sendBookingReminderEmail(data: {
   }
 }
 
+// ============================================
+// BOOKING CANCELLATION EMAIL (to creator)
+// ============================================
+export async function sendBookingCancellationEmail(data: {
+  creatorEmail: string;
+  creatorName: string;
+  buyerName: string;
+  buyerEmail: string;
+  productTitle: string;
+  bookingDate: string;
+  bookingTime: string;
+  reason: string;
+}) {
+  try {
+    const formattedDate = data.bookingDate ? new Date(data.bookingDate).toLocaleDateString('th-TH', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }) : '';
+    const formattedTime = data.bookingTime?.slice(0, 5) || '';
+
+    const { error } = await resend.emails.send({
+      from: 'Sellio <noreply@sellio.app>',
+      to: data.creatorEmail,
+      subject: `❌ ยกเลิกนัดหมาย - ${data.productTitle}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="margin: 0; padding: 20px; background: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 30px; text-align: center;">
+              <h1 style="margin: 0; color: white; font-size: 24px;">❌ ยกเลิกนัดหมาย</h1>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 30px;">
+              <p style="color: #374151; font-size: 16px; margin: 0 0 20px;">
+                สวัสดี ${data.creatorName},<br><br>
+                ลูกค้าได้ยกเลิกการจองแล้ว
+              </p>
+              
+              <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <p style="margin: 0 0 10px; font-weight: bold; color: #991b1b;">📦 ${data.productTitle}</p>
+                <p style="margin: 0 0 5px; color: #7f1d1d;">📆 ${formattedDate}</p>
+                <p style="margin: 0 0 5px; color: #7f1d1d;">⏰ ${formattedTime} น.</p>
+              </div>
+              
+              <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <p style="margin: 0 0 10px; font-weight: bold; color: #374151;">👤 ข้อมูลลูกค้า</p>
+                <p style="margin: 0 0 5px; color: #6b7280;">ชื่อ: ${data.buyerName}</p>
+                <p style="margin: 0 0 5px; color: #6b7280;">อีเมล: ${data.buyerEmail}</p>
+                <p style="margin: 0; color: #6b7280;">เหตุผล: ${data.reason}</p>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                Slot นี้กลับมาเปิดให้จองใหม่แล้วอัตโนมัติ
+              </p>
+            </div>
+            
+            <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">Sellio - แจ้งเตือนอัตโนมัติ</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error('Send cancellation email error:', error);
+    }
+  } catch (err) {
+    console.error('Cancellation email error:', err);
+  }
+}
+
+// ============================================
+// BOOKING RESCHEDULE EMAIL (to creator)
+// ============================================
+export async function sendBookingRescheduleEmail(data: {
+  creatorEmail: string;
+  creatorName: string;
+  buyerName: string;
+  buyerEmail: string;
+  productTitle: string;
+  oldDate: string;
+  oldTime: string;
+  newDate: string;
+  newTime: string;
+}) {
+  try {
+    const formatDate = (dateStr: string) => dateStr ? new Date(dateStr).toLocaleDateString('th-TH', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }) : '';
+
+    const oldFormattedDate = formatDate(data.oldDate);
+    const newFormattedDate = formatDate(data.newDate);
+    const oldFormattedTime = data.oldTime?.slice(0, 5) || '';
+    const newFormattedTime = data.newTime?.slice(0, 5) || '';
+
+    const { error } = await resend.emails.send({
+      from: 'Sellio <noreply@sellio.app>',
+      to: data.creatorEmail,
+      subject: `🔄 เปลี่ยนนัดหมาย - ${data.productTitle}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="margin: 0; padding: 20px; background: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
+              <h1 style="margin: 0; color: white; font-size: 24px;">🔄 เปลี่ยนนัดหมาย</h1>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 30px;">
+              <p style="color: #374151; font-size: 16px; margin: 0 0 20px;">
+                สวัสดี ${data.creatorName},<br><br>
+                ลูกค้าได้เปลี่ยนเวลานัดหมายใหม่
+              </p>
+              
+              <p style="font-weight: bold; color: #374151; margin: 0 0 10px;">📦 ${data.productTitle}</p>
+              
+              <!-- Old Time -->
+              <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
+                <p style="margin: 0 0 5px; font-weight: bold; color: #991b1b;">❌ เวลาเดิม (ยกเลิก)</p>
+                <p style="margin: 0; color: #7f1d1d; text-decoration: line-through;">${oldFormattedDate} เวลา ${oldFormattedTime} น.</p>
+              </div>
+              
+              <!-- New Time -->
+              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                <p style="margin: 0 0 5px; font-weight: bold; color: #166534;">✅ เวลาใหม่</p>
+                <p style="margin: 0; color: #15803d; font-weight: bold;">${newFormattedDate} เวลา ${newFormattedTime} น.</p>
+              </div>
+              
+              <div style="background: #f9fafb; border-radius: 12px; padding: 20px;">
+                <p style="margin: 0 0 10px; font-weight: bold; color: #374151;">👤 ข้อมูลลูกค้า</p>
+                <p style="margin: 0 0 5px; color: #6b7280;">ชื่อ: ${data.buyerName}</p>
+                <p style="margin: 0; color: #6b7280;">อีเมล: ${data.buyerEmail}</p>
+              </div>
+            </div>
+            
+            <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">Sellio - แจ้งเตือนอัตโนมัติ</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error('Send reschedule email error:', error);
+    }
+  } catch (err) {
+    console.error('Reschedule email error:', err);
+  }
+}
+

@@ -979,3 +979,285 @@ export async function refundOrder(
   revalidatePath('/dashboard/orders');
   return { success: true };
 }
+
+// ============================================
+// CANCEL BOOKING (by customer)
+// ============================================
+export async function cancelBooking(
+  orderId: string,
+  reason?: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  // Get order with product info
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select(`
+      id, status, booking_date, booking_time, product_id, buyer_email, buyer_name,
+      product:products!inner (id, title, type, creator_id),
+      creator:creators!inner (id, display_name, email, contact_line)
+    `)
+    .eq('id', orderId)
+    .single();
+
+  if (orderError || !order) {
+    return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+  }
+
+  // Check if can cancel (only confirmed or pending_confirmation)
+  if (!['confirmed', 'pending_confirmation'].includes(order.status)) {
+    return { success: false, error: 'ไม่สามารถยกเลิกคำสั่งซื้อนี้ได้' };
+  }
+
+  // Check if booking product
+  const product = order.product as { id: string; title: string; type: string; creator_id: string };
+  if (!['booking', 'live'].includes(product.type)) {
+    return { success: false, error: 'สินค้านี้ไม่ใช่การจอง' };
+  }
+
+  // Find the slot to decrement
+  if (order.booking_date && order.booking_time) {
+    const { data: slot } = await supabase
+      .from('booking_slots')
+      .select('id, current_bookings, max_bookings')
+      .eq('product_id', product.id)
+      .eq('slot_date', order.booking_date)
+      .eq('start_time', order.booking_time)
+      .single();
+
+    if (slot) {
+      // Decrement current_bookings
+      const newCurrentBookings = Math.max(0, (slot.current_bookings || 1) - 1);
+      await supabase
+        .from('booking_slots')
+        .update({
+          current_bookings: newCurrentBookings,
+          is_booked: newCurrentBookings >= (slot.max_bookings || 1),
+        })
+        .eq('id', slot.id);
+    }
+  }
+
+  // Update order status to cancelled
+  const { error: updateError } = await supabase
+    .from('orders')
+    .update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+      cancel_reason: reason || 'ลูกค้ายกเลิก',
+    })
+    .eq('id', orderId);
+
+  if (updateError) {
+    return { success: false, error: 'ไม่สามารถยกเลิกได้' };
+  }
+
+  // Send cancellation email to creator
+  const creator = order.creator as { id: string; display_name: string; email: string; contact_line?: string };
+  if (creator.email) {
+    await sendBookingCancellationEmail({
+      creatorEmail: creator.email,
+      creatorName: creator.display_name || 'Creator',
+      buyerName: order.buyer_name,
+      buyerEmail: order.buyer_email,
+      productTitle: product.title,
+      bookingDate: order.booking_date || '',
+      bookingTime: order.booking_time || '',
+      reason: reason || 'ไม่ระบุ',
+    });
+  }
+
+  revalidatePath(`/checkout/${orderId}/success`);
+  return { success: true };
+}
+
+// ============================================
+// RESCHEDULE BOOKING (by customer)
+// ============================================
+export async function rescheduleBooking(
+  orderId: string,
+  newSlotId: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  // Get order with product info
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select(`
+      id, status, booking_date, booking_time, product_id, buyer_email, buyer_name,
+      product:products!inner (id, title, type, type_config, creator_id),
+      creator:creators!inner (id, display_name, email, contact_line)
+    `)
+    .eq('id', orderId)
+    .single();
+
+  if (orderError || !order) {
+    return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+  }
+
+  // Check if can reschedule
+  if (!['confirmed', 'pending_confirmation'].includes(order.status)) {
+    return { success: false, error: 'ไม่สามารถเปลี่ยนนัดได้' };
+  }
+
+  const product = order.product as { id: string; title: string; type: string; type_config: Record<string, unknown>; creator_id: string };
+  if (!['booking', 'live'].includes(product.type)) {
+    return { success: false, error: 'สินค้านี้ไม่ใช่การจอง' };
+  }
+
+  // Get new slot
+  const { data: newSlot, error: newSlotError } = await supabase
+    .from('booking_slots')
+    .select('id, slot_date, start_time, end_time, max_bookings, current_bookings, is_available')
+    .eq('id', newSlotId)
+    .eq('product_id', product.id)
+    .single();
+
+  if (newSlotError || !newSlot) {
+    return { success: false, error: 'ช่วงเวลาที่เลือกไม่พร้อมใช้งาน' };
+  }
+
+  // Check new slot availability
+  if (!newSlot.is_available) {
+    return { success: false, error: 'ช่วงเวลานี้ไม่เปิดให้จอง' };
+  }
+
+  const newMaxBookings = newSlot.max_bookings || 1;
+  const newCurrentBookings = newSlot.current_bookings || 0;
+  if (newCurrentBookings >= newMaxBookings) {
+    return { success: false, error: 'ช่วงเวลานี้เต็มแล้ว' };
+  }
+
+  // Check minimum advance booking
+  const minAdvanceHours = (product.type_config?.minimum_advance_hours as number) || 0;
+  if (minAdvanceHours > 0) {
+    const bookingDatetime = new Date(`${newSlot.slot_date}T${newSlot.start_time}+07:00`);
+    const now = new Date();
+    const hoursUntil = (bookingDatetime.getTime() - now.getTime()) / (1000 * 60 * 60);
+    if (hoursUntil < minAdvanceHours) {
+      return { success: false, error: `กรุณาเลือกเวลาล่วงหน้าอย่างน้อย ${minAdvanceHours} ชั่วโมง` };
+    }
+  }
+
+  // Decrement old slot
+  if (order.booking_date && order.booking_time) {
+    const { data: oldSlot } = await supabase
+      .from('booking_slots')
+      .select('id, current_bookings, max_bookings')
+      .eq('product_id', product.id)
+      .eq('slot_date', order.booking_date)
+      .eq('start_time', order.booking_time)
+      .single();
+
+    if (oldSlot) {
+      const oldNewCount = Math.max(0, (oldSlot.current_bookings || 1) - 1);
+      await supabase
+        .from('booking_slots')
+        .update({
+          current_bookings: oldNewCount,
+          is_booked: oldNewCount >= (oldSlot.max_bookings || 1),
+        })
+        .eq('id', oldSlot.id);
+    }
+  }
+
+  // Increment new slot
+  await supabase
+    .from('booking_slots')
+    .update({
+      current_bookings: newCurrentBookings + 1,
+      is_booked: (newCurrentBookings + 1) >= newMaxBookings,
+    })
+    .eq('id', newSlotId);
+
+  // Update order with new booking info
+  const { error: updateError } = await supabase
+    .from('orders')
+    .update({
+      booking_date: newSlot.slot_date,
+      booking_time: newSlot.start_time,
+      rescheduled_at: new Date().toISOString(),
+    })
+    .eq('id', orderId);
+
+  if (updateError) {
+    return { success: false, error: 'ไม่สามารถเปลี่ยนนัดได้' };
+  }
+
+  // Send reschedule notification to creator
+  const creator = order.creator as { id: string; display_name: string; email: string };
+  if (creator.email) {
+    await sendBookingRescheduleEmail({
+      creatorEmail: creator.email,
+      creatorName: creator.display_name || 'Creator',
+      buyerName: order.buyer_name,
+      buyerEmail: order.buyer_email,
+      productTitle: product.title,
+      oldDate: order.booking_date || '',
+      oldTime: order.booking_time || '',
+      newDate: newSlot.slot_date,
+      newTime: newSlot.start_time,
+    });
+  }
+
+  revalidatePath(`/checkout/${orderId}/success`);
+  return { success: true };
+}
+
+// ============================================
+// GET AVAILABLE SLOTS FOR RESCHEDULE
+// ============================================
+export async function getAvailableSlotsForReschedule(
+  orderId: string
+): Promise<{ success: boolean; slots?: Array<{
+  id: string;
+  slot_date: string;
+  start_time: string;
+  end_time: string;
+  remaining: number;
+}>; error?: string }> {
+  const supabase = await createClient();
+
+  // Get order
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('product_id, booking_date, booking_time')
+    .eq('id', orderId)
+    .single();
+
+  if (orderError || !order) {
+    return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+  }
+
+  // Get available slots
+  const today = new Date().toISOString().split('T')[0];
+  const { data: slots, error: slotsError } = await supabase
+    .from('booking_slots')
+    .select('id, slot_date, start_time, end_time, max_bookings, current_bookings')
+    .eq('product_id', order.product_id)
+    .eq('is_available', true)
+    .gte('slot_date', today)
+    .order('slot_date', { ascending: true })
+    .order('start_time', { ascending: true });
+
+  if (slotsError) {
+    return { success: false, error: 'ไม่สามารถโหลดเวลาว่างได้' };
+  }
+
+  // Filter out full slots and current slot
+  const availableSlots = (slots || [])
+    .filter(slot => {
+      const remaining = (slot.max_bookings || 1) - (slot.current_bookings || 0);
+      const isCurrent = slot.slot_date === order.booking_date && slot.start_time === order.booking_time;
+      return remaining > 0 && !isCurrent;
+    })
+    .map(slot => ({
+      id: slot.id,
+      slot_date: slot.slot_date,
+      start_time: slot.start_time,
+      end_time: slot.end_time,
+      remaining: (slot.max_bookings || 1) - (slot.current_bookings || 0),
+    }));
+
+  return { success: true, slots: availableSlots };
+}
