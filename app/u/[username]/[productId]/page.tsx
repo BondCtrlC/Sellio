@@ -98,7 +98,15 @@ export default async function ProductPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <ProductDetail 
-        product={product} 
+        product={product as {
+          id: string;
+          title: string;
+          description: string | null;
+          type: 'digital' | 'booking' | 'live' | 'link';
+          price: number;
+          image_url: string | null;
+          type_config: Record<string, unknown> | null;
+        }} 
         creator={creator}
         availableSlots={availableSlots}
       />
