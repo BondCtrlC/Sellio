@@ -221,7 +221,42 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                         isTooClose = hoursUntil < minAdvanceHours;
                       }
                       
-                      const isDisabled = isFull || isTooClose;
+                      // Check buffer time conflict
+                      const bufferMinutes = (product.type_config?.buffer_minutes as number) || 0;
+                      let isInBuffer = false;
+                      if (bufferMinutes > 0 && !isFull) {
+                        // Get all booked slots on the same day
+                        const bookedSlots = slots.filter(s => (s.current_bookings || 0) > 0 && s.id !== slot.id);
+                        
+                        // Convert slot start time to minutes from midnight
+                        const [slotStartH, slotStartM] = slot.start_time.split(':').map(Number);
+                        const slotStartMinutes = slotStartH * 60 + slotStartM;
+                        
+                        // Check if this slot starts within buffer time after any booked slot ends
+                        for (const bookedSlot of bookedSlots) {
+                          const [bookedEndH, bookedEndM] = bookedSlot.end_time.split(':').map(Number);
+                          const bookedEndMinutes = bookedEndH * 60 + bookedEndM;
+                          
+                          // Slot is blocked if it starts before (booked end + buffer)
+                          // and starts after booked start (to only block AFTER, not before)
+                          const [bookedStartH, bookedStartM] = bookedSlot.start_time.split(':').map(Number);
+                          const bookedStartMinutes = bookedStartH * 60 + bookedStartM;
+                          
+                          if (slotStartMinutes >= bookedStartMinutes && 
+                              slotStartMinutes < bookedEndMinutes + bufferMinutes) {
+                            isInBuffer = true;
+                            break;
+                          }
+                        }
+                      }
+                      
+                      const isDisabled = isFull || isTooClose || isInBuffer;
+                      
+                      // Determine status text
+                      let statusText = `ว่าง ${remaining} ที่นั่ง`;
+                      if (isFull) statusText = 'เต็ม';
+                      else if (isTooClose) statusText = 'จองล่วงหน้าไม่ทัน';
+                      else if (isInBuffer) statusText = 'ติดช่วงพักนัด';
                       
                       return (
                         <button
@@ -245,7 +280,7 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                               ? 'text-white/80' 
                               : 'text-muted-foreground'
                           }`}>
-                            {isFull ? 'เต็ม' : isTooClose ? 'จองล่วงหน้าไม่ทัน' : `ว่าง ${remaining} ที่นั่ง`}
+                            {statusText}
                           </div>
                         </button>
                       );

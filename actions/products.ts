@@ -192,7 +192,7 @@ export async function deleteProduct(productId: string): Promise<ProductResult> {
 
 export async function updateProductBookingSettings(
   productId: string,
-  settings: { minimum_advance_hours?: number; duration_minutes?: number }
+  settings: { minimum_advance_hours?: number; duration_minutes?: number; buffer_minutes?: number }
 ): Promise<ProductResult> {
   const creatorId = await getCreatorId();
   if (!creatorId) {
@@ -220,6 +220,7 @@ export async function updateProductBookingSettings(
     ...existingConfig,
     ...(settings.minimum_advance_hours !== undefined && { minimum_advance_hours: settings.minimum_advance_hours }),
     ...(settings.duration_minutes !== undefined && { duration_minutes: settings.duration_minutes }),
+    ...(settings.buffer_minutes !== undefined && { buffer_minutes: settings.buffer_minutes }),
   };
 
   const { error } = await supabase

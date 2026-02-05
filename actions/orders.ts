@@ -116,7 +116,7 @@ export async function createOrder(
     }
 
     // Check minimum advance booking hours
-    const typeConfig = product.type_config as { minimum_advance_hours?: number } | null;
+    const typeConfig = product.type_config as { minimum_advance_hours?: number; buffer_minutes?: number } | null;
     const minAdvanceHours = typeConfig?.minimum_advance_hours || 0;
     
     if (minAdvanceHours > 0) {
@@ -130,6 +130,39 @@ export async function createOrder(
           success: false, 
           error: `กรุณาจองล่วงหน้าอย่างน้อย ${minAdvanceHours} ชั่วโมง` 
         };
+      }
+    }
+
+    // Check buffer time conflict
+    const bufferMinutes = typeConfig?.buffer_minutes || 0;
+    if (bufferMinutes > 0) {
+      // Get all booked slots on the same date
+      const { data: sameDaySlots } = await supabase
+        .from('booking_slots')
+        .select('id, start_time, end_time, current_bookings')
+        .eq('product_id', productId)
+        .eq('slot_date', slot.slot_date)
+        .gt('current_bookings', 0)
+        .neq('id', slot.id);
+
+      if (sameDaySlots && sameDaySlots.length > 0) {
+        const [slotStartH, slotStartM] = slot.start_time.split(':').map(Number);
+        const slotStartMinutes = slotStartH * 60 + slotStartM;
+
+        for (const bookedSlot of sameDaySlots) {
+          const [bookedEndH, bookedEndM] = bookedSlot.end_time.split(':').map(Number);
+          const bookedEndMinutes = bookedEndH * 60 + bookedEndM;
+          const [bookedStartH, bookedStartM] = bookedSlot.start_time.split(':').map(Number);
+          const bookedStartMinutes = bookedStartH * 60 + bookedStartM;
+
+          if (slotStartMinutes >= bookedStartMinutes && 
+              slotStartMinutes < bookedEndMinutes + bufferMinutes) {
+            return { 
+              success: false, 
+              error: `ช่วงเวลานี้ติดกับช่วงพักระหว่างนัด กรุณาเลือกช่วงเวลาอื่น` 
+            };
+          }
+        }
       }
     }
 

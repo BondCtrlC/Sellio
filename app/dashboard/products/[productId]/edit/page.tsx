@@ -83,6 +83,7 @@ export default async function EditProductPage({ params, searchParams }: EditProd
   const redirectName = typeConfig.redirect_name as string | null;
   const durationMinutes = (typeConfig.duration_minutes as number) || 60;
   const minimumAdvanceHours = (typeConfig.minimum_advance_hours as number) || 0;
+  const bufferMinutes = (typeConfig.buffer_minutes as number) || 0;
   
   // Check if need to show upload/slots section
   const needsSetup = product.type === 'digital' || product.type === 'booking' || product.type === 'link';
@@ -173,6 +174,7 @@ export default async function EditProductPage({ params, searchParams }: EditProd
             <BookingSettings
               productId={product.id}
               initialMinimumAdvanceHours={minimumAdvanceHours}
+              initialBufferMinutes={bufferMinutes}
             />
           </CardContent>
         </Card>

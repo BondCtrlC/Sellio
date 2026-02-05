@@ -3,18 +3,21 @@
 import { useState } from 'react';
 import { Button, Input, Label } from '@/components/ui';
 import { updateProductBookingSettings } from '@/actions/products';
-import { Clock, Save, Loader2 } from 'lucide-react';
+import { Clock, Save, Loader2, Timer } from 'lucide-react';
 
 interface BookingSettingsProps {
   productId: string;
   initialMinimumAdvanceHours: number;
+  initialBufferMinutes: number;
 }
 
 export function BookingSettings({ 
   productId, 
-  initialMinimumAdvanceHours
+  initialMinimumAdvanceHours,
+  initialBufferMinutes
 }: BookingSettingsProps) {
   const [minimumAdvanceHours, setMinimumAdvanceHours] = useState(initialMinimumAdvanceHours);
+  const [bufferMinutes, setBufferMinutes] = useState(initialBufferMinutes);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
@@ -25,6 +28,7 @@ export function BookingSettings({
     try {
       const result = await updateProductBookingSettings(productId, {
         minimum_advance_hours: minimumAdvanceHours,
+        buffer_minutes: bufferMinutes,
       });
       
       if (result.success) {
@@ -41,28 +45,53 @@ export function BookingSettings({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="minimum_advance_hours">จองล่วงหน้าอย่างน้อย (ชั่วโมง)</Label>
-        <Input
-          id="minimum_advance_hours"
-          type="number"
-          min={0}
-          max={168}
-          value={minimumAdvanceHours}
-          onChange={(e) => setMinimumAdvanceHours(parseInt(e.target.value) || 0)}
-          className="max-w-xs"
-        />
-        <p className="text-xs text-muted-foreground">
-          ตั้ง 0 หากไม่ต้องการจำกัด (เช่น ตั้ง 24 = ลูกค้าต้องจองก่อน 24 ชม.)
-        </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="minimum_advance_hours">จองล่วงหน้าอย่างน้อย (ชั่วโมง)</Label>
+          <Input
+            id="minimum_advance_hours"
+            type="number"
+            min={0}
+            max={168}
+            value={minimumAdvanceHours}
+            onChange={(e) => setMinimumAdvanceHours(parseInt(e.target.value) || 0)}
+          />
+          <p className="text-xs text-muted-foreground">
+            ตั้ง 0 = ไม่จำกัด (เช่น ตั้ง 24 = ต้องจองก่อน 24 ชม.)
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="buffer_minutes">เว้นช่วงระหว่างนัด (นาที)</Label>
+          <Input
+            id="buffer_minutes"
+            type="number"
+            min={0}
+            max={120}
+            step={5}
+            value={bufferMinutes}
+            onChange={(e) => setBufferMinutes(parseInt(e.target.value) || 0)}
+          />
+          <p className="text-xs text-muted-foreground">
+            ตั้ง 0 = ไม่เว้น (เช่น ตั้ง 15 = เว้น 15 นาที)
+          </p>
+        </div>
       </div>
 
-      {minimumAdvanceHours > 0 && (
-        <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700">
-          <Clock className="h-4 w-4" />
-          <span className="text-sm">
-            ลูกค้าจะต้องจองล่วงหน้าอย่างน้อย {minimumAdvanceHours} ชั่วโมง
-          </span>
+      {(minimumAdvanceHours > 0 || bufferMinutes > 0) && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 space-y-1">
+          {minimumAdvanceHours > 0 && (
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4" />
+              <span>ลูกค้าต้องจองล่วงหน้าอย่างน้อย {minimumAdvanceHours} ชั่วโมง</span>
+            </div>
+          )}
+          {bufferMinutes > 0 && (
+            <div className="flex items-center gap-2 text-sm">
+              <Timer className="h-4 w-4" />
+              <span>Slot ที่ติดกับนัดที่มีคนจองแล้วจะถูกบล็อก {bufferMinutes} นาที</span>
+            </div>
+          )}
         </div>
       )}
 
