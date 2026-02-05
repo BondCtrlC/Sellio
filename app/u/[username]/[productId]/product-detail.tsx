@@ -81,7 +81,18 @@ const typeConfig = {
   },
 };
 
-export function ProductDetail({ product, creator, availableSlots }: ProductDetailProps) {
+export function ProductDetail({ product: rawProduct, creator, availableSlots }: ProductDetailProps) {
+  // Explicitly type product to avoid unknown inference
+  const product = rawProduct as {
+    id: string;
+    title: string;
+    description: string | null;
+    type: 'digital' | 'booking' | 'live' | 'link';
+    price: number;
+    image_url: string | null;
+    type_config: Record<string, unknown> | null;
+  };
+  
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const config = typeConfig[product.type];
   const Icon = config.icon;
@@ -133,7 +144,7 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
         {product.image_url ? (
           <img
             src={product.image_url}
-            alt={String(product.title)}
+            alt={product.title}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -152,11 +163,11 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
         </span>
 
         {/* Title */}
-        <h1 className="text-2xl font-bold">{String(product.title)}</h1>
+        <h1 className="text-2xl font-bold">{product.title}</h1>
 
         {/* Description - Memoized to prevent video reload on slot change */}
         {product.description && (
-          <ProductDescription html={String(product.description)} />
+          <ProductDescription html={product.description} />
         )}
 
         {/* Type-specific info */}
@@ -176,8 +187,8 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
         {/* Share Buttons */}
         <ShareButtons
           url={`/u/${creator.username}/${product.id}`}
-          title={String(product.title)}
-          description={product.description ? String(product.description) : undefined}
+          title={product.title}
+          description={product.description || undefined}
         />
       </div>
 
