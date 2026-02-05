@@ -1,13 +1,16 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { checkoutSchema, type CheckoutInput } from '@/lib/validations/checkout';
 import { 
   sendOrderConfirmationEmail, 
   sendPaymentRejectionEmail,
   sendNewOrderNotificationEmail,
-  sendRefundNotificationEmail 
+  sendRefundNotificationEmail,
+  sendBookingCancellationEmail,
+  sendBookingRescheduleEmail
 } from '@/lib/email';
 
 // ============================================
@@ -987,7 +990,8 @@ export async function cancelBooking(
   orderId: string,
   reason?: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
+  // Use admin client to bypass RLS (customer not logged in)
+  const supabase = createAdminClient();
 
   // Get order with product info
   const { data: order, error: orderError } = await supabase
@@ -1090,7 +1094,8 @@ export async function rescheduleBooking(
   orderId: string,
   newSlotId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
+  // Use admin client to bypass RLS (customer not logged in)
+  const supabase = createAdminClient();
 
   // Get order with product info
   const { data: order, error: orderError } = await supabase
@@ -1240,7 +1245,8 @@ export async function getAvailableSlotsForReschedule(
   end_time: string;
   remaining: number;
 }>; error?: string }> {
-  const supabase = await createClient();
+  // Use admin client to bypass RLS (customer not logged in)
+  const supabase = createAdminClient();
 
   // Get order
   const { data: order, error: orderError } = await supabase
