@@ -20,10 +20,11 @@ export async function GET(request: NextRequest) {
     const thailandOffset = 7 * 60 * 60 * 1000; // 7 hours in ms
     const thailandNow = new Date(now.getTime() + thailandOffset);
     
-    // Calculate the time window for reminders (23-25 hours from now)
-    // This gives us a 2-hour window to catch bookings even if cron runs slightly off schedule
-    const minHoursAhead = 23;
-    const maxHoursAhead = 25;
+    // Calculate the time window for reminders (12-36 hours from now)
+    // Since cron runs once daily at 8 AM, we check for bookings happening tomorrow
+    // This wider window ensures we catch all tomorrow's bookings
+    const minHoursAhead = 12;
+    const maxHoursAhead = 36;
     
     const minTime = new Date(thailandNow.getTime() + minHoursAhead * 60 * 60 * 1000);
     const maxTime = new Date(thailandNow.getTime() + maxHoursAhead * 60 * 60 * 1000);
