@@ -182,6 +182,15 @@ ADD COLUMN IF NOT EXISTS current_bookings INTEGER DEFAULT 0;
 ### ~~Stripe/Payment Integration~~ ✅ COMPLETED
 - ~~Alternative to PromptPay for international~~
 
+### Stripe Live Mode Setup (Priority: High) - Before Launch
+- [ ] ยืนยันตัวตนใน Stripe Dashboard (บัตรประชาชน)
+- [ ] กรอกข้อมูลธุรกิจให้ครบ
+- [ ] เชื่อมบัญชีธนาคารสำหรับรับเงิน
+- [ ] Copy Live Mode keys (`pk_live_`, `sk_live_`)
+- [ ] อัปเดต Environment Variables ใน Vercel
+- [ ] สร้าง Webhook ใหม่สำหรับ Live Mode
+- [ ] ทดสอบการชำระเงินจริง (จำนวนน้อยๆ)
+
 ### LINE Notify Integration (Priority: Medium) - Business Plan
 - แจ้งเตือน Creator ผ่าน LINE เมื่อมีออเดอร์ใหม่
 - แจ้งเตือนเมื่อลูกค้าชำระเงิน
