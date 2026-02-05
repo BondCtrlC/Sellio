@@ -35,8 +35,9 @@ export function ProductForm({ product }: ProductFormProps) {
     watch,
     setValue,
     formState: { errors, isSubmitting },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } = useForm<ProductInput>({
-    resolver: zodResolver(productSchema),
+    resolver: zodResolver(productSchema) as any,
     defaultValues: {
       type: product?.type || 'digital',
       title: product?.title || '',
