@@ -460,7 +460,14 @@ export async function getCreatorOrders(status?: string) {
     return { success: false, error: 'ไม่สามารถโหลดคำสั่งซื้อได้', orders: [] };
   }
 
-  return { success: true, orders };
+  // Transform data: convert arrays to single objects
+  const transformedOrders = (orders || []).map(order => ({
+    ...order,
+    product: Array.isArray(order.product) ? order.product[0] || null : order.product,
+    payment: Array.isArray(order.payment) ? order.payment[0] || null : order.payment,
+  }));
+
+  return { success: true, orders: transformedOrders };
 }
 
 // ============================================
