@@ -993,9 +993,15 @@ export async function cancelBooking(
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .select(`
-      id, status, booking_date, booking_time, product_id, buyer_email, buyer_name,
-      product:products (id, title, type, creator_id),
-      creator:creators (id, display_name, email, contact_line)
+      id,
+      status,
+      booking_date,
+      booking_time,
+      product_id,
+      buyer_email,
+      buyer_name,
+      product:products(id, title, type, creator_id),
+      creator:creators(id, display_name, email, contact_line)
     `)
     .eq('id', orderId)
     .single();
@@ -1005,7 +1011,10 @@ export async function cancelBooking(
     return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
   }
 
-  if (!order.product) {
+  const product = Array.isArray(order.product) ? order.product[0] : order.product;
+  const creator = Array.isArray(order.creator) ? order.creator[0] : order.creator;
+
+  if (!product) {
     return { success: false, error: 'ไม่พบข้อมูลสินค้า' };
   }
 
@@ -1015,7 +1024,6 @@ export async function cancelBooking(
   }
 
   // Check if booking product
-  const product = order.product as { id: string; title: string; type: string; creator_id: string };
   if (!['booking', 'live'].includes(product.type)) {
     return { success: false, error: 'สินค้านี้ไม่ใช่การจอง' };
   }
@@ -1058,8 +1066,7 @@ export async function cancelBooking(
   }
 
   // Send cancellation email to creator
-  const creator = order.creator as { id: string; display_name: string; email: string; contact_line?: string };
-  if (creator.email) {
+  if (creator?.email) {
     await sendBookingCancellationEmail({
       creatorEmail: creator.email,
       creatorName: creator.display_name || 'Creator',
@@ -1089,9 +1096,15 @@ export async function rescheduleBooking(
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .select(`
-      id, status, booking_date, booking_time, product_id, buyer_email, buyer_name,
-      product:products (id, title, type, type_config, creator_id),
-      creator:creators (id, display_name, email, contact_line)
+      id,
+      status,
+      booking_date,
+      booking_time,
+      product_id,
+      buyer_email,
+      buyer_name,
+      product:products(id, title, type, type_config, creator_id),
+      creator:creators(id, display_name, email, contact_line)
     `)
     .eq('id', orderId)
     .single();
@@ -1101,7 +1114,10 @@ export async function rescheduleBooking(
     return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
   }
 
-  if (!order.product) {
+  const product = Array.isArray(order.product) ? order.product[0] : order.product;
+  const creator = Array.isArray(order.creator) ? order.creator[0] : order.creator;
+
+  if (!product) {
     return { success: false, error: 'ไม่พบข้อมูลสินค้า' };
   }
 
@@ -1110,7 +1126,6 @@ export async function rescheduleBooking(
     return { success: false, error: 'ไม่สามารถเปลี่ยนนัดได้' };
   }
 
-  const product = order.product as { id: string; title: string; type: string; type_config: Record<string, unknown>; creator_id: string };
   if (!['booking', 'live'].includes(product.type)) {
     return { success: false, error: 'สินค้านี้ไม่ใช่การจอง' };
   }
@@ -1195,8 +1210,7 @@ export async function rescheduleBooking(
   }
 
   // Send reschedule notification to creator
-  const creator = order.creator as { id: string; display_name: string; email: string };
-  if (creator.email) {
+  if (creator?.email) {
     await sendBookingRescheduleEmail({
       creatorEmail: creator.email,
       creatorName: creator.display_name || 'Creator',
