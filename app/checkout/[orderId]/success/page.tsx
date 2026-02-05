@@ -137,7 +137,7 @@ export default async function SuccessPage({ params }: PageProps) {
                     productTitle={order.product.title}
                     bookingDate={order.booking_date}
                     bookingTime={order.booking_time}
-                    durationMinutes={(order.product.type_config as any)?.duration_minutes || 60}
+                    durationMinutes={((order.product as any).type_config)?.duration_minutes || 60}
                     creatorName={order.creator.display_name || order.creator.username}
                   />
                 </div>
@@ -303,7 +303,7 @@ export default async function SuccessPage({ params }: PageProps) {
                     productTitle={order.product.title}
                     bookingDate={order.booking_date}
                     bookingTime={order.booking_time}
-                    durationMinutes={(order.product.type_config as any)?.duration_minutes || 60}
+                    durationMinutes={((order.product as any).type_config)?.duration_minutes || 60}
                     meetingUrl={(fulfillment.content as any).meeting_url}
                     location={(fulfillment.content as any).location}
                     creatorName={order.creator.display_name || order.creator.username}
