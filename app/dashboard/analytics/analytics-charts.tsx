@@ -64,7 +64,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
                 tick={{ fill: 'currentColor' }}
               />
               <Tooltip 
-                formatter={(value: number) => [formatTooltipValue(value), 'รายได้']}
+                formatter={(value) => [formatTooltipValue(Number(value) || 0), 'รายได้']}
                 labelFormatter={(label) => {
                   const date = new Date(label);
                   return date.toLocaleDateString('th-TH', { 
@@ -130,7 +130,7 @@ export function OrdersChart({ data }: OrdersChartProps) {
                 allowDecimals={false}
               />
               <Tooltip 
-                formatter={(value: number) => [value, 'คำสั่งซื้อ']}
+                formatter={(value) => [Number(value) || 0, 'คำสั่งซื้อ']}
                 labelFormatter={(label) => {
                   const date = new Date(label);
                   return date.toLocaleDateString('th-TH', { 
@@ -234,7 +234,7 @@ export function StatusPieChart({ data }: StatusPieChartProps) {
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: number) => [value, 'รายการ']}
+                formatter={(value) => [Number(value) || 0, 'รายการ']}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
@@ -323,7 +323,7 @@ export function ProductTypePieChart({ data }: ProductTypePieChartProps) {
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: number) => [value, 'รายการ']}
+                formatter={(value) => [Number(value) || 0, 'รายการ']}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
