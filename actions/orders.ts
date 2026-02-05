@@ -733,6 +733,7 @@ export async function getOrderStats() {
       pending_confirmation: 0,
       confirmed: 0,
       cancelled: 0,
+      refunded: 0,
       total_revenue: 0,
     };
   }
