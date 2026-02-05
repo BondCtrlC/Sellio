@@ -108,22 +108,24 @@ async function getStoreData(creatorId: string) {
   // If store_items exist and have data, use them
   if (!itemsError && storeItems && storeItems.length > 0) {
     // Filter only published products and valid items
-    const validItems = (storeItems as StoreItem[]).filter(
-      item => item.product && item.product.is_published
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const validItems = (storeItems as any[]).filter(
+      (item: any) => item.product && item.product.is_published
     );
     
     // Organize by sections
     const unsectionedProducts = validItems
-      .filter(item => !item.section_id)
-      .map(item => item.product);
+      .filter((item: any) => !item.section_id)
+      .map((item: any) => item.product);
     
-    const sectionedProducts: { section: StoreSection; products: StoreItem['product'][] }[] = 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sectionedProducts: { section: StoreSection; products: any[] }[] = 
       (sections || []).map((section: StoreSection) => ({
         section,
         products: validItems
-          .filter(item => item.section_id === section.id)
-          .map(item => item.product)
-      })).filter((s: { section: StoreSection; products: StoreItem['product'][] }) => s.products.length > 0);
+          .filter((item: any) => item.section_id === section.id)
+          .map((item: any) => item.product)
+      })).filter((s: { section: StoreSection; products: any[] }) => s.products.length > 0);
 
     return { unsectionedProducts, sectionedProducts };
   }
