@@ -94,8 +94,7 @@ export async function createCoupon(input: CouponInput) {
   // Validate input
   const parsed = couponSchema.safeParse(input);
   if (!parsed.success) {
-    const errors = parsed.error.errors || parsed.error.issues || [];
-    const firstError = errors[0];
+    const firstError = parsed.error.issues[0];
     return { success: false, error: firstError?.message || 'ข้อมูลไม่ถูกต้อง' };
   }
 
