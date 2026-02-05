@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const productSchema = z.object({
   type: z.enum(['digital', 'booking', 'link'], {
-    required_error: 'กรุณาเลือกประเภทสินค้า',
+    error: 'กรุณาเลือกประเภทสินค้า',
   }),
   title: z
     .string()
