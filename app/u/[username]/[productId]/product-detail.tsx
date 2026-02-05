@@ -163,18 +163,18 @@ export function ProductDetail({ product: rawProduct, creator, availableSlots }: 
         </span>
 
         {/* Title */}
-        <h1 className="text-2xl font-bold">{product.title as string}</h1>
+        <h1 className="text-2xl font-bold">{String(product.title)}</h1>
 
         {/* Description - Memoized to prevent video reload on slot change */}
         {product.description && (
-          <ProductDescription html={product.description as string} />
+          <ProductDescription html={String(product.description)} />
         )}
 
         {/* Type-specific info */}
         {(product.type === 'booking' || product.type === 'live') && product.type_config?.duration_minutes && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span>ระยะเวลา {product.type_config.duration_minutes as number} นาที</span>
+            <span>ระยะเวลา {Number(product.type_config.duration_minutes)} นาที</span>
           </div>
         )}
 
