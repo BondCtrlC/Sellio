@@ -677,7 +677,8 @@ export async function rejectPayment(
   }
 
   // Send rejection email to buyer
-  const productTitle = Array.isArray(order.product) ? order.product[0]?.title : order.product?.title;
+  const product = order.product as { title?: string } | { title?: string }[] | null;
+  const productTitle = Array.isArray(product) ? product[0]?.title : product?.title;
   await sendPaymentRejectionEmail({
     orderId: order.id,
     buyerName: order.buyer_name,
@@ -871,7 +872,8 @@ export async function refundOrder(
   }
 
   // Send refund notification email to buyer with slip
-  const productTitle = Array.isArray(order.product) ? order.product[0]?.title : order.product?.title;
+  const productRefund = order.product as { title?: string } | { title?: string }[] | null;
+  const productTitle = Array.isArray(productRefund) ? productRefund[0]?.title : productRefund?.title;
   await sendRefundNotificationEmail({
     orderId: order.id,
     buyerName: order.buyer_name,

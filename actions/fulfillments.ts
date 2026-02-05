@@ -155,7 +155,7 @@ export async function getFulfillmentByToken(token: string): Promise<{
     order: order ? {
       buyer_name: order.buyer_name,
       buyer_email: order.buyer_email,
-      product_title: order.product?.title || 'สินค้า',
+      product_title: (order.product as { title?: string } | null)?.title || 'สินค้า',
     } : null,
   };
 }
