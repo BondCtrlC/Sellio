@@ -27,12 +27,9 @@ export function ProductsList({ initialProducts }: ProductsListProps) {
   const filteredProducts = useMemo(() => {
     let products = initialProducts;
     
-    // Filter by type (treat "live" as "booking")
+    // Filter by type
     if (activeFilter !== 'all') {
-      products = products.filter(p => {
-        const productType = p.type === 'live' ? 'booking' : p.type;
-        return productType === activeFilter;
-      });
+      products = products.filter(p => p.type === activeFilter);
     }
     
     // Filter by search query
