@@ -994,14 +994,19 @@ export async function cancelBooking(
     .from('orders')
     .select(`
       id, status, booking_date, booking_time, product_id, buyer_email, buyer_name,
-      product:products!inner (id, title, type, creator_id),
-      creator:creators!inner (id, display_name, email, contact_line)
+      product:products (id, title, type, creator_id),
+      creator:creators (id, display_name, email, contact_line)
     `)
     .eq('id', orderId)
     .single();
 
   if (orderError || !order) {
+    console.error('Cancel booking - order query error:', orderError);
     return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+  }
+
+  if (!order.product) {
+    return { success: false, error: 'ไม่พบข้อมูลสินค้า' };
   }
 
   // Check if can cancel (only confirmed or pending_confirmation)
@@ -1085,14 +1090,19 @@ export async function rescheduleBooking(
     .from('orders')
     .select(`
       id, status, booking_date, booking_time, product_id, buyer_email, buyer_name,
-      product:products!inner (id, title, type, type_config, creator_id),
-      creator:creators!inner (id, display_name, email, contact_line)
+      product:products (id, title, type, type_config, creator_id),
+      creator:creators (id, display_name, email, contact_line)
     `)
     .eq('id', orderId)
     .single();
 
   if (orderError || !order) {
+    console.error('Reschedule booking - order query error:', orderError);
     return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+  }
+
+  if (!order.product) {
+    return { success: false, error: 'ไม่พบข้อมูลสินค้า' };
   }
 
   // Check if can reschedule
