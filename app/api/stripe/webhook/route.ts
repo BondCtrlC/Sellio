@@ -80,6 +80,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       total,
       buyer_name,
       buyer_email,
+      booking_date,
+      booking_time,
       product:products(id, title, type, type_config),
       creator:creators(id, display_name, contact_line, contact_ig)
     `)
@@ -159,7 +161,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   // Send confirmation email
   if (creator && product) {
-    await sendOrderConfirmationEmail({
+    // Prepare email data
+    const emailData: Parameters<typeof sendOrderConfirmationEmail>[0] = {
       orderId: order.id,
       buyerName: order.buyer_name,
       buyerEmail: order.buyer_email,
@@ -170,7 +173,32 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         line: creator.contact_line || undefined,
         ig: creator.contact_ig || undefined,
       },
-    });
+    };
+
+    // Add booking info if this is a booking order
+    if ((product.type === 'booking' || product.type === 'live') && order.booking_date && order.booking_time) {
+      // Get fulfillment for meeting details
+      const { data: fulfillment } = await supabase
+        .from('fulfillments')
+        .select('content')
+        .eq('order_id', orderId)
+        .single();
+
+      const fulfillmentContent = (fulfillment?.content as Record<string, unknown>) || {};
+      const typeConfig = (product.type_config as Record<string, unknown>) || {};
+
+      emailData.booking = {
+        date: order.booking_date,
+        time: order.booking_time,
+        durationMinutes: (typeConfig.duration_minutes as number) || 60,
+        meetingType: (fulfillmentContent.meeting_type as 'online' | 'offline') || 'online',
+        meetingUrl: fulfillmentContent.meeting_url as string | undefined,
+        meetingPlatform: fulfillmentContent.meeting_platform as string | undefined,
+        location: fulfillmentContent.location as string | undefined,
+      };
+    }
+
+    await sendOrderConfirmationEmail(emailData);
   }
 
   console.log('Order confirmed via Stripe:', orderId);

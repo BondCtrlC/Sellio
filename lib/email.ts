@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { generateBookingICS } from './ics';
 
 // Initialize Resend with API key from environment
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -17,6 +18,16 @@ interface OrderEmailData {
     line?: string;
     ig?: string;
   };
+  // Booking info (optional)
+  booking?: {
+    date: string; // YYYY-MM-DD
+    time: string; // HH:mm
+    durationMinutes?: number;
+    meetingType?: 'online' | 'offline';
+    meetingUrl?: string;
+    meetingPlatform?: string;
+    location?: string;
+  };
 }
 
 // ============================================
@@ -24,10 +35,112 @@ interface OrderEmailData {
 // ============================================
 export async function sendOrderConfirmationEmail(data: OrderEmailData) {
   try {
-    const { error } = await resend.emails.send({
+    const isBooking = !!data.booking;
+    
+    // Format booking date/time for display
+    let bookingSection = '';
+    let googleCalUrl = '';
+    let icsContent = '';
+    
+    if (data.booking) {
+      const dateObj = new Date(data.booking.date + 'T00:00:00');
+      const formattedDate = dateObj.toLocaleDateString('th-TH', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      const formattedTime = data.booking.time.slice(0, 5);
+      
+      // Generate .ics file
+      icsContent = generateBookingICS({
+        productTitle: data.productTitle,
+        creatorName: data.creatorName,
+        buyerName: data.buyerName,
+        buyerEmail: data.buyerEmail,
+        bookingDate: data.booking.date,
+        bookingTime: data.booking.time,
+        durationMinutes: data.booking.durationMinutes || 60,
+        meetingUrl: data.booking.meetingUrl,
+        location: data.booking.location,
+      });
+      
+      // Generate Google Calendar URL
+      const timeParts = data.booking.time.split(':');
+      const hours = parseInt(timeParts[0], 10);
+      const minutes = parseInt(timeParts[1], 10);
+      const dateParts = data.booking.date.split('-');
+      const year = parseInt(dateParts[0], 10);
+      const month = parseInt(dateParts[1], 10) - 1;
+      const day = parseInt(dateParts[2], 10);
+      const startDate = new Date(Date.UTC(year, month, day, hours - 7, minutes, 0));
+      const endDate = new Date(startDate.getTime() + (data.booking.durationMinutes || 60) * 60 * 1000);
+      const formatForGoogle = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+      googleCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(data.productTitle)}&dates=${formatForGoogle(startDate)}/${formatForGoogle(endDate)}&details=${encodeURIComponent(`นัดหมายกับ ${data.creatorName}`)}`;
+      
+      // Meeting info
+      const meetingInfo = data.booking.meetingType === 'online' && data.booking.meetingUrl
+        ? `
+          <div style="background: #f0f9ff; border-radius: 8px; padding: 15px; margin-top: 15px;">
+            <p style="margin: 0 0 5px; color: #0369a1; font-weight: bold;">🎥 ประชุมออนไลน์</p>
+            ${data.booking.meetingPlatform ? `<p style="margin: 0 0 5px; color: #374151;">แพลตฟอร์ม: ${data.booking.meetingPlatform}</p>` : ''}
+            <a href="${data.booking.meetingUrl}" style="display: inline-block; background: #0ea5e9; color: white; text-decoration: none; padding: 8px 16px; border-radius: 6px; margin-top: 10px; font-size: 14px;">🔗 เข้าร่วมประชุม</a>
+          </div>
+        `
+        : data.booking.location
+        ? `
+          <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin-top: 15px;">
+            <p style="margin: 0 0 5px; color: #92400e; font-weight: bold;">📍 สถานที่นัดพบ</p>
+            <p style="margin: 0; color: #374151;">${data.booking.location}</p>
+          </div>
+        `
+        : '';
+      
+      bookingSection = `
+        <!-- Booking Details -->
+        <div style="background: linear-gradient(135deg, #faf5ff, #f3e8ff); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e9d5ff;">
+          <p style="margin: 0 0 15px; color: #7c3aed; font-weight: bold;">📅 รายละเอียดการนัดหมาย</p>
+          
+          <div style="display: flex; margin-bottom: 10px;">
+            <span style="font-size: 24px; margin-right: 12px;">📆</span>
+            <div>
+              <p style="margin: 0; font-weight: bold; color: #111827; font-size: 16px;">${formattedDate}</p>
+            </div>
+          </div>
+          
+          <div style="display: flex; margin-bottom: 10px;">
+            <span style="font-size: 24px; margin-right: 12px;">⏰</span>
+            <div>
+              <p style="margin: 0; font-weight: bold; color: #111827; font-size: 16px;">${formattedTime} น.</p>
+              <p style="margin: 0; color: #6b7280; font-size: 14px;">(${data.booking.durationMinutes || 60} นาที)</p>
+            </div>
+          </div>
+          
+          ${meetingInfo}
+        </div>
+        
+        <!-- Add to Calendar -->
+        <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+          <p style="margin: 0 0 10px; color: #374151; font-weight: bold;">📱 เพิ่มลงปฏิทิน</p>
+          <a href="${googleCalUrl}" target="_blank" style="display: inline-block; background: #4285f4; color: white; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-size: 14px;">Google Calendar</a>
+          <p style="margin: 10px 0 0; color: #6b7280; font-size: 12px;">หรือเปิดไฟล์ .ics ที่แนบมาเพื่อเพิ่มลง Calendar อื่นๆ (Apple, Outlook)</p>
+        </div>
+      `;
+    }
+
+    // Prepare email options
+    const emailOptions: {
+      from: string;
+      to: string;
+      subject: string;
+      html: string;
+      attachments?: { filename: string; content: string; contentType: string }[];
+    } = {
       from: FROM_EMAIL,
       to: data.buyerEmail,
-      subject: `✅ ยืนยันการชำระเงิน - ${data.productTitle}`,
+      subject: isBooking 
+        ? `📅 ยืนยันการนัดหมาย - ${data.productTitle}`
+        : `✅ ยืนยันการชำระเงิน - ${data.productTitle}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -38,9 +151,9 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
         <body style="font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
           <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <!-- Header -->
-            <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-              <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
-              <h1 style="color: white; margin: 0; font-size: 24px;">การชำระเงินสำเร็จ!</h1>
+            <div style="background: linear-gradient(135deg, ${isBooking ? '#8b5cf6, #7c3aed' : '#22c55e, #16a34a'}); padding: 30px; text-align: center;">
+              <div style="font-size: 48px; margin-bottom: 10px;">${isBooking ? '📅' : '✅'}</div>
+              <h1 style="color: white; margin: 0; font-size: 24px;">${isBooking ? 'การนัดหมายยืนยันแล้ว!' : 'การชำระเงินสำเร็จ!'}</h1>
             </div>
             
             <!-- Content -->
@@ -48,7 +161,7 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
               <p style="color: #374151; margin: 0 0 20px;">สวัสดีคุณ ${data.buyerName},</p>
               
               <p style="color: #374151; margin: 0 0 20px;">
-                การชำระเงินของคุณได้รับการยืนยันเรียบร้อยแล้ว
+                ${isBooking ? 'การนัดหมายของคุณได้รับการยืนยันเรียบร้อยแล้ว' : 'การชำระเงินของคุณได้รับการยืนยันเรียบร้อยแล้ว'}
               </p>
               
               <!-- Order Details -->
@@ -56,17 +169,21 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
                 <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">รายละเอียดคำสั่งซื้อ</p>
                 <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${data.productTitle}</p>
                 <p style="margin: 0; color: #6b7280;">หมายเลข: #${data.orderId.slice(0, 8).toUpperCase()}</p>
-                <p style="margin: 10px 0 0; font-size: 24px; font-weight: bold; color: #22c55e;">฿${data.amount.toLocaleString()}</p>
+                <p style="margin: 10px 0 0; font-size: 24px; font-weight: bold; color: ${isBooking ? '#7c3aed' : '#22c55e'};">฿${data.amount.toLocaleString()}</p>
               </div>
               
+              ${bookingSection}
+              
+              ${!isBooking ? `
               <p style="color: #374151; margin: 0 0 20px;">
                 ผู้ขายจะติดต่อคุณเพื่อส่งมอบสินค้า/บริการตามที่สั่งซื้อ
               </p>
+              ` : ''}
               
               <!-- View Order Button -->
               <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/checkout/${data.orderId}/success" 
-                 style="display: block; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; text-decoration: none; padding: 15px 30px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 20px;">
-                🎁 คลิกเพื่อรับสินค้า/บริการ
+                 style="display: block; background: linear-gradient(135deg, ${isBooking ? '#8b5cf6, #7c3aed' : '#22c55e, #16a34a'}); color: white; text-decoration: none; padding: 15px 30px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 20px;">
+                ${isBooking ? '📅 ดูรายละเอียดนัดหมาย' : '🎁 คลิกเพื่อรับสินค้า/บริการ'}
               </a>
               
               <!-- Creator Contact -->
@@ -89,7 +206,20 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
         </body>
         </html>
       `,
-    });
+    };
+    
+    // Add .ics attachment for booking orders
+    if (isBooking && icsContent) {
+      emailOptions.attachments = [
+        {
+          filename: 'booking.ics',
+          content: Buffer.from(icsContent).toString('base64'),
+          contentType: 'text/calendar',
+        },
+      ];
+    }
+
+    const { error } = await resend.emails.send(emailOptions);
 
     if (error) {
       console.error('Send email error:', error);
@@ -359,3 +489,4 @@ export async function sendNewOrderNotificationEmail(
     return { success: false, error: 'Failed to send email' };
   }
 }
+

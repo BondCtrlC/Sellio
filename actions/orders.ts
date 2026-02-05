@@ -497,7 +497,7 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .select(`
-      id, status, total, buyer_email, buyer_name, 
+      id, status, total, buyer_email, buyer_name, booking_date, booking_time,
       product:products(id, title, type, type_config)
     `)
     .eq('id', orderId)
@@ -601,7 +601,9 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
 
   // Send confirmation email to buyer
   const productTitle = product?.title || 'สินค้า';
-  await sendOrderConfirmationEmail({
+  
+  // Prepare email data
+  const emailData: Parameters<typeof sendOrderConfirmationEmail>[0] = {
     orderId: order.id,
     buyerName: order.buyer_name,
     buyerEmail: order.buyer_email,
@@ -612,7 +614,32 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
       line: creator.contact_line || undefined,
       ig: creator.contact_ig || undefined,
     },
-  });
+  };
+  
+  // Add booking info if this is a booking product
+  if ((product?.type === 'booking' || product?.type === 'live') && order.booking_date && order.booking_time) {
+    // Get fulfillment for meeting details
+    const { data: fulfillment } = await supabase
+      .from('fulfillments')
+      .select('content')
+      .eq('order_id', orderId)
+      .single();
+
+    const fulfillmentContent = fulfillment?.content as Record<string, unknown> || {};
+    const typeConfig = (product.type_config as Record<string, unknown>) || {};
+
+    emailData.booking = {
+      date: order.booking_date,
+      time: order.booking_time,
+      durationMinutes: (typeConfig.duration_minutes as number) || 60,
+      meetingType: (fulfillmentContent.meeting_type as 'online' | 'offline') || 'online',
+      meetingUrl: fulfillmentContent.meeting_url as string | undefined,
+      meetingPlatform: fulfillmentContent.meeting_platform as string | undefined,
+      location: fulfillmentContent.location as string | undefined,
+    };
+  }
+  
+  await sendOrderConfirmationEmail(emailData);
 
   revalidatePath('/dashboard/orders');
   return { success: true };

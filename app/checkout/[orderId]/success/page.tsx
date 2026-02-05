@@ -8,6 +8,7 @@ import { formatPrice, formatDate } from '@/lib/utils';
 import { CopyLinkButton } from './copy-link-button';
 import { DownloadButton } from './download-button';
 import { ReviewSection } from './review-section';
+import { AddToCalendar } from './add-to-calendar';
 
 interface PageProps {
   params: Promise<{ orderId: string }>;
@@ -87,10 +88,10 @@ export default async function SuccessPage({ params }: PageProps) {
                 <p className="text-sm text-muted-foreground">
                   โดย {order.creator.display_name || order.creator.username}
                 </p>
-                {order.booking_date && (
+                {order.booking_date && order.booking_time && (
                   <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
                     <Calendar className="h-3.5 w-3.5" />
-                    <span>{formatDate(order.booking_date)} {order.booking_time?.slice(0, 5)}</span>
+                    <span>{formatDate(order.booking_date)} {order.booking_time.slice(0, 5)} น.</span>
                   </div>
                 )}
               </div>
@@ -126,6 +127,21 @@ export default async function SuccessPage({ params }: PageProps) {
                 <li>• คุณจะได้รับอีเมลยืนยันเมื่อการชำระเงินได้รับการอนุมัติ</li>
                 <li>• หากมีปัญหา ผู้ขายจะติดต่อกลับทางอีเมลของคุณ</li>
               </ul>
+              
+              {/* Add to Calendar for pending booking orders */}
+              {order.booking_date && order.booking_time && (
+                <div className="mt-4 pt-3 border-t border-yellow-300">
+                  <p className="text-sm text-yellow-700 mb-2">📅 เพิ่มนัดหมายลงปฏิทินไว้ก่อน:</p>
+                  <AddToCalendar
+                    orderId={orderId}
+                    productTitle={order.product.title}
+                    bookingDate={order.booking_date}
+                    bookingTime={order.booking_time}
+                    durationMinutes={(order.product.type_config as any)?.duration_minutes || 60}
+                    creatorName={order.creator.display_name || order.creator.username}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -214,8 +230,29 @@ export default async function SuccessPage({ params }: PageProps) {
                 <Calendar className="h-4 w-4" />
                 รายละเอียดการนัดหมาย
               </h4>
+              
+              {/* Date/Time Info */}
+              {order.booking_date && order.booking_time && (
+                <div className="bg-white rounded-lg p-3 mb-3 border border-purple-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {formatDate(order.booking_date)}
+                      </p>
+                      <p className="text-sm text-gray-600 flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5" />
+                        {order.booking_time.slice(0, 5)} น.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {(fulfillment.content as any).meeting_url || (fulfillment.content as any).location ? (
-                <div className="space-y-2 text-sm">
+                <div className="space-y-3 text-sm">
                   {(fulfillment.content as any).meeting_type === 'online' ? (
                     <>
                       {(fulfillment.content as any).meeting_platform && (
@@ -256,6 +293,22 @@ export default async function SuccessPage({ params }: PageProps) {
                 <p className="text-sm text-purple-600">
                   ผู้ขายจะส่งรายละเอียดการนัดหมายให้คุณเร็วๆ นี้
                 </p>
+              )}
+
+              {/* Add to Calendar Button */}
+              {order.booking_date && order.booking_time && (
+                <div className="mt-4 pt-3 border-t border-purple-200">
+                  <AddToCalendar
+                    orderId={orderId}
+                    productTitle={order.product.title}
+                    bookingDate={order.booking_date}
+                    bookingTime={order.booking_time}
+                    durationMinutes={(order.product.type_config as any)?.duration_minutes || 60}
+                    meetingUrl={(fulfillment.content as any).meeting_url}
+                    location={(fulfillment.content as any).location}
+                    creatorName={order.creator.display_name || order.creator.username}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>

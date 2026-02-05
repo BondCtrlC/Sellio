@@ -191,6 +191,89 @@ ADD COLUMN IF NOT EXISTS current_bookings INTEGER DEFAULT 0;
 - [ ] สร้าง Webhook ใหม่สำหรับ Live Mode
 - [ ] ทดสอบการชำระเงินจริง (จำนวนน้อยๆ)
 
+### 🔥 Stripe Connect - Stan Store Model (Priority: High)
+ระบบให้ Creator เชื่อมต่อ Stripe เพื่อรับเงินโดยตรง (เหมือน Stan Store)
+
+**Flow:** `ลูกค้าจ่าย → Stripe → Creator's Connected Account (หัก Platform Fee)`
+
+**ข้อดี:**
+- Simple - ไม่ต้องสร้างระบบ Wallet
+- Stripe จัดการ Payout อัตโนมัติ
+- Creator ควบคุม Refund เอง
+- Platform เก็บค่าธรรมเนียมผ่าน `application_fee`
+
+#### Phase 1: Creator Stripe Connect Onboarding
+- [ ] ปุ่ม "เชื่อมต่อ Stripe" ในหน้า Settings
+- [ ] Stripe Connect Express Account (ง่ายที่สุด)
+- [ ] บันทึก `stripe_account_id` ใน database
+- [ ] ตรวจสอบสถานะ `charges_enabled`, `payouts_enabled`
+- [ ] แสดงสถานะการเชื่อมต่อใน Dashboard
+- [ ] Link ไป Stripe Express Dashboard (ดูรายได้, ถอนเงิน)
+
+#### Phase 2: Payment with Connected Account
+- [ ] ใช้ Destination Charges (เงินไป Creator โดยตรง)
+- [ ] หัก Platform Fee ผ่าน `application_fee_amount`
+- [ ] บันทึก `stripe_charge_id` ใน orders table
+- [ ] Webhook: `payment_intent.succeeded` → update order
+
+#### Phase 3: Creator Refund (Stan-like)
+- [ ] ปุ่ม "Refund" ในหน้า Order Detail
+- [ ] Creator กด Refund → เงินคืนจาก Creator's Stripe Balance
+- [ ] Refund ได้เฉพาะเมื่อ: ไม่ได้รับสินค้า / ปัญหาทางเทคนิค
+- [ ] บันทึก refund status ใน database
+- [ ] หมายเหตุ: Stripe Fee ไม่คืน (Creator รับผิดชอบ)
+
+#### Phase 4: Income Dashboard
+- [ ] แสดงรายได้รวม (ดึงจาก Stripe API หรือ orders)
+- [ ] แสดงค่าธรรมเนียมที่ถูกหัก
+- [ ] Link ไป Stripe Express Dashboard ดูรายละเอียด
+- [ ] ไม่ต้องสร้างระบบ Wallet เอง (Stripe จัดการให้)
+
+#### Database Changes Needed
+```sql
+-- Update creators table
+ALTER TABLE creators ADD COLUMN IF NOT EXISTS stripe_account_id TEXT;
+ALTER TABLE creators ADD COLUMN IF NOT EXISTS stripe_onboarding_complete BOOLEAN DEFAULT FALSE;
+ALTER TABLE creators ADD COLUMN IF NOT EXISTS stripe_charges_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE creators ADD COLUMN IF NOT EXISTS stripe_payouts_enabled BOOLEAN DEFAULT FALSE;
+
+-- Update orders table for refund tracking
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_charge_id TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS refund_status TEXT CHECK (refund_status IN ('none', 'partial', 'full'));
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS refund_amount DECIMAL(10,2);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS refund_reason TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ;
+```
+
+#### Files to Create/Update
+```
+lib/stripe-connect.ts              # Stripe Connect helpers
+app/api/stripe/connect/
+  ├── create-account/route.ts      # สร้าง Express Account
+  ├── onboarding/route.ts          # สร้าง Account Link
+  ├── refresh/route.ts             # Refresh Link (ถ้า expire)
+  └── webhook/route.ts             # Connect Webhooks
+app/dashboard/settings/
+  └── stripe-connect.tsx           # เชื่อมต่อ Stripe Component
+app/dashboard/income/
+  └── page.tsx                     # แสดงรายได้ (optional)
+actions/refunds.ts                 # Refund Actions
+```
+
+#### Platform Fee Structure
+| รายการ | จำนวน |
+|--------|-------|
+| Platform Fee (Sellio) | 5% ต่อ transaction |
+| Stripe Fee | ~3.4% + ฿10 |
+| **Creator ได้รับ** | ~91.6% |
+
+### 🗑️ Remove Manual PromptPay QR (Priority: Medium) - After Stripe Connect
+- [ ] ลบระบบ Generate PromptPay QR แยก (ไม่ใช่ผ่าน Stripe)
+- [ ] ลบ Upload Slip แบบ Manual
+- [ ] เหตุผล: เงินเข้า Creator โดยตรง → อาจเกิดการโกงได้
+- [ ] หมายเหตุ: ยังคง PromptPay ผ่าน Stripe ไว้ (ปลอดภัยกว่า)
+- [ ] ⚠️ ทำหลังจาก Stripe Connect พร้อมใช้งานแล้ว
+
 ### LINE Notify Integration (Priority: Medium) - Business Plan
 - แจ้งเตือน Creator ผ่าน LINE เมื่อมีออเดอร์ใหม่
 - แจ้งเตือนเมื่อลูกค้าชำระเงิน
