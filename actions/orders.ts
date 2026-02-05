@@ -93,7 +93,7 @@ export async function createOrder(
   if (data.slot_id && (product.type === 'booking' || product.type === 'live')) {
     const { data: slot, error: slotError } = await supabase
       .from('booking_slots')
-      .select('slot_date, start_time, is_available, max_bookings, current_bookings')
+      .select('id, slot_date, start_time, end_time, is_available, max_bookings, current_bookings')
       .eq('id', data.slot_id)
       .eq('product_id', productId)
       .single();
