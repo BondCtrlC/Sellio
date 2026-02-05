@@ -53,7 +53,8 @@ interface Slot {
 }
 
 interface ProductDetailProps {
-  product: Product;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  product: any;
   creator: Creator;
   availableSlots: Slot[];
 }
@@ -81,20 +82,9 @@ const typeConfig = {
   },
 };
 
-export function ProductDetail({ product: rawProduct, creator, availableSlots }: ProductDetailProps) {
-  // Explicitly type product to avoid unknown inference
-  const product = rawProduct as {
-    id: string;
-    title: string;
-    description: string | null;
-    type: 'digital' | 'booking' | 'live' | 'link';
-    price: number;
-    image_url: string | null;
-    type_config: Record<string, unknown> | null;
-  };
-  
+export function ProductDetail({ product, creator, availableSlots }: ProductDetailProps) {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const config = typeConfig[product.type];
+  const config = typeConfig[product.type as keyof typeof typeConfig];
   const Icon = config.icon;
 
   // Group slots by date
@@ -163,18 +153,18 @@ export function ProductDetail({ product: rawProduct, creator, availableSlots }: 
         </span>
 
         {/* Title */}
-        <h1 className="text-2xl font-bold">{String(product.title)}</h1>
+        <h1 className="text-2xl font-bold">{product.title}</h1>
 
         {/* Description - Memoized to prevent video reload on slot change */}
         {product.description && (
-          <ProductDescription html={String(product.description)} />
+          <ProductDescription html={product.description} />
         )}
 
         {/* Type-specific info */}
         {(product.type === 'booking' || product.type === 'live') && product.type_config?.duration_minutes && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span>ระยะเวลา {Number(product.type_config.duration_minutes)} นาที</span>
+            <span>ระยะเวลา {product.type_config.duration_minutes} นาที</span>
           </div>
         )}
 
