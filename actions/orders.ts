@@ -115,6 +115,24 @@ export async function createOrder(
       return { success: false, error: 'ช่วงเวลานี้เต็มแล้ว' };
     }
 
+    // Check minimum advance booking hours
+    const typeConfig = product.type_config as { minimum_advance_hours?: number } | null;
+    const minAdvanceHours = typeConfig?.minimum_advance_hours || 0;
+    
+    if (minAdvanceHours > 0) {
+      // Calculate booking datetime
+      const bookingDatetime = new Date(`${slot.slot_date}T${slot.start_time}+07:00`);
+      const now = new Date();
+      const hoursUntilBooking = (bookingDatetime.getTime() - now.getTime()) / (1000 * 60 * 60);
+      
+      if (hoursUntilBooking < minAdvanceHours) {
+        return { 
+          success: false, 
+          error: `กรุณาจองล่วงหน้าอย่างน้อย ${minAdvanceHours} ชั่วโมง` 
+        };
+      }
+    }
+
     bookingDate = slot.slot_date;
     bookingTime = slot.start_time;
   } else if ((product.type === 'booking' || product.type === 'live') && !data.slot_id) {

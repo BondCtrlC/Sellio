@@ -185,7 +185,13 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
       {/* Slot Selection for Booking/Live */}
       {(product.type === 'booking' || product.type === 'live') && (
         <div className="mb-6">
-          <h3 className="font-semibold mb-3">เลือกวัน/เวลา</h3>
+          <h3 className="font-semibold mb-2">เลือกวัน/เวลา</h3>
+          {(product.type_config?.minimum_advance_hours as number) > 0 && (
+            <p className="text-xs text-amber-600 mb-3 flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              ต้องจองล่วงหน้าอย่างน้อย {product.type_config?.minimum_advance_hours as number} ชั่วโมง
+            </p>
+          )}
           
           {Object.keys(slotsByDate).length === 0 ? (
             <p className="text-muted-foreground text-sm py-4 text-center bg-muted rounded-lg">
@@ -205,14 +211,26 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                       const remaining = maxBookings - currentBookings;
                       const isFull = remaining <= 0;
                       
+                      // Check minimum advance booking
+                      const minAdvanceHours = (product.type_config?.minimum_advance_hours as number) || 0;
+                      let isTooClose = false;
+                      if (minAdvanceHours > 0) {
+                        const slotDatetime = new Date(`${slot.slot_date}T${slot.start_time}+07:00`);
+                        const now = new Date();
+                        const hoursUntil = (slotDatetime.getTime() - now.getTime()) / (1000 * 60 * 60);
+                        isTooClose = hoursUntil < minAdvanceHours;
+                      }
+                      
+                      const isDisabled = isFull || isTooClose;
+                      
                       return (
                         <button
                           type="button"
                           key={slot.id}
-                          onClick={() => !isFull && setSelectedSlot(slot.id)}
-                          disabled={isFull}
+                          onClick={() => !isDisabled && setSelectedSlot(slot.id)}
+                          disabled={isDisabled}
                           className={`px-3 py-2 text-sm rounded-lg border-2 font-medium transition-colors ${
-                            isFull
+                            isDisabled
                               ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                               : selectedSlot === slot.id
                               ? 'bg-primary text-white border-primary'
@@ -221,13 +239,13 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                         >
                           <div>{slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}</div>
                           <div className={`text-xs mt-0.5 ${
-                            isFull 
+                            isDisabled 
                               ? 'text-gray-400' 
                               : selectedSlot === slot.id 
                               ? 'text-white/80' 
                               : 'text-muted-foreground'
                           }`}>
-                            {isFull ? 'เต็ม' : `ว่าง ${remaining} ที่นั่ง`}
+                            {isFull ? 'เต็ม' : isTooClose ? 'จองล่วงหน้าไม่ทัน' : `ว่าง ${remaining} ที่นั่ง`}
                           </div>
                         </button>
                       );

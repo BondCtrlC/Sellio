@@ -190,6 +190,54 @@ export async function deleteProduct(productId: string): Promise<ProductResult> {
   return { success: true };
 }
 
+export async function updateProductBookingSettings(
+  productId: string,
+  settings: { minimum_advance_hours?: number; duration_minutes?: number }
+): Promise<ProductResult> {
+  const creatorId = await getCreatorId();
+  if (!creatorId) {
+    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+  }
+
+  const supabase = await createClient();
+
+  // Get current product to preserve existing type_config fields
+  const { data: currentProduct } = await supabase
+    .from('products')
+    .select('type_config')
+    .eq('id', productId)
+    .eq('creator_id', creatorId)
+    .single();
+
+  if (!currentProduct) {
+    return { success: false, error: 'ไม่พบสินค้า' };
+  }
+
+  const existingConfig = (currentProduct.type_config as Record<string, unknown>) || {};
+
+  // Merge new settings with existing config
+  const updatedConfig = {
+    ...existingConfig,
+    ...(settings.minimum_advance_hours !== undefined && { minimum_advance_hours: settings.minimum_advance_hours }),
+    ...(settings.duration_minutes !== undefined && { duration_minutes: settings.duration_minutes }),
+  };
+
+  const { error } = await supabase
+    .from('products')
+    .update({ type_config: updatedConfig })
+    .eq('id', productId)
+    .eq('creator_id', creatorId);
+
+  if (error) {
+    console.error('Update booking settings error:', error);
+    return { success: false, error: 'ไม่สามารถบันทึกการตั้งค่าได้' };
+  }
+
+  revalidatePath('/dashboard/products');
+  revalidatePath(`/dashboard/products/${productId}/edit`);
+  return { success: true };
+}
+
 export async function toggleProductPublish(productId: string, isPublished: boolean): Promise<ProductResult> {
   const creatorId = await getCreatorId();
   if (!creatorId) {

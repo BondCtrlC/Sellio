@@ -6,6 +6,7 @@ import { ProductForm } from '../../product-form';
 import { ProductImageUpload } from './product-image-upload';
 import { DigitalFileUpload } from './digital-file-upload';
 import { BookingSlotsManager } from './booking-slots-manager';
+import { BookingSettings } from './booking-settings';
 import { CheckCircle } from 'lucide-react';
 
 interface EditProductPageProps {
@@ -81,6 +82,7 @@ export default async function EditProductPage({ params, searchParams }: EditProd
   const redirectUrl = typeConfig.redirect_url as string | null;
   const redirectName = typeConfig.redirect_name as string | null;
   const durationMinutes = (typeConfig.duration_minutes as number) || 60;
+  const minimumAdvanceHours = (typeConfig.minimum_advance_hours as number) || 0;
   
   // Check if need to show upload/slots section
   const needsSetup = product.type === 'digital' || product.type === 'booking' || product.type === 'link';
@@ -155,6 +157,22 @@ export default async function EditProductPage({ params, searchParams }: EditProd
               currentDeliveryType={deliveryType}
               currentRedirectUrl={redirectUrl}
               currentRedirectName={redirectName}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Booking Settings - Only for booking products */}
+      {product.type === 'booking' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>ตั้งค่าการจอง</CardTitle>
+            <CardDescription>ตั้งค่าระยะเวลาและเงื่อนไขการจอง</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BookingSettings
+              productId={product.id}
+              initialMinimumAdvanceHours={minimumAdvanceHours}
             />
           </CardContent>
         </Card>
