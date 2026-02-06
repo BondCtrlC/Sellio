@@ -297,14 +297,14 @@ export default async function DashboardPage() {
       </Card>
 
       {/* Quick Actions - show only if there are setup tasks */}
-      {(!creator.promptpay_id || stats.totalProducts === 0 || !creator.is_published) && (
+      {((!creator.promptpay_id && !creator.bank_name) || stats.totalProducts === 0 || !creator.is_published) && (
         <Card>
           <CardHeader>
             <CardTitle>เริ่มต้นใช้งาน</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {!creator.promptpay_id && (
+              {!creator.promptpay_id && !creator.bank_name && (
                 <Link
                   href="/dashboard/settings"
                   className="flex items-center gap-4 p-4 rounded-xl border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all"
@@ -313,8 +313,8 @@ export default async function DashboardPage() {
                     <DollarSign className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold">ตั้งค่า PromptPay</p>
-                    <p className="text-sm text-muted-foreground">เพื่อรับชำระเงิน</p>
+                    <p className="font-semibold">ตั้งค่าการรับชำระเงิน</p>
+                    <p className="text-sm text-muted-foreground">PromptPay หรือ บัญชีธนาคาร</p>
                   </div>
                 </Link>
               )}

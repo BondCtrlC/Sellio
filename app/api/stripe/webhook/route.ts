@@ -39,7 +39,26 @@ export async function POST(request: NextRequest) {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
-      await handleCheckoutCompleted(session);
+      if (session.mode === 'subscription') {
+        await handleSubscriptionCheckout(session);
+      } else {
+        await handleCheckoutCompleted(session);
+      }
+      break;
+    }
+    case 'customer.subscription.updated': {
+      const subscription = event.data.object as Stripe.Subscription;
+      await handleSubscriptionUpdated(subscription);
+      break;
+    }
+    case 'customer.subscription.deleted': {
+      const subscription = event.data.object as Stripe.Subscription;
+      await handleSubscriptionDeleted(subscription);
+      break;
+    }
+    case 'invoice.payment_failed': {
+      const invoice = event.data.object as Stripe.Invoice;
+      console.log('Invoice payment failed:', invoice.id, 'subscription:', invoice.subscription);
       break;
     }
     case 'payment_intent.succeeded': {
@@ -50,7 +69,6 @@ export async function POST(request: NextRequest) {
     case 'payment_intent.payment_failed': {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       console.log('Payment failed:', paymentIntent.id);
-      // Could send notification to buyer here
       break;
     }
     default:
@@ -211,4 +229,98 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   console.log('Order confirmed via Stripe:', orderId);
+}
+
+// ============================================
+// SUBSCRIPTION HANDLERS
+// ============================================
+
+async function handleSubscriptionCheckout(session: Stripe.Checkout.Session) {
+  const creatorId = session.metadata?.creator_id;
+  if (!creatorId) {
+    console.error('No creator_id in subscription session metadata');
+    return;
+  }
+
+  const subscriptionId = session.subscription as string;
+  if (!subscriptionId) {
+    console.error('No subscription ID in session');
+    return;
+  }
+
+  // Get subscription details for period end
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from('creators')
+    .update({
+      plan: 'pro',
+      stripe_subscription_id: subscriptionId,
+      stripe_customer_id: session.customer as string,
+      plan_expires_at: new Date(subscription.current_period_end * 1000).toISOString(),
+    })
+    .eq('id', creatorId);
+
+  if (error) {
+    console.error('Failed to upgrade creator to pro:', error);
+    return;
+  }
+
+  console.log('Creator upgraded to Pro:', creatorId);
+}
+
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  const creatorId = subscription.metadata?.creator_id;
+  if (!creatorId) {
+    console.error('No creator_id in subscription metadata');
+    return;
+  }
+
+  const supabase = createAdminClient();
+
+  // Check if subscription is active or past_due
+  const isActive = ['active', 'trialing'].includes(subscription.status);
+  
+  const { error } = await supabase
+    .from('creators')
+    .update({
+      plan: isActive ? 'pro' : 'free',
+      plan_expires_at: new Date(subscription.current_period_end * 1000).toISOString(),
+    })
+    .eq('id', creatorId);
+
+  if (error) {
+    console.error('Failed to update subscription status:', error);
+    return;
+  }
+
+  console.log('Subscription updated for creator:', creatorId, 'status:', subscription.status);
+}
+
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  const creatorId = subscription.metadata?.creator_id;
+  if (!creatorId) {
+    console.error('No creator_id in deleted subscription metadata');
+    return;
+  }
+
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from('creators')
+    .update({
+      plan: 'free',
+      stripe_subscription_id: null,
+      plan_expires_at: null,
+    })
+    .eq('id', creatorId);
+
+  if (error) {
+    console.error('Failed to downgrade creator:', error);
+    return;
+  }
+
+  console.log('Creator downgraded to Free (subscription deleted):', creatorId);
 }

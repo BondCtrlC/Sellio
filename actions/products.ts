@@ -2,8 +2,10 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { productSchema, type ProductInput } from '@/lib/validations/product';
+import { canCreateProduct } from '@/lib/plan';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import type { PlanType } from '@/types';
 
 export type ProductResult = {
   success: boolean;
@@ -27,18 +29,49 @@ async function getCreatorId() {
   return creator?.id || null;
 }
 
+async function getCreatorWithPlan() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return null;
+
+  const { data: creator } = await supabase
+    .from('creators')
+    .select('id, plan')
+    .eq('user_id', user.id)
+    .single();
+
+  return creator || null;
+}
+
 export async function createProduct(data: ProductInput): Promise<ProductResult> {
   const parsed = productSchema.safeParse(data);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const creatorId = await getCreatorId();
-  if (!creatorId) {
+  const creator = await getCreatorWithPlan();
+  if (!creator) {
     return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
   }
 
+  const creatorId = creator.id;
+  const plan = (creator.plan || 'free') as PlanType;
   const supabase = await createClient();
+
+  // Check product limit for current plan
+  const { count } = await supabase
+    .from('products')
+    .select('*', { count: 'exact', head: true })
+    .eq('creator_id', creatorId);
+
+  const currentCount = count || 0;
+  if (!canCreateProduct(plan, currentCount)) {
+    return { 
+      success: false, 
+      error: `แพลน Free สร้างได้สูงสุด 2 สินค้า อัปเกรดเป็น Pro เพื่อสร้างไม่จำกัด` 
+    };
+  }
 
   // Build type_config based on product type
   let typeConfig = {};
@@ -175,6 +208,31 @@ export async function deleteProduct(productId: string): Promise<ProductResult> {
 
   const supabase = await createClient();
 
+  // Check if product has any orders (can't delete if it does)
+  const { count: orderCount } = await supabase
+    .from('orders')
+    .select('*', { count: 'exact', head: true })
+    .eq('product_id', productId);
+
+  if (orderCount && orderCount > 0) {
+    return { 
+      success: false, 
+      error: `สินค้านี้มี ${orderCount} คำสั่งซื้อแล้ว ไม่สามารถลบได้ ลองซ่อนสินค้าแทน` 
+    };
+  }
+
+  // Delete related records first (store_items, booking_slots)
+  await supabase
+    .from('store_items')
+    .delete()
+    .eq('product_id', productId);
+
+  await supabase
+    .from('booking_slots')
+    .delete()
+    .eq('product_id', productId);
+
+  // Now delete the product
   const { error } = await supabase
     .from('products')
     .delete()
@@ -183,7 +241,7 @@ export async function deleteProduct(productId: string): Promise<ProductResult> {
 
   if (error) {
     console.error('Delete product error:', error);
-    return { success: false, error: 'ไม่สามารถลบสินค้าได้' };
+    return { success: false, error: `ไม่สามารถลบสินค้าได้: ${error.message}` };
   }
 
   revalidatePath('/dashboard/products');

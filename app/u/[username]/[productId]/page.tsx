@@ -12,7 +12,7 @@ async function getCreatorByUsername(username: string) {
   
   const { data: creator } = await supabase
     .from('creators')
-    .select('id, display_name, username, avatar_url, promptpay_id')
+    .select('id, display_name, username, avatar_url, promptpay_id, bank_name, bank_account_number, bank_account_name')
     .eq('username', username)
     .single();
 

@@ -16,7 +16,8 @@ import {
   Ticket,
   Users,
   Star,
-  CalendarDays
+  CalendarDays,
+  Crown
 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { logout } from '@/actions/auth';
@@ -194,6 +195,17 @@ export function Sidebar({ username, isOpen, onClose }: SidebarProps) {
 
         {/* Footer */}
         <div className="p-4 border-t border-sidebar-border space-y-1">
+          {/* Upgrade Banner - only show for free plan */}
+          <Link
+            href="/dashboard/upgrade"
+            onClick={onClose}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-gradient-to-r from-amber-50 to-orange-50 text-amber-800 hover:from-amber-100 hover:to-orange-100 transition-colors mb-2"
+          >
+            <Crown className="h-5 w-5 text-amber-600" />
+            <span className="flex-1">อัปเกรด Pro</span>
+            <span className="text-xs bg-amber-200 px-1.5 py-0.5 rounded-full font-bold">99฿</span>
+          </Link>
+          
           {username && (
             <Link
               href={`/u/${username}`}

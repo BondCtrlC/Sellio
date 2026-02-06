@@ -3,14 +3,16 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, Button, Badge, Input } from '@/components/ui';
-import { Plus, Package, Pencil, FileText, Calendar, Link as LinkIcon, Filter, Search } from 'lucide-react';
+import { Plus, Package, Pencil, FileText, Calendar, Link as LinkIcon, Filter, Search, Crown, AlertTriangle } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { PRODUCT_TYPES } from '@/lib/constants';
+import { canCreateProduct, getPlanLimits } from '@/lib/plan';
 import { DeleteProductButton, TogglePublishButton } from './product-actions';
-import type { Product } from '@/types';
+import type { Product, PlanType } from '@/types';
 
 interface ProductsListProps {
   initialProducts: Product[];
+  plan: PlanType;
 }
 
 const TYPE_FILTERS = [
@@ -20,9 +22,13 @@ const TYPE_FILTERS = [
   { value: 'link', label: 'Link/URL', icon: LinkIcon },
 ];
 
-export function ProductsList({ initialProducts }: ProductsListProps) {
+export function ProductsList({ initialProducts, plan }: ProductsListProps) {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const limits = getPlanLimits(plan);
+  const canCreate = canCreateProduct(plan, initialProducts.length);
+  const isAtLimit = !canCreate && plan === 'free';
 
   const filteredProducts = useMemo(() => {
     let products = initialProducts;
@@ -59,15 +65,48 @@ export function ProductsList({ initialProducts }: ProductsListProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">สินค้า</h2>
-          <p className="text-muted-foreground">จัดการสินค้าและบริการของคุณ</p>
+          <p className="text-muted-foreground">
+            จัดการสินค้าและบริการของคุณ
+            {plan === 'free' && (
+              <span className="ml-2 text-xs font-medium text-amber-600">
+                ({initialProducts.length}/{limits.max_products} ชิ้น)
+              </span>
+            )}
+          </p>
         </div>
-        <Link href="/dashboard/products/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            เพิ่มสินค้า
-          </Button>
-        </Link>
+        {canCreate ? (
+          <Link href="/dashboard/products/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              เพิ่มสินค้า
+            </Button>
+          </Link>
+        ) : (
+          <Link href="/dashboard/upgrade">
+            <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600">
+              <Crown className="h-4 w-4 mr-2" />
+              อัปเกรดเป็น Pro
+            </Button>
+          </Link>
+        )}
       </div>
+
+      {/* Limit Warning */}
+      {isAtLimit && (
+        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium text-amber-800">คุณใช้สินค้าครบ {limits.max_products} ชิ้นแล้ว</p>
+            <p className="text-sm text-amber-700 mt-1">
+              แพลน Free สร้างได้สูงสุด {limits.max_products} สินค้า อัปเกรดเป็น Pro เพียง 99 บาท/เดือน เพื่อสร้างสินค้าได้ไม่จำกัด
+            </p>
+            <Link href="/dashboard/upgrade" className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-amber-800 hover:text-amber-900 underline">
+              <Crown className="h-3.5 w-3.5" />
+              อัปเกรดเลย →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Search and Filter */}
       <div className="space-y-4">
@@ -127,12 +166,14 @@ export function ProductsList({ initialProducts }: ProductsListProps) {
             <p className="text-muted-foreground mb-4">
               {activeFilter === 'all' ? 'เริ่มต้นสร้างสินค้าแรกของคุณ' : 'ลองเปลี่ยนหมวดหมู่หรือสร้างสินค้าใหม่'}
             </p>
-            <Link href="/dashboard/products/new">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                เพิ่มสินค้า
-              </Button>
-            </Link>
+            {canCreate && (
+              <Link href="/dashboard/products/new">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  เพิ่มสินค้า
+                </Button>
+              </Link>
+            )}
           </CardContent>
         </Card>
       ) : (

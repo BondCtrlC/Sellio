@@ -12,7 +12,9 @@ import {
   Loader2,
   Image as ImageIcon,
   X,
-  Download
+  Download,
+  Building2,
+  QrCode
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { uploadSlip } from '@/actions/orders';
@@ -39,6 +41,9 @@ interface OrderDetails {
     display_name: string | null;
     promptpay_id: string | null;
     promptpay_name: string | null;
+    bank_name: string | null;
+    bank_account_number: string | null;
+    bank_account_name: string | null;
     contact_line: string | null;
     contact_ig: string | null;
   };
@@ -65,6 +70,14 @@ export function PaymentPage({ order }: PaymentPageProps) {
   const isPendingPayment = order.status === 'pending_payment';
   const isPendingConfirmation = order.status === 'pending_confirmation';
   const hasSlip = order.payment?.slip_url;
+
+  // Payment method availability
+  const hasPromptPay = !!order.creator.promptpay_id;
+  const hasBank = !!(order.creator.bank_name && order.creator.bank_account_number && order.creator.bank_account_name);
+  const hasAnyPayment = hasPromptPay || hasBank;
+  
+  // Default to PromptPay if available, otherwise bank
+  const [paymentTab, setPaymentTab] = useState<'promptpay' | 'bank'>(hasPromptPay ? 'promptpay' : 'bank');
 
   // Generate QR code URL
   const qrCodeUrl = order.creator.promptpay_id 
@@ -246,8 +259,36 @@ export function PaymentPage({ order }: PaymentPageProps) {
         {/* Payment Section */}
         {isPendingPayment && (
           <>
+            {/* Payment Method Tabs (only show if both are available) */}
+            {hasPromptPay && hasBank && (
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setPaymentTab('promptpay')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 transition-colors text-sm font-medium ${
+                    paymentTab === 'promptpay'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-gray-200 bg-white text-muted-foreground hover:border-gray-300'
+                  }`}
+                >
+                  <QrCode className="h-4 w-4" />
+                  PromptPay
+                </button>
+                <button
+                  onClick={() => setPaymentTab('bank')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 transition-colors text-sm font-medium ${
+                    paymentTab === 'bank'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-gray-200 bg-white text-muted-foreground hover:border-gray-300'
+                  }`}
+                >
+                  <Building2 className="h-4 w-4" />
+                  โอนผ่านธนาคาร
+                </button>
+              </div>
+            )}
+
             {/* PromptPay QR Code */}
-            {qrCodeUrl && (
+            {hasPromptPay && paymentTab === 'promptpay' && qrCodeUrl && (
               <Card className="mb-6">
                 <CardContent className="p-6">
                   <h3 className="font-semibold text-center mb-4">สแกนจ่ายผ่าน PromptPay</h3>
@@ -290,8 +331,43 @@ export function PaymentPage({ order }: PaymentPageProps) {
               </Card>
             )}
 
+            {/* Bank Transfer */}
+            {hasBank && paymentTab === 'bank' && (
+              <Card className="mb-6">
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-center mb-4">โอนเงินผ่านธนาคาร</h3>
+                  
+                  <div className="space-y-4">
+                    {/* Bank Info */}
+                    <div className="bg-gray-50 rounded-xl p-5 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">ธนาคาร</span>
+                        <span className="font-semibold">{order.creator.bank_name}</span>
+                      </div>
+                      <div className="border-t border-gray-200" />
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">เลขที่บัญชี</span>
+                        <span className="font-semibold font-mono tracking-wider">{order.creator.bank_account_number}</span>
+                      </div>
+                      <div className="border-t border-gray-200" />
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">ชื่อบัญชี</span>
+                        <span className="font-semibold">{order.creator.bank_account_name}</span>
+                      </div>
+                    </div>
+
+                    {/* Amount */}
+                    <div className="bg-primary/5 rounded-lg px-6 py-3 text-center">
+                      <p className="text-sm text-muted-foreground">ยอดที่ต้องชำระ</p>
+                      <p className="text-2xl font-bold text-primary">{formatPrice(order.total)}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* No payment method available */}
-            {!qrCodeUrl && (
+            {!hasAnyPayment && (
               <Card className="mb-6">
                 <CardContent className="p-6">
                   <p className="text-center text-muted-foreground">
@@ -302,7 +378,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
             )}
 
             {/* Upload Slip Section */}
-            {qrCodeUrl && (
+            {hasAnyPayment && (
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-semibold mb-4">อัพโหลดสลิปการโอนเงิน</h3>

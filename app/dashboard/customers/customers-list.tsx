@@ -14,13 +14,18 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import { hasFeature } from '@/lib/plan';
+import { ProBadge } from '@/components/shared/pro-gate';
 import { exportCustomers, type Customer } from '@/actions/customers';
+import type { PlanType } from '@/types';
 
 interface CustomersListProps {
   initialCustomers: Customer[];
+  plan: PlanType;
 }
 
-export function CustomersList({ initialCustomers }: CustomersListProps) {
+export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
+  const canExport = hasFeature(plan, 'export_csv');
   const [customers] = useState<Customer[]>(initialCustomers);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
@@ -74,10 +79,20 @@ export function CustomersList({ initialCustomers }: CustomersListProps) {
           <h2 className="text-2xl font-bold">รายชื่อลูกค้า</h2>
           <p className="text-muted-foreground">ลูกค้าทั้งหมดที่เคยสั่งซื้อ</p>
         </div>
-        <Button onClick={handleExport} disabled={exporting || customers.length === 0}>
-          <Download className="h-4 w-4 mr-2" />
-          {exporting ? 'กำลังส่งออก...' : 'ส่งออก CSV'}
-        </Button>
+        {canExport ? (
+          <Button onClick={handleExport} disabled={exporting || customers.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            {exporting ? 'กำลังส่งออก...' : 'ส่งออก CSV'}
+          </Button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Button disabled variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              ส่งออก CSV
+            </Button>
+            <ProBadge />
+          </div>
+        )}
       </div>
 
       {/* Stats */}

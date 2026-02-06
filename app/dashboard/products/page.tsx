@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { ProductsList } from './products-list';
+import type { PlanType } from '@/types';
 
 async function getProducts() {
   const supabase = await createClient();
@@ -8,10 +9,10 @@ async function getProducts() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Get creator
+  // Get creator with plan
   const { data: creator } = await supabase
     .from('creators')
-    .select('id')
+    .select('id, plan')
     .eq('user_id', user.id)
     .single();
 
@@ -25,11 +26,15 @@ async function getProducts() {
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
 
-  return { products: products || [], creatorId: creator.id };
+  return { 
+    products: products || [], 
+    creatorId: creator.id,
+    plan: (creator.plan || 'free') as PlanType,
+  };
 }
 
 export default async function ProductsPage() {
-  const { products } = await getProducts();
+  const { products, plan } = await getProducts();
 
-  return <ProductsList initialProducts={products} />;
+  return <ProductsList initialProducts={products} plan={plan} />;
 }

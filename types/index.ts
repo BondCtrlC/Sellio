@@ -2,6 +2,8 @@
 // ENUMS
 // ============================================
 
+export type PlanType = 'free' | 'pro';
+
 export type ProductType = 'digital' | 'booking' | 'link';
 
 export type OrderStatus = 
@@ -42,6 +44,11 @@ export interface Creator extends BaseEntity {
   promptpay_id: string | null;  // เบอร์โทร PromptPay
   promptpay_name: string | null;
   
+  // Payment (Bank Transfer)
+  bank_name: string | null;
+  bank_account_number: string | null;
+  bank_account_name: string | null;
+  
   // Contact
   contact_phone: string | null;
   contact_line: string | null;
@@ -51,6 +58,12 @@ export interface Creator extends BaseEntity {
   // Settings
   is_published: boolean;
   store_theme: string;
+  
+  // Plan & Subscription
+  plan: PlanType;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  plan_expires_at: string | null;
   
   // Design
   store_design: StoreDesign | null;

@@ -47,6 +47,7 @@ async function getCreatorByUsername(username: string) {
       bio,
       avatar_url,
       is_published,
+      plan,
       contact_phone,
       contact_line,
       contact_ig,
@@ -243,10 +244,14 @@ export default async function StorePage({ params }: PageProps) {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="text-center py-6 text-sm text-muted-foreground border-t">
-        <p>Powered by Sellio</p>
-      </footer>
+      {/* Footer - hidden for Pro users */}
+      {creator.plan !== 'pro' && (
+        <footer className="text-center py-6 text-sm text-muted-foreground border-t">
+          <a href="https://sellio.me" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+            Powered by Sellio
+          </a>
+        </footer>
+      )}
     </StoreWrapper>
   );
 }

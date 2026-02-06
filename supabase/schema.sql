@@ -35,6 +35,11 @@ CREATE TABLE creators (
   promptpay_id VARCHAR(20),
   promptpay_name VARCHAR(100),
   
+  -- Bank Transfer
+  bank_name VARCHAR(100),
+  bank_account_number VARCHAR(20),
+  bank_account_name VARCHAR(100),
+  
   -- Contact
   contact_line VARCHAR(100),
   contact_ig VARCHAR(100),

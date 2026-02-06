@@ -24,14 +24,41 @@ export async function updateSettings(data: SettingsInput): Promise<SettingsResul
     return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
   }
 
+  // Get current creator to check if username changed
+  const { data: currentCreator } = await supabase
+    .from('creators')
+    .select('username')
+    .eq('user_id', user.id)
+    .single();
+
+  const newUsername = parsed.data.username.toLowerCase();
+  const oldUsername = currentCreator?.username;
+
+  // If username changed, check uniqueness
+  if (newUsername !== oldUsername) {
+    const { data: existingUser } = await supabase
+      .from('creators')
+      .select('username')
+      .eq('username', newUsername)
+      .single();
+
+    if (existingUser) {
+      return { success: false, error: 'Username นี้ถูกใช้งานแล้ว กรุณาเลือกชื่ออื่น' };
+    }
+  }
+
   // Update creator profile
   const { error } = await supabase
     .from('creators')
     .update({
+      username: newUsername,
       display_name: parsed.data.display_name,
       bio: parsed.data.bio || null,
       promptpay_id: parsed.data.promptpay_phone || null,
       promptpay_name: parsed.data.promptpay_name || null,
+      bank_name: parsed.data.bank_name || null,
+      bank_account_number: parsed.data.bank_account_number || null,
+      bank_account_name: parsed.data.bank_account_name || null,
       contact_phone: parsed.data.contact_phone || null,
       contact_line: parsed.data.contact_line || null,
       contact_ig: parsed.data.contact_ig || null,
@@ -46,11 +73,19 @@ export async function updateSettings(data: SettingsInput): Promise<SettingsResul
 
   if (error) {
     console.error('Update settings error:', error);
+    if (error.code === '23505') {
+      return { success: false, error: 'Username นี้ถูกใช้งานแล้ว กรุณาเลือกชื่ออื่น' };
+    }
     return { success: false, error: 'ไม่สามารถบันทึกข้อมูลได้' };
   }
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/settings');
+  // Revalidate old and new store pages
+  if (oldUsername && newUsername !== oldUsername) {
+    revalidatePath(`/u/${oldUsername}`);
+  }
+  revalidatePath(`/u/${newUsername}`);
   
   return { success: true };
 }

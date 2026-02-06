@@ -325,6 +325,9 @@ export async function getOrderById(orderId: string): Promise<OrderDetails | null
         display_name,
         promptpay_id,
         promptpay_name,
+        bank_name,
+        bank_account_number,
+        bank_account_name,
         contact_line,
         contact_ig
       ),
@@ -380,12 +383,23 @@ export async function uploadSlip(
   // Get order to verify it exists and is pending payment
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('id, status')
+    .select('id, status, expires_at')
     .eq('id', orderId)
     .single();
 
   if (orderError || !order) {
     return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+  }
+
+  // Check if order has expired
+  if (order.expires_at && new Date(order.expires_at) < new Date()) {
+    // Auto-cancel expired order
+    await supabase
+      .from('orders')
+      .update({ status: 'cancelled' })
+      .eq('id', orderId)
+      .eq('status', 'pending_payment');
+    return { success: false, error: 'คำสั่งซื้อนี้หมดอายุแล้ว กรุณาสั่งซื้อใหม่' };
   }
 
   if (order.status !== 'pending_payment') {

@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
 export const settingsSchema = z.object({
+  username: z
+    .string()
+    .min(3, 'Username ต้องมีอย่างน้อย 3 ตัวอักษร')
+    .max(30, 'Username ต้องไม่เกิน 30 ตัวอักษร')
+    .regex(/^[a-z0-9_]+$/, 'Username ใช้ได้เฉพาะ a-z, 0-9 และ _ เท่านั้น'),
   display_name: z
     .string()
     .min(1, 'กรุณากรอกชื่อที่แสดง')
@@ -16,6 +21,21 @@ export const settingsSchema = z.object({
     .optional()
     .or(z.literal('')),
   promptpay_name: z
+    .string()
+    .max(100, 'ชื่อบัญชีต้องไม่เกิน 100 ตัวอักษร')
+    .optional()
+    .or(z.literal('')),
+  bank_name: z
+    .string()
+    .max(100, 'ชื่อธนาคารต้องไม่เกิน 100 ตัวอักษร')
+    .optional()
+    .or(z.literal('')),
+  bank_account_number: z
+    .string()
+    .max(20, 'เลขบัญชีต้องไม่เกิน 20 ตัวอักษร')
+    .optional()
+    .or(z.literal('')),
+  bank_account_name: z
     .string()
     .max(100, 'ชื่อบัญชีต้องไม่เกิน 100 ตัวอักษร')
     .optional()

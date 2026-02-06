@@ -32,10 +32,10 @@ const footerLinks = {
   legal: {
     title: 'กฎหมาย',
     links: [
-      { label: 'เงื่อนไขการใช้งาน', href: '#' },
-      { label: 'นโยบายความเป็นส่วนตัว', href: '#' },
-      { label: 'นโยบายคุกกี้', href: '#' },
-      { label: 'นโยบายคืนเงิน', href: '#' },
+      { label: 'เงื่อนไขการใช้งาน', href: '/terms' },
+      { label: 'นโยบายความเป็นส่วนตัว', href: '/privacy' },
+      { label: 'นโยบายคุกกี้', href: '/privacy#cookies' },
+      { label: 'นโยบายคืนเงิน', href: '/terms#refund' },
     ]
   }
 };
