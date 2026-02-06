@@ -258,13 +258,13 @@ export function Hero() {
               </div>
 
               {/* ลูกค้าใหม่ */}
-              <div className="absolute -right-2 top-[52%] bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-3000">
+              <div className="absolute right-12 top-[52%] bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-3000 min-w-[200px]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-xl">👥</span>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">ลูกค้าใหม่วันนี้</p>
+                    <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">ลูกค้าใหม่วันนี้</p>
                     <p className="text-lg font-bold text-pink-600">+8 คน</p>
                   </div>
                 </div>
