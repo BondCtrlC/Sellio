@@ -594,21 +594,35 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
 // ============================================
 function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProps['billingInfo']> }) {
   const [cancelling, setCancelling] = useState(false);
+  const [cancelStatus, setCancelStatus] = useState<'none' | 'scheduled' | 'cancelled'>('none');
   const router = useRouter();
   const isPro = billingInfo.plan === 'pro';
 
-  const handleCancel = async () => {
-    if (!confirm('คุณแน่ใจหรือไม่ที่จะยกเลิก Pro?\nคุณจะยังใช้ได้จนถึงวันหมดอายุของรอบบิลปัจจุบัน')) return;
+  const handleCancel = async (immediate: boolean) => {
+    const msg = immediate
+      ? 'คุณแน่ใจหรือไม่ที่จะยกเลิก Pro ทันที?\n\nแพลน Pro จะถูกยกเลิกทันทีและเปลี่ยนเป็น Free'
+      : 'คุณแน่ใจหรือไม่ที่จะยกเลิก Pro?\n\nคุณจะยังใช้ Pro ได้จนถึงสิ้นสุดรอบบิลปัจจุบัน';
+    
+    if (!confirm(msg)) return;
     
     setCancelling(true);
     try {
       const res = await fetch('/api/stripe/cancel-subscription', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ immediate }),
       });
       const data = await res.json();
       
       if (data.success) {
-        router.refresh();
+        if (data.immediate) {
+          setCancelStatus('cancelled');
+          // Refresh after a moment so user can see the message
+          setTimeout(() => router.refresh(), 2000);
+        } else {
+          setCancelStatus('scheduled');
+          router.refresh();
+        }
       } else {
         alert(data.error || 'เกิดข้อผิดพลาด');
       }
@@ -654,17 +668,27 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 items-end">
               {isPro ? (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleCancel}
-                  disabled={cancelling}
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิก Subscription'}
-                </Button>
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleCancel(true)}
+                    disabled={cancelling}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิกทันที'}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => handleCancel(false)}
+                    disabled={cancelling}
+                    className="text-xs text-muted-foreground hover:text-red-600 hover:underline transition-colors"
+                  >
+                    ยกเลิกเมื่อหมดรอบบิล
+                  </button>
+                </>
               ) : (
                 <Link href="/dashboard/upgrade">
                   <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
@@ -676,6 +700,24 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
           </div>
         </div>
       </div>
+
+      {/* Cancel Status Messages */}
+      {cancelStatus === 'scheduled' && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="font-medium text-amber-800">ตั้งเวลายกเลิกเรียบร้อย</p>
+          <p className="text-sm text-amber-700 mt-1">
+            คุณจะยังใช้ Pro ได้จนถึงสิ้นสุดรอบบิลปัจจุบัน หลังจากนั้นจะเปลี่ยนเป็น Free อัตโนมัติ
+          </p>
+        </div>
+      )}
+      {cancelStatus === 'cancelled' && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <p className="font-medium text-green-800">ยกเลิก Subscription เรียบร้อยแล้ว</p>
+          <p className="text-sm text-green-700 mt-1">
+            แพลนของคุณเปลี่ยนเป็น Free แล้ว กำลังรีเฟรชหน้า...
+          </p>
+        </div>
+      )}
 
       {/* Invoice History */}
       <div className="border-t pt-6 space-y-4">
