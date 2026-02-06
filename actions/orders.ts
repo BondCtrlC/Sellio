@@ -27,7 +27,7 @@ interface UploadSlipResult {
   error?: string;
 }
 
-interface OrderDetails {
+export interface OrderDetails {
   id: string;
   status: string;
   total: number;
@@ -51,6 +51,9 @@ interface OrderDetails {
     display_name: string | null;
     promptpay_id: string | null;
     promptpay_name: string | null;
+    bank_name: string | null;
+    bank_account_number: string | null;
+    bank_account_name: string | null;
     contact_line: string | null;
     contact_ig: string | null;
   };

@@ -17,43 +17,8 @@ import {
   QrCode
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
-import { uploadSlip } from '@/actions/orders';
+import { uploadSlip, type OrderDetails } from '@/actions/orders';
 import { generatePromptPayQR } from '@/lib/promptpay';
-
-interface OrderDetails {
-  id: string;
-  status: string;
-  total: number;
-  buyer_name: string;
-  buyer_email: string;
-  booking_date: string | null;
-  booking_time: string | null;
-  created_at: string;
-  product: {
-    id: string;
-    title: string;
-    type: string;
-    image_url: string | null;
-  };
-  creator: {
-    id: string;
-    username: string;
-    display_name: string | null;
-    promptpay_id: string | null;
-    promptpay_name: string | null;
-    bank_name: string | null;
-    bank_account_number: string | null;
-    bank_account_name: string | null;
-    contact_line: string | null;
-    contact_ig: string | null;
-  };
-  payment: {
-    id: string;
-    status: string;
-    slip_url: string | null;
-    slip_uploaded_at: string | null;
-  } | null;
-}
 
 interface PaymentPageProps {
   order: OrderDetails;
