@@ -30,7 +30,7 @@ export default function DashboardLayout({
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <span className="font-semibold lg:hidden">Creator Store</span>
+          <span className="font-bold text-lg lg:hidden">Sellio</span>
           <div className="flex-1" />
           <StoreLink />
           <NotificationBell />
