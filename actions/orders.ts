@@ -37,6 +37,7 @@ interface OrderDetails {
   buyer_note: string | null;
   booking_date: string | null;
   booking_time: string | null;
+  expires_at: string | null;
   created_at: string;
   product: {
     id: string;
@@ -312,6 +313,7 @@ export async function getOrderById(orderId: string): Promise<OrderDetails | null
       buyer_note,
       booking_date,
       booking_time,
+      expires_at,
       created_at,
       product:products(
         id,
