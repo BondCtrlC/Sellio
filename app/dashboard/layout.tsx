@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Sidebar, NotificationBell, StoreLink } from '@/components/dashboard';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui';
@@ -30,7 +31,7 @@ export default function DashboardLayout({
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <span className="font-bold text-lg lg:hidden">Sellio</span>
+          <Image src="/logo-black.png" alt="Sellio" width={370} height={120} className="h-[120px] w-auto lg:hidden" />
           <div className="flex-1" />
           <StoreLink />
           <NotificationBell />

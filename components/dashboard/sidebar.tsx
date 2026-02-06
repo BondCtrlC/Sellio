@@ -18,8 +18,7 @@ import {
   Users,
   Star,
   CalendarDays,
-  Crown,
-  Sparkles
+  Crown
 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { logout } from '@/actions/auth';
@@ -172,11 +171,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         {/* Logo - Sellio branding */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
-            <span className="font-bold text-xl text-sidebar-foreground">Sellio</span>
+          <Link href="/dashboard" className="flex items-center">
+            <Image src="/logo-black.png" alt="Sellio" width={370} height={120} className="h-[120px] w-auto" />
           </Link>
           <Button
             variant="ghost"
