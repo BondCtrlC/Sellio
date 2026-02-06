@@ -485,6 +485,7 @@ export async function getCreatorOrders(status?: string) {
       refund_promptpay,
       booking_date,
       booking_time,
+      cancel_reason,
       created_at,
       product:products(
         id,
@@ -693,7 +694,13 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
     };
   }
   
-  await sendOrderConfirmationEmail(emailData);
+  console.log('confirmOrder - sending email to:', emailData.buyerEmail);
+  try {
+    await sendOrderConfirmationEmail(emailData);
+    console.log('confirmOrder - email sent successfully');
+  } catch (emailError) {
+    console.error('confirmOrder - email failed:', emailError);
+  }
 
   revalidatePath('/dashboard/orders');
   return { success: true };
@@ -993,44 +1000,49 @@ export async function cancelBooking(
   // Use admin client to bypass RLS (customer not logged in)
   const supabase = createAdminClient();
 
-  // Get order with product info
+  // Get order first
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select(`
-      id,
-      status,
-      booking_date,
-      booking_time,
-      product_id,
-      buyer_email,
-      buyer_name,
-      product:products(id, title, type, creator_id),
-      creator:creators(id, display_name, email, contact_line)
-    `)
+    .select('id, status, booking_date, booking_time, product_id, creator_id, buyer_email, buyer_name')
     .eq('id', orderId)
     .single();
 
   if (orderError || !order) {
-    console.error('Cancel booking - order query error:', orderError);
+    console.error('Cancel booking - order query error:', orderError, 'orderId:', orderId);
     return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
   }
 
-  const product = Array.isArray(order.product) ? order.product[0] : order.product;
-  const creator = Array.isArray(order.creator) ? order.creator[0] : order.creator;
+  console.log('Cancel booking - order found:', order);
+
+  // Check if can cancel (only confirmed or pending_confirmation)
+  if (!['confirmed', 'pending_confirmation'].includes(order.status)) {
+    console.error('Cancel booking - invalid status:', order.status);
+    return { success: false, error: `ไม่สามารถยกเลิกได้ (สถานะ: ${order.status})` };
+  }
+
+  // Get product info separately
+  const { data: product, error: productError } = await supabase
+    .from('products')
+    .select('id, title, type')
+    .eq('id', order.product_id)
+    .single();
+
+  console.log('Cancel booking - product:', product, 'error:', productError);
 
   if (!product) {
     return { success: false, error: 'ไม่พบข้อมูลสินค้า' };
   }
-
-  // Check if can cancel (only confirmed or pending_confirmation)
-  if (!['confirmed', 'pending_confirmation'].includes(order.status)) {
-    return { success: false, error: 'ไม่สามารถยกเลิกคำสั่งซื้อนี้ได้' };
-  }
-
-  // Check if booking product
+  
   if (!['booking', 'live'].includes(product.type)) {
-    return { success: false, error: 'สินค้านี้ไม่ใช่การจอง' };
+    return { success: false, error: `สินค้านี้ไม่ใช่การจอง (type: ${product.type})` };
   }
+
+  // Get creator info separately
+  const { data: creator } = await supabase
+    .from('creators')
+    .select('id, display_name, email, contact_line')
+    .eq('id', order.creator_id)
+    .single();
 
   // Find the slot to decrement
   if (order.booking_date && order.booking_time) {
@@ -1060,27 +1072,37 @@ export async function cancelBooking(
     .from('orders')
     .update({
       status: 'cancelled',
-      cancelled_at: new Date().toISOString(),
       cancel_reason: reason || 'ลูกค้ายกเลิก',
     })
     .eq('id', orderId);
 
+  console.log('Cancel booking - update result, error:', updateError);
+
   if (updateError) {
-    return { success: false, error: 'ไม่สามารถยกเลิกได้' };
+    console.error('Cancel booking - update error:', updateError);
+    return { success: false, error: `ไม่สามารถยกเลิกได้: ${updateError.message}` };
   }
 
   // Send cancellation email to creator
   if (creator?.email) {
-    await sendBookingCancellationEmail({
-      creatorEmail: creator.email,
-      creatorName: creator.display_name || 'Creator',
-      buyerName: order.buyer_name,
-      buyerEmail: order.buyer_email,
-      productTitle: product.title,
-      bookingDate: order.booking_date || '',
-      bookingTime: order.booking_time || '',
-      reason: reason || 'ไม่ระบุ',
-    });
+    console.log('Cancel booking - sending email to creator:', creator.email);
+    try {
+      await sendBookingCancellationEmail({
+        creatorEmail: creator.email,
+        creatorName: creator.display_name || 'Creator',
+        buyerName: order.buyer_name,
+        buyerEmail: order.buyer_email,
+        productTitle: product.title,
+        bookingDate: order.booking_date || '',
+        bookingTime: order.booking_time || '',
+        reason: reason || 'ไม่ระบุ',
+      });
+      console.log('Cancel booking - email sent successfully');
+    } catch (emailError) {
+      console.error('Cancel booking - email failed:', emailError);
+    }
+  } else {
+    console.log('Cancel booking - no creator email found');
   }
 
   revalidatePath(`/checkout/${orderId}/success`);
@@ -1097,51 +1119,70 @@ export async function rescheduleBooking(
   // Use admin client to bypass RLS (customer not logged in)
   const supabase = createAdminClient();
 
-  // Get order with product info
+  // Get order first
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select(`
-      id,
-      status,
-      booking_date,
-      booking_time,
-      product_id,
-      buyer_email,
-      buyer_name,
-      product:products(id, title, type, type_config, creator_id),
-      creator:creators(id, display_name, email, contact_line)
-    `)
+    .select('id, status, booking_date, booking_time, product_id, creator_id, buyer_email, buyer_name, reschedule_count')
     .eq('id', orderId)
     .single();
+
+  console.log('Reschedule booking - order:', order, 'error:', orderError);
 
   if (orderError || !order) {
     console.error('Reschedule booking - order query error:', orderError);
     return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
   }
 
-  const product = Array.isArray(order.product) ? order.product[0] : order.product;
-  const creator = Array.isArray(order.creator) ? order.creator[0] : order.creator;
+  // Check if already rescheduled
+  const rescheduleCount = (order as any).reschedule_count || 0;
+  if (rescheduleCount >= 1) {
+    return { success: false, error: 'คุณได้เปลี่ยนเวลานัดหมายไปแล้ว 1 ครั้ง ไม่สามารถเปลี่ยนได้อีก' };
+  }
+
+  // Get product info separately
+  const { data: product, error: productError } = await supabase
+    .from('products')
+    .select('id, title, type, type_config, creator_id')
+    .eq('id', order.product_id)
+    .single();
+
+  console.log('Reschedule booking - product:', product, 'error:', productError);
+
+  // Get creator info separately  
+  const { data: creator } = await supabase
+    .from('creators')
+    .select('id, display_name, email, contact_line')
+    .eq('id', order.creator_id)
+    .single();
 
   if (!product) {
+    console.log('Reschedule - product not found');
     return { success: false, error: 'ไม่พบข้อมูลสินค้า' };
   }
 
   // Check if can reschedule
+  console.log('Reschedule - checking status:', order.status);
   if (!['confirmed', 'pending_confirmation'].includes(order.status)) {
-    return { success: false, error: 'ไม่สามารถเปลี่ยนนัดได้' };
+    console.log('Reschedule - invalid status:', order.status);
+    return { success: false, error: `ไม่สามารถเปลี่ยนนัดได้ (สถานะ: ${order.status})` };
   }
 
+  console.log('Reschedule - checking product type:', product.type);
   if (!['booking', 'live'].includes(product.type)) {
-    return { success: false, error: 'สินค้านี้ไม่ใช่การจอง' };
+    console.log('Reschedule - invalid product type:', product.type);
+    return { success: false, error: `สินค้านี้ไม่ใช่การจอง (type: ${product.type})` };
   }
 
   // Get new slot
+  console.log('Reschedule - getting new slot:', newSlotId);
   const { data: newSlot, error: newSlotError } = await supabase
     .from('booking_slots')
     .select('id, slot_date, start_time, end_time, max_bookings, current_bookings, is_available')
     .eq('id', newSlotId)
     .eq('product_id', product.id)
     .single();
+
+  console.log('Reschedule - newSlot:', newSlot, 'error:', newSlotError);
 
   if (newSlotError || !newSlot) {
     return { success: false, error: 'ช่วงเวลาที่เลือกไม่พร้อมใช้งาน' };
@@ -1200,33 +1241,47 @@ export async function rescheduleBooking(
     })
     .eq('id', newSlotId);
 
-  // Update order with new booking info
+  // Update order with new booking info and increment reschedule count
+  console.log('Reschedule - updating order with new booking date/time');
   const { error: updateError } = await supabase
     .from('orders')
     .update({
       booking_date: newSlot.slot_date,
       booking_time: newSlot.start_time,
-      rescheduled_at: new Date().toISOString(),
+      reschedule_count: rescheduleCount + 1,
     })
     .eq('id', orderId);
 
+  console.log('Reschedule - update result, error:', updateError);
+
   if (updateError) {
-    return { success: false, error: 'ไม่สามารถเปลี่ยนนัดได้' };
+    console.error('Reschedule - update failed:', updateError);
+    return { success: false, error: `ไม่สามารถเปลี่ยนนัดได้: ${updateError.message}` };
   }
+
+  console.log('Reschedule - success!');
 
   // Send reschedule notification to creator
   if (creator?.email) {
-    await sendBookingRescheduleEmail({
-      creatorEmail: creator.email,
-      creatorName: creator.display_name || 'Creator',
-      buyerName: order.buyer_name,
-      buyerEmail: order.buyer_email,
-      productTitle: product.title,
-      oldDate: order.booking_date || '',
-      oldTime: order.booking_time || '',
-      newDate: newSlot.slot_date,
-      newTime: newSlot.start_time,
-    });
+    console.log('Reschedule - sending email to creator:', creator.email);
+    try {
+      await sendBookingRescheduleEmail({
+        creatorEmail: creator.email,
+        creatorName: creator.display_name || 'Creator',
+        buyerName: order.buyer_name,
+        buyerEmail: order.buyer_email,
+        productTitle: product.title,
+        oldDate: order.booking_date || '',
+        oldTime: order.booking_time || '',
+        newDate: newSlot.slot_date,
+        newTime: newSlot.start_time,
+      });
+      console.log('Reschedule - email sent successfully');
+    } catch (emailError) {
+      console.error('Reschedule - email failed:', emailError);
+    }
+  } else {
+    console.log('Reschedule - no creator email found');
   }
 
   revalidatePath(`/checkout/${orderId}/success`);
@@ -1259,6 +1314,18 @@ export async function getAvailableSlotsForReschedule(
     return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
   }
 
+  // Get product settings for minimum_advance_hours and buffer_minutes
+  const { data: product } = await supabase
+    .from('products')
+    .select('type_config')
+    .eq('id', order.product_id)
+    .single();
+
+  const typeConfig = (product?.type_config as any) || {};
+  const minimumAdvanceHours = typeConfig.minimum_advance_hours || 0;
+  const bufferMinutes = typeConfig.buffer_minutes || 0;
+  const durationMinutes = typeConfig.duration_minutes || 60;
+
   // Get available slots
   const today = new Date().toISOString().split('T')[0];
   const { data: slots, error: slotsError } = await supabase
@@ -1274,12 +1341,54 @@ export async function getAvailableSlotsForReschedule(
     return { success: false, error: 'ไม่สามารถโหลดเวลาว่างได้' };
   }
 
-  // Filter out full slots and current slot
+  // Get all booked slots for buffer time calculation
+  // (exclude current order's slot since we're moving away from it)
+  const { data: bookedOrders } = await supabase
+    .from('orders')
+    .select('booking_date, booking_time')
+    .eq('product_id', order.product_id)
+    .in('status', ['confirmed', 'pending_confirmation'])
+    .neq('id', orderId); // Exclude current order
+
+  const bookedSlots = bookedOrders || [];
+  const now = new Date();
+
+  // Filter slots with all restrictions
   const availableSlots = (slots || [])
     .filter(slot => {
       const remaining = (slot.max_bookings || 1) - (slot.current_bookings || 0);
       const isCurrent = slot.slot_date === order.booking_date && slot.start_time === order.booking_time;
-      return remaining > 0 && !isCurrent;
+      
+      // Basic checks
+      if (remaining <= 0 || isCurrent) return false;
+
+      // Check minimum advance hours
+      if (minimumAdvanceHours > 0) {
+        const slotDateTime = new Date(`${slot.slot_date}T${slot.start_time}`);
+        const hoursUntilSlot = (slotDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+        if (hoursUntilSlot < minimumAdvanceHours) return false;
+      }
+
+      // Check buffer time
+      if (bufferMinutes > 0) {
+        const slotStartTime = new Date(`${slot.slot_date}T${slot.start_time}`).getTime();
+        
+        // Check if this slot is within buffer zone of any booked slot
+        const isInBuffer = bookedSlots.some(booked => {
+          if (booked.booking_date !== slot.slot_date) return false;
+          
+          const bookedStart = new Date(`${booked.booking_date}T${booked.booking_time}`).getTime();
+          const bookedEnd = bookedStart + (durationMinutes * 60 * 1000);
+          const bufferEnd = bookedEnd + (bufferMinutes * 60 * 1000);
+          
+          // Slot starts within buffer period after booked slot ends
+          return slotStartTime >= bookedEnd && slotStartTime < bufferEnd;
+        });
+        
+        if (isInBuffer) return false;
+      }
+
+      return true;
     })
     .map(slot => ({
       id: slot.id,

@@ -11,6 +11,7 @@ interface ManageBookingProps {
   canManage: boolean; // Only if status is confirmed or pending_confirmation
   currentDate: string;
   currentTime: string;
+  rescheduleCount?: number; // How many times rescheduled (max 1)
 }
 
 type Slot = {
@@ -21,7 +22,9 @@ type Slot = {
   remaining: number;
 };
 
-export function ManageBooking({ orderId, canManage, currentDate, currentTime }: ManageBookingProps) {
+const MAX_RESCHEDULES = 1;
+
+export function ManageBooking({ orderId, canManage, currentDate, currentTime, rescheduleCount = 0 }: ManageBookingProps) {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -56,7 +59,9 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime }: 
     setIsLoading(true);
     setError(null);
     
+    console.log('Calling cancelBooking with orderId:', orderId);
     const result = await cancelBooking(orderId, cancelReason || undefined);
+    console.log('cancelBooking result:', result);
     
     if (result.success) {
       setSuccess('ยกเลิกการจองเรียบร้อยแล้ว');
@@ -104,15 +109,38 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime }: 
     return acc;
   }, {} as Record<string, Slot[]>);
 
+  // Don't render anything if can't manage (order cancelled, etc.)
+  if (!canManage) {
+    return null;
+  }
+
+  const canReschedule = rescheduleCount < MAX_RESCHEDULES;
+
   return (
     <>
+      {/* Warning about reschedule limit */}
+      {canReschedule && (
+        <p className="text-xs text-amber-600 mt-3 flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          สามารถเปลี่ยนเวลานัดหมายได้ 1 ครั้งเท่านั้น
+        </p>
+      )}
+      
+      {/* Already rescheduled message */}
+      {!canReschedule && (
+        <p className="text-xs text-muted-foreground mt-3">
+          คุณได้เปลี่ยนเวลานัดหมายไปแล้ว 1 ครั้ง
+        </p>
+      )}
+
       {/* Manage Buttons */}
-      <div className="flex gap-2 mt-4">
+      <div className="flex gap-2 mt-2">
         <Button
           variant="outline"
           size="sm"
           onClick={handleOpenReschedule}
-          className="flex-1"
+          disabled={!canReschedule}
+          className={`flex-1 ${!canReschedule ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <Calendar className="h-4 w-4 mr-2" />
           เปลี่ยนเวลา
@@ -198,6 +226,13 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime }: 
                     เวลาเดิม: {formatDate(currentDate)} {currentTime?.slice(0, 5)} น.
                   </p>
                 </div>
+              </div>
+              {/* Warning about one-time reschedule */}
+              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-700 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span>คุณสามารถเปลี่ยนเวลานัดหมายได้ <strong>1 ครั้งเท่านั้น</strong> กรุณาเลือกเวลาที่แน่ใจ</span>
+                </p>
               </div>
             </div>
 

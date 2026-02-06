@@ -21,7 +21,7 @@ export default async function CheckoutPaymentPage({ params }: PageProps) {
   }
 
   if (order.status === 'cancelled' || order.status === 'refunded') {
-    redirect(`/checkout/${orderId}/cancelled`);
+    redirect(`/checkout/${orderId}/success`);
   }
 
   return <PaymentPage order={order} />;

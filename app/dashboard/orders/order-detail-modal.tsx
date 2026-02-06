@@ -37,6 +37,7 @@ interface Order {
   refund_promptpay: string | null;
   booking_date: string | null;
   booking_time: string | null;
+  cancel_reason: string | null;
   created_at: string;
   product: {
     id: string;
@@ -598,6 +599,15 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
             <div className="text-center text-sm text-red-600 mb-3">
               ❌ คำสั่งซื้อถูกยกเลิก
             </div>
+            
+            {/* Cancel reason from customer */}
+            {order.cancel_reason && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+                <p className="text-xs font-medium text-red-800 mb-1">เหตุผลที่ยกเลิก:</p>
+                <p className="text-sm text-red-700">{order.cancel_reason}</p>
+              </div>
+            )}
+
             <Button
               variant="outline"
               className="w-full text-purple-600 border-purple-200 hover:bg-purple-50"

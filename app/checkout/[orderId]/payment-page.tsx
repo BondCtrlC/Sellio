@@ -13,7 +13,8 @@ import {
   Image as ImageIcon,
   X,
   CreditCard,
-  QrCode
+  QrCode,
+  Download
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { uploadSlip } from '@/actions/orders';
@@ -79,6 +80,44 @@ export function PaymentPage({ order }: PaymentPageProps) {
   const qrCodeUrl = order.creator.promptpay_id 
     ? generatePromptPayQR(order.creator.promptpay_id, order.total)
     : null;
+
+  // Download QR code via server proxy (avoids CORS issues)
+  const handleDownloadQR = async () => {
+    if (!qrCodeUrl) return;
+    
+    const filename = `promptpay-${order.id.slice(0, 8)}.png`;
+    const downloadUrl = `/api/download-qr?url=${encodeURIComponent(qrCodeUrl)}&filename=${encodeURIComponent(filename)}`;
+    
+    // Check if mobile
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile && navigator.share) {
+      // Try Web Share API for mobile (allows save to album)
+      try {
+        const response = await fetch(downloadUrl);
+        const blob = await response.blob();
+        const file = new File([blob], filename, { type: 'image/png' });
+        
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'PromptPay QR Code',
+          });
+          return;
+        }
+      } catch (err) {
+        console.log('Share failed, falling back to download');
+      }
+    }
+    
+    // Desktop or share not available - direct download
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Handle Stripe checkout
   const handleStripeCheckout = async () => {
@@ -342,13 +381,24 @@ export function PaymentPage({ order }: PaymentPageProps) {
                   
                   <div className="flex flex-col items-center">
                     {/* QR Code */}
-                    <div className="bg-white p-4 rounded-xl border-2 border-dashed mb-4">
+                    <div className="bg-white p-4 rounded-xl border-2 border-dashed mb-3">
                       <img
                         src={qrCodeUrl}
                         alt="PromptPay QR Code"
                         className="w-48 h-48"
                       />
                     </div>
+
+                    {/* Save QR Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadQR}
+                      className="mb-4"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      บันทึกรูป QR
+                    </Button>
 
                     {/* Account Info */}
                     <div className="text-center">

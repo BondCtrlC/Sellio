@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getOrderById } from '@/actions/orders';
 import { getFulfillmentByOrderId } from '@/actions/fulfillments';
-import { CheckCircle, Package, Calendar, Mail, MessageCircle, Download, Video, MapPin, ExternalLink, Clock } from 'lucide-react';
+import { CheckCircle, Package, Calendar, Mail, MessageCircle, Download, Video, MapPin, ExternalLink, Clock, XCircle } from 'lucide-react';
 import { Card, CardContent, Button } from '@/components/ui';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { CopyLinkButton } from './copy-link-button';
@@ -29,30 +29,52 @@ export default async function SuccessPage({ params }: PageProps) {
 
   const isConfirmed = order.status === 'confirmed';
   const isPendingConfirmation = order.status === 'pending_confirmation';
+  const isCancelled = order.status === 'cancelled';
+
+  // Determine icon and colors
+  const getStatusDisplay = () => {
+    if (isCancelled) {
+      const isBookingProduct = order.product.type === 'booking' || order.product.type === 'live';
+      return {
+        bgColor: 'bg-red-100',
+        icon: <XCircle className="h-10 w-10 text-red-600" />,
+        title: isBookingProduct ? 'การจองถูกยกเลิก' : 'คำสั่งซื้อถูกยกเลิก',
+        subtitle: isBookingProduct ? 'การจองนี้ได้ถูกยกเลิกแล้ว' : 'คำสั่งซื้อนี้ได้ถูกยกเลิกแล้ว',
+      };
+    }
+    if (isConfirmed) {
+      return {
+        bgColor: 'bg-green-100',
+        icon: <CheckCircle className="h-10 w-10 text-green-600" />,
+        title: 'การชำระเงินสำเร็จ!',
+        subtitle: 'ขอบคุณสำหรับการสั่งซื้อ',
+      };
+    }
+    return {
+      bgColor: 'bg-yellow-100',
+      icon: <Package className="h-10 w-10 text-yellow-600" />,
+      title: 'รอตรวจสอบการชำระเงิน',
+      subtitle: 'ระบบได้รับสลิปของคุณแล้ว กรุณารอการยืนยันจากผู้ขาย',
+    };
+  };
+
+  const statusDisplay = getStatusDisplay();
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-lg mx-auto px-4">
         {/* Success Icon */}
         <div className="text-center mb-8">
-          <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center ${
-            isConfirmed ? 'bg-green-100' : 'bg-yellow-100'
-          }`}>
-            {isConfirmed ? (
-              <CheckCircle className="h-10 w-10 text-green-600" />
-            ) : (
-              <Package className="h-10 w-10 text-yellow-600" />
-            )}
+          <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center ${statusDisplay.bgColor}`}>
+            {statusDisplay.icon}
           </div>
           
           <h1 className="text-2xl font-bold mt-4">
-            {isConfirmed ? 'การชำระเงินสำเร็จ!' : 'รอตรวจสอบการชำระเงิน'}
+            {statusDisplay.title}
           </h1>
           
           <p className="text-muted-foreground mt-2">
-            {isConfirmed 
-              ? 'ขอบคุณสำหรับการสั่งซื้อ' 
-              : 'ระบบได้รับสลิปของคุณแล้ว กรุณารอการยืนยันจากผู้ขาย'}
+            {statusDisplay.subtitle}
           </p>
         </div>
 
@@ -117,6 +139,66 @@ export default async function SuccessPage({ params }: PageProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Cancelled Info + Refund CTA */}
+        {isCancelled && (
+          <Card className="mb-6 border-red-200 overflow-hidden">
+            {/* Red header */}
+            <div className="bg-red-500 px-4 py-3">
+              <h4 className="font-semibold text-white text-center">
+                {order.product.type === 'booking' || order.product.type === 'live' ? 'การจองถูกยกเลิก' : 'คำสั่งซื้อถูกยกเลิก'}
+              </h4>
+            </div>
+            <CardContent className="p-5 space-y-4">
+              {/* Refund guidance */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <h5 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                  <span className="text-lg">💰</span>
+                  ขอคืนเงิน
+                </h5>
+                <p className="text-sm text-amber-700 mb-3">
+                  หากคุณได้ชำระเงินแล้ว กรุณาติดต่อผู้ขายโดยตรงเพื่อขอรับเงินคืน พร้อมแจ้งหมายเลขคำสั่งซื้อ <strong>#{orderId.slice(0, 8).toUpperCase()}</strong>
+                </p>
+                
+                {/* Contact buttons */}
+                <div className="flex flex-col gap-2">
+                  {order.creator.contact_line && (
+                    <a
+                      href={`https://line.me/ti/p/~${order.creator.contact_line.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-green-500 text-white text-sm font-semibold rounded-lg hover:bg-green-600 transition-colors"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      ทัก Line ผู้ขายเพื่อขอคืนเงิน
+                    </a>
+                  )}
+                  {order.creator.contact_ig && (
+                    <a
+                      href={`https://instagram.com/${order.creator.contact_ig.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      ติดต่อผ่าน Instagram
+                    </a>
+                  )}
+                  {!order.creator.contact_line && !order.creator.contact_ig && (
+                    <p className="text-sm text-amber-600 text-center">
+                      ติดต่อผู้ขายผ่านช่องทางที่ท่านเคยติดต่อ
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Additional info */}
+              <p className="text-xs text-muted-foreground text-center">
+                กรุณาเก็บหลักฐานการชำระเงิน (สลิป) ไว้เพื่อใช้ประกอบการขอคืนเงิน
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Status Info */}
         {isPendingConfirmation && (
@@ -316,6 +398,7 @@ export default async function SuccessPage({ params }: PageProps) {
                     canManage={isConfirmed || isPendingConfirmation}
                     currentDate={order.booking_date}
                     currentTime={order.booking_time}
+                    rescheduleCount={(order as any).reschedule_count || 0}
                   />
                 </div>
               )}

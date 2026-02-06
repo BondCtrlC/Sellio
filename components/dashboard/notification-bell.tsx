@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, ShoppingCart, CreditCard, Ticket, X, CalendarCheck } from 'lucide-react';
+import { Bell, ShoppingCart, CreditCard, Ticket, X, CalendarCheck, CalendarX, CalendarClock, Star } from 'lucide-react';
 import { Button } from '@/components/ui';
 import Link from 'next/link';
 import { getNotifications, type Notification } from '@/actions/notifications';
@@ -33,8 +33,9 @@ export function NotificationBell({ initialCount = 0 }: NotificationBellProps) {
     const fetchInitialCount = async () => {
       const result = await getNotifications();
       if (result.success) {
+        const importantTypes = ['payment_pending', 'new_order', 'new_booking', 'booking_cancelled', 'booking_rescheduled', 'new_review'];
         const importantCount = result.notifications.filter(
-          n => n.type === 'payment_pending' || n.type === 'new_order' || n.type === 'new_booking'
+          n => importantTypes.includes(n.type)
         ).length;
         setCount(importantCount);
       }
@@ -49,9 +50,9 @@ export function NotificationBell({ initialCount = 0 }: NotificationBellProps) {
       const result = await getNotifications();
       if (result.success) {
         setNotifications(result.notifications);
-        // Count new_order, payment_pending, and new_booking for the badge
+        const importantTypes = ['payment_pending', 'new_order', 'new_booking', 'booking_cancelled', 'booking_rescheduled', 'new_review'];
         const importantCount = result.notifications.filter(
-          n => n.type === 'payment_pending' || n.type === 'new_order' || n.type === 'new_booking'
+          n => importantTypes.includes(n.type)
         ).length;
         setCount(importantCount);
       }
@@ -65,9 +66,9 @@ export function NotificationBell({ initialCount = 0 }: NotificationBellProps) {
     const interval = setInterval(async () => {
       const result = await getNotifications();
       if (result.success) {
-        // Count new_order, payment_pending, and new_booking for the badge
+        const importantTypes = ['payment_pending', 'new_order', 'new_booking', 'booking_cancelled', 'booking_rescheduled', 'new_review'];
         const importantCount = result.notifications.filter(
-          n => n.type === 'payment_pending' || n.type === 'new_order' || n.type === 'new_booking'
+          n => importantTypes.includes(n.type)
         ).length;
         setCount(importantCount);
       }
@@ -87,6 +88,12 @@ export function NotificationBell({ initialCount = 0 }: NotificationBellProps) {
         return <Ticket className="h-4 w-4 text-orange-500" />;
       case 'new_booking':
         return <CalendarCheck className="h-4 w-4 text-purple-500" />;
+      case 'booking_cancelled':
+        return <CalendarX className="h-4 w-4 text-red-500" />;
+      case 'booking_rescheduled':
+        return <CalendarClock className="h-4 w-4 text-amber-500" />;
+      case 'new_review':
+        return <Star className="h-4 w-4 text-yellow-500" />;
       default:
         return <Bell className="h-4 w-4" />;
     }

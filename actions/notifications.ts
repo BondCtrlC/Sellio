@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 // ============================================
 export interface Notification {
   id: string;
-  type: 'new_order' | 'payment_pending' | 'payment_confirmed' | 'coupon_expiring' | 'low_stock' | 'new_booking';
+  type: 'new_order' | 'payment_pending' | 'payment_confirmed' | 'coupon_expiring' | 'low_stock' | 'new_booking' | 'booking_cancelled' | 'booking_rescheduled' | 'new_review';
   title: string;
   message: string;
   link?: string;
@@ -111,7 +111,87 @@ export async function getNotifications(): Promise<{ success: boolean; notificati
     });
   });
 
-  // 4. Check expiring coupons (next 7 days)
+  // 4. Get cancelled bookings (last 24 hours)
+  const { data: cancelledBookings } = await supabase
+    .from('orders')
+    .select('id, buyer_name, booking_date, booking_time, updated_at, product:products!inner(title, type)')
+    .eq('creator_id', creator.id)
+    .eq('status', 'cancelled')
+    .in('product.type', ['booking', 'live'])
+    .not('booking_date', 'is', null)
+    .gte('updated_at', new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString())
+    .order('updated_at', { ascending: false })
+    .limit(5);
+
+  cancelledBookings?.forEach(booking => {
+    const product = Array.isArray(booking.product) ? booking.product[0] : booking.product;
+    const bookingDate = booking.booking_date ? new Date(booking.booking_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : '';
+    const bookingTime = booking.booking_time ? booking.booking_time.slice(0, 5) : '';
+    
+    notifications.push({
+      id: `cancelled_${booking.id}`,
+      type: 'booking_cancelled',
+      title: 'ยกเลิกนัดหมาย',
+      message: `${booking.buyer_name} ยกเลิก ${product?.title || 'นัดหมาย'} - ${bookingDate} ${bookingTime}`,
+      link: '/dashboard/orders',
+      created_at: booking.updated_at,
+      is_read: false,
+    });
+  });
+
+  // 5. Get rescheduled bookings (last 24 hours) - orders with reschedule_count > 0
+  const { data: rescheduledBookings } = await supabase
+    .from('orders')
+    .select('id, buyer_name, booking_date, booking_time, updated_at, reschedule_count, product:products!inner(title, type)')
+    .eq('creator_id', creator.id)
+    .eq('status', 'confirmed')
+    .in('product.type', ['booking', 'live'])
+    .gt('reschedule_count', 0)
+    .gte('updated_at', new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString())
+    .order('updated_at', { ascending: false })
+    .limit(5);
+
+  rescheduledBookings?.forEach(booking => {
+    const product = Array.isArray(booking.product) ? booking.product[0] : booking.product;
+    const bookingDate = booking.booking_date ? new Date(booking.booking_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : '';
+    const bookingTime = booking.booking_time ? booking.booking_time.slice(0, 5) : '';
+    
+    notifications.push({
+      id: `rescheduled_${booking.id}`,
+      type: 'booking_rescheduled',
+      title: 'เปลี่ยนเวลานัดหมาย',
+      message: `${booking.buyer_name} เปลี่ยนเวลา ${product?.title || 'นัดหมาย'} เป็น ${bookingDate} ${bookingTime}`,
+      link: '/dashboard/orders',
+      created_at: booking.updated_at,
+      is_read: false,
+    });
+  });
+
+  // 6. Get new reviews (last 48 hours)
+  const { data: newReviews } = await supabase
+    .from('reviews')
+    .select('id, buyer_name, rating, comment, created_at, product:products(title)')
+    .eq('creator_id', creator.id)
+    .gte('created_at', new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString())
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  newReviews?.forEach(review => {
+    const product = Array.isArray(review.product) ? review.product[0] : review.product;
+    const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+    
+    notifications.push({
+      id: `review_${review.id}`,
+      type: 'new_review',
+      title: 'รีวิวใหม่',
+      message: `${review.buyer_name} ให้ ${stars} ${product?.title || 'สินค้า'}${review.comment ? ` - "${review.comment.slice(0, 30)}${review.comment.length > 30 ? '...' : ''}"` : ''}`,
+      link: '/dashboard/reviews',
+      created_at: review.created_at,
+      is_read: false,
+    });
+  });
+
+  // 7. Check expiring coupons (next 7 days)
   const { data: expiringCoupons } = await supabase
     .from('coupons')
     .select('id, code, expires_at')
@@ -187,5 +267,32 @@ export async function getNotificationCount(): Promise<number> {
     .not('booking_date', 'is', null)
     .gte('updated_at', new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString());
 
-  return (pendingConfirmCount || 0) + (newOrderCount || 0) + (newBookingCount || 0);
+  // Count cancelled bookings (last 24 hours)
+  const { count: cancelledCount } = await supabase
+    .from('orders')
+    .select('id, product:products!inner(type)', { count: 'exact', head: true })
+    .eq('creator_id', creator.id)
+    .eq('status', 'cancelled')
+    .in('product.type', ['booking', 'live'])
+    .not('booking_date', 'is', null)
+    .gte('updated_at', new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString());
+
+  // Count rescheduled bookings (last 24 hours)
+  const { count: rescheduledCount } = await supabase
+    .from('orders')
+    .select('id, product:products!inner(type)', { count: 'exact', head: true })
+    .eq('creator_id', creator.id)
+    .eq('status', 'confirmed')
+    .in('product.type', ['booking', 'live'])
+    .gt('reschedule_count', 0)
+    .gte('updated_at', new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString());
+
+  // Count new reviews (last 48 hours)
+  const { count: newReviewCount } = await supabase
+    .from('reviews')
+    .select('*', { count: 'exact', head: true })
+    .eq('creator_id', creator.id)
+    .gte('created_at', new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString());
+
+  return (pendingConfirmCount || 0) + (newOrderCount || 0) + (newBookingCount || 0) + (cancelledCount || 0) + (rescheduledCount || 0) + (newReviewCount || 0);
 }

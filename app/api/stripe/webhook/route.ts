@@ -160,6 +160,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   // Send confirmation email
+  console.log('Stripe webhook - preparing to send email, creator:', creator?.email, 'product:', product?.title);
   if (creator && product) {
     // Prepare email data
     const emailData: Parameters<typeof sendOrderConfirmationEmail>[0] = {
@@ -198,7 +199,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       };
     }
 
-    await sendOrderConfirmationEmail(emailData);
+    console.log('Stripe webhook - sending confirmation email to:', order.buyer_email);
+    try {
+      await sendOrderConfirmationEmail(emailData);
+      console.log('Stripe webhook - email sent successfully');
+    } catch (emailError) {
+      console.error('Stripe webhook - email failed:', emailError);
+    }
+  } else {
+    console.log('Stripe webhook - skipping email, creator or product missing');
   }
 
   console.log('Order confirmed via Stripe:', orderId);
