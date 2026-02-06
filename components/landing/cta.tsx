@@ -53,7 +53,7 @@ export function CTA() {
             <Button 
               variant="outline" 
               size="lg" 
-              className="h-14 px-8 text-base border-white/30 text-white hover:bg-white/10"
+              className="h-14 px-8 text-base border-white/40 text-white hover:bg-white/15 bg-white/10"
             >
               ดูวิธีใช้งาน
             </Button>
