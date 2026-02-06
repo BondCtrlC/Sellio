@@ -75,10 +75,10 @@ export function Hero() {
         <div className="mt-16 relative">
           <div className="relative mx-auto max-w-5xl flex items-center justify-center">
             
-            {/* Left Floating Cards */}
-            <div className="absolute left-0 top-0 bottom-0 hidden lg:flex flex-col justify-center gap-5 -translate-x-4">
+            {/* Left Floating Cards - staggered positions */}
+            <div className="absolute left-0 top-0 bottom-0 hidden lg:block">
               {/* ยอดขายวันนี้ */}
-              <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float">
+              <div className="absolute -left-6 top-[8%] bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                     <span className="text-xl">💰</span>
@@ -91,7 +91,7 @@ export function Hero() {
               </div>
 
               {/* รีวิว */}
-              <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-2000">
+              <div className="absolute left-6 top-[45%] bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-2000">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
                     <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
@@ -110,7 +110,7 @@ export function Hero() {
               </div>
 
               {/* Conversion Rate */}
-              <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-4000">
+              <div className="absolute -left-2 top-[78%] bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-4000">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-xl">📊</span>
@@ -242,10 +242,10 @@ export function Hero() {
               <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-28 h-1 bg-gray-600 rounded-full" />
             </div>
 
-            {/* Right Floating Cards */}
-            <div className="absolute right-0 top-0 bottom-0 hidden lg:flex flex-col justify-center gap-5 translate-x-4">
+            {/* Right Floating Cards - staggered positions */}
+            <div className="absolute right-0 top-0 bottom-0 hidden lg:block">
               {/* คำสั่งซื้อใหม่ */}
-              <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-1000">
+              <div className="absolute right-4 top-[15%] bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-1000">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                     <span className="text-xl">📦</span>
@@ -258,7 +258,7 @@ export function Hero() {
               </div>
 
               {/* ลูกค้าใหม่ */}
-              <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-3000">
+              <div className="absolute -right-2 top-[52%] bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-3000">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
                     <span className="text-xl">👥</span>
@@ -271,7 +271,7 @@ export function Hero() {
               </div>
 
               {/* PromptPay */}
-              <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-5000">
+              <div className="absolute right-8 top-[82%] bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-5000">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
                     <span className="text-xl">✅</span>
