@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui';
-import { ArrowRight, Play, CheckCircle } from 'lucide-react';
+import { ArrowRight, Play, CheckCircle, Star, Instagram, MessageCircle, Mail, Phone } from 'lucide-react';
 
 export function Hero() {
   return (
@@ -71,61 +71,219 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Hero Image/Mockup */}
+        {/* Phone Mockup with Store Preview */}
         <div className="mt-16 relative">
-          <div className="relative mx-auto max-w-5xl">
-            {/* Browser Frame */}
-            <div className="bg-white rounded-2xl shadow-2xl shadow-gray-200/50 border border-gray-200 overflow-hidden">
-              {/* Browser Header */}
-              <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-400" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                  <div className="w-3 h-3 rounded-full bg-green-400" />
-                </div>
-                <div className="flex-1 mx-4">
-                  <div className="bg-white rounded-md px-3 py-1.5 text-sm text-gray-400 text-center border border-gray-200">
-                    creatorshop.co/u/yourname
+          <div className="relative mx-auto max-w-5xl flex items-center justify-center">
+            
+            {/* Left Floating Cards */}
+            <div className="absolute left-0 top-0 bottom-0 hidden lg:flex flex-col justify-center gap-5 -translate-x-4">
+              {/* ยอดขายวันนี้ */}
+              <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-xl">💰</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">ยอดขายวันนี้</p>
+                    <p className="text-lg font-bold text-green-600">฿12,450</p>
                   </div>
                 </div>
               </div>
-              
-              {/* Dashboard Preview */}
-              <div className="aspect-[16/9] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-                <div className="text-center p-8">
-                  <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl mx-auto mb-4 flex items-center justify-center">
-                    <span className="text-4xl">🛍️</span>
+
+              {/* รีวิว */}
+              <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-2000">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                    <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">ร้านค้าของคุณ</h3>
-                  <p className="text-gray-500">หน้าร้านพร้อมใช้งาน รอแค่สินค้าของคุณ</p>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">รีวิวใหม่</p>
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                      ))}
+                      <span className="text-xs text-gray-500 ml-1">(4.9)</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2 ml-[52px]">&quot;สินค้าดีมาก ส่งไว!&quot;</p>
+              </div>
+
+              {/* Conversion Rate */}
+              <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-4000">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-xl">📊</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Conversion</p>
+                    <p className="text-lg font-bold text-blue-600">12.8%</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Floating Cards */}
-            <div className="absolute -left-4 top-1/3 bg-white rounded-xl shadow-lg p-4 border border-gray-100 hidden lg:block animate-float">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-xl">💰</span>
+            {/* Phone Frame */}
+            <div className="relative w-[280px] sm:w-[320px] flex-shrink-0">
+              {/* Phone outer frame */}
+              <div className="bg-gray-900 rounded-[3rem] p-3 shadow-2xl shadow-gray-400/30">
+                {/* Notch */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-gray-900 rounded-b-2xl z-10" />
+                
+                {/* Screen */}
+                <div className="bg-white rounded-[2.25rem] overflow-hidden">
+                  {/* Status bar */}
+                  <div className="flex items-center justify-between px-6 pt-3 pb-1 text-[10px] font-semibold text-gray-900">
+                    <span>9:41</span>
+                    <div className="flex items-center gap-1">
+                      <div className="flex gap-0.5">
+                        <div className="w-1 h-1.5 bg-gray-900 rounded-sm" />
+                        <div className="w-1 h-2 bg-gray-900 rounded-sm" />
+                        <div className="w-1 h-2.5 bg-gray-900 rounded-sm" />
+                        <div className="w-1 h-3 bg-gray-900 rounded-sm" />
+                      </div>
+                      <span className="ml-1">5G</span>
+                    </div>
+                  </div>
+
+                  {/* Store Preview Content */}
+                  <div className="px-0">
+                    {/* Cover / Header */}
+                    <div className="relative h-36 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex flex-col items-center justify-center text-white">
+                      <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center mb-2 overflow-hidden">
+                        <span className="text-2xl">👩‍🎨</span>
+                      </div>
+                      <h3 className="font-bold text-sm">Nida Creative</h3>
+                      <p className="text-[10px] text-white/80 mt-0.5">ขาย Preset & Template</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                          <Instagram className="w-3 h-3 text-white" />
+                        </div>
+                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                          <MessageCircle className="w-3 h-3 text-white" />
+                        </div>
+                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                          <Mail className="w-3 h-3 text-white" />
+                        </div>
+                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                          <Phone className="w-3 h-3 text-white" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Products */}
+                    <div className="px-4 py-3 space-y-2.5">
+                      {/* Product 1 */}
+                      <div className="flex items-center gap-3 p-2.5 border border-gray-100 rounded-xl hover:shadow-sm transition-shadow">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-lg">🎨</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-gray-900 truncate">Lightroom Preset Pack</p>
+                          <p className="text-[10px] text-green-600 font-bold">฿299</p>
+                        </div>
+                        <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
+                        </div>
+                      </div>
+
+                      {/* Product 2 */}
+                      <div className="flex items-center gap-3 p-2.5 border border-gray-100 rounded-xl hover:shadow-sm transition-shadow">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-lg">📐</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-gray-900 truncate">Canva Template Bundle</p>
+                          <p className="text-[10px] text-green-600 font-bold">฿199</p>
+                        </div>
+                        <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
+                        </div>
+                      </div>
+
+                      {/* Product 3 */}
+                      <div className="flex items-center gap-3 p-2.5 border border-gray-100 rounded-xl hover:shadow-sm transition-shadow">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-100 to-yellow-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-lg">📸</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-gray-900 truncate">1-on-1 Photo Review</p>
+                          <p className="text-[10px] text-green-600 font-bold">฿500</p>
+                        </div>
+                        <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
+                        </div>
+                      </div>
+
+                      {/* Product 4 */}
+                      <div className="flex items-center gap-3 p-2.5 border border-gray-100 rounded-xl hover:shadow-sm transition-shadow">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-lg">📚</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-gray-900 truncate">E-Book: สอนแต่งรูป</p>
+                          <p className="text-[10px] text-green-600 font-bold">฿149</p>
+                        </div>
+                        <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
+                        </div>
+                      </div>
+
+                      {/* Powered by */}
+                      <div className="text-center pt-1 pb-2">
+                        <span className="text-[9px] text-gray-300">Powered by Sellio</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">ยอดขายวันนี้</p>
-                  <p className="text-lg font-bold text-green-600">฿12,450</p>
+              </div>
+
+              {/* Home indicator */}
+              <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-28 h-1 bg-gray-600 rounded-full" />
+            </div>
+
+            {/* Right Floating Cards */}
+            <div className="absolute right-0 top-0 bottom-0 hidden lg:flex flex-col justify-center gap-5 translate-x-4">
+              {/* คำสั่งซื้อใหม่ */}
+              <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-1000">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                    <span className="text-xl">📦</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">คำสั่งซื้อใหม่</p>
+                    <p className="text-lg font-bold text-purple-600">+15 รายการ</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ลูกค้าใหม่ */}
+              <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-3000">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
+                    <span className="text-xl">👥</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">ลูกค้าใหม่วันนี้</p>
+                    <p className="text-lg font-bold text-pink-600">+8 คน</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* PromptPay */}
+              <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 animate-float animation-delay-5000">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <span className="text-xl">✅</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">PromptPay QR</p>
+                    <p className="text-xs text-gray-500">รับเงินทันที ไม่มีค่าธรรมเนียม</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="absolute -right-4 top-1/4 bg-white rounded-xl shadow-lg p-4 border border-gray-100 hidden lg:block animate-float animation-delay-1000">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                  <span className="text-xl">📦</span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">คำสั่งซื้อใหม่</p>
-                  <p className="text-lg font-bold text-purple-600">+15 รายการ</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

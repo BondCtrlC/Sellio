@@ -367,6 +367,14 @@ body {
   animation-delay: 1s;
 }
 
+.animation-delay-3000 {
+  animation-delay: 3s;
+}
+
+.animation-delay-5000 {
+  animation-delay: 5s;
+}
+
 /* Smooth Scroll */
 html {
   scroll-behavior: smooth;
