@@ -12,8 +12,6 @@ import {
   Loader2,
   Image as ImageIcon,
   X,
-  CreditCard,
-  QrCode,
   Download
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
@@ -56,8 +54,6 @@ interface PaymentPageProps {
   order: OrderDetails;
 }
 
-type PaymentMethod = 'promptpay' | 'card';
-
 export function PaymentPage({ order }: PaymentPageProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,15 +62,9 @@ export function PaymentPage({ order }: PaymentPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('promptpay');
-  const [processingStripe, setProcessingStripe] = useState(false);
-
   const isPendingPayment = order.status === 'pending_payment';
   const isPendingConfirmation = order.status === 'pending_confirmation';
   const hasSlip = order.payment?.slip_url;
-
-  // Check if Stripe is enabled (has publishable key)
-  const stripeEnabled = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
   // Generate QR code URL
   const qrCodeUrl = order.creator.promptpay_id 
@@ -117,37 +107,6 @@ export function PaymentPage({ order }: PaymentPageProps) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  // Handle Stripe checkout
-  const handleStripeCheckout = async () => {
-    setProcessingStripe(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/stripe/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: order.id }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create checkout session');
-      }
-
-      // Redirect to Stripe Checkout
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('ไม่สามารถสร้างหน้าชำระเงินได้');
-      }
-    } catch (err) {
-      console.error('Stripe checkout error:', err);
-      setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่');
-      setProcessingStripe(false);
-    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -287,94 +246,8 @@ export function PaymentPage({ order }: PaymentPageProps) {
         {/* Payment Section */}
         {isPendingPayment && (
           <>
-            {/* Payment Method Selection */}
-            {stripeEnabled && qrCodeUrl && (
-              <Card className="mb-6">
-                <CardContent className="p-4">
-                  <h3 className="font-semibold mb-3">เลือกวิธีชำระเงิน</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setPaymentMethod('promptpay')}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                        paymentMethod === 'promptpay'
-                          ? 'border-primary bg-primary/5'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <QrCode className={`h-6 w-6 ${paymentMethod === 'promptpay' ? 'text-primary' : 'text-gray-500'}`} />
-                      <span className={`text-sm font-medium ${paymentMethod === 'promptpay' ? 'text-primary' : ''}`}>
-                        PromptPay
-                      </span>
-                      <span className="text-xs text-muted-foreground">โอนเงิน</span>
-                    </button>
-                    <button
-                      onClick={() => setPaymentMethod('card')}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                        paymentMethod === 'card'
-                          ? 'border-primary bg-primary/5'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <CreditCard className={`h-6 w-6 ${paymentMethod === 'card' ? 'text-primary' : 'text-gray-500'}`} />
-                      <span className={`text-sm font-medium ${paymentMethod === 'card' ? 'text-primary' : ''}`}>
-                        บัตรเครดิต/เดบิต
-                      </span>
-                      <span className="text-xs text-muted-foreground">Visa, Mastercard</span>
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Card Payment (Stripe) */}
-            {(paymentMethod === 'card' || (!qrCodeUrl && stripeEnabled)) && stripeEnabled && (
-              <Card className="mb-6">
-                <CardContent className="p-6">
-                  <h3 className="font-semibold text-center mb-4">ชำระด้วยบัตรเครดิต/เดบิต</h3>
-                  
-                  <div className="flex flex-col items-center">
-                    {/* Card Icons */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <img src="https://cdn.jsdelivr.net/gh/nicklasoverby/payment-icons/icons/visa.svg" alt="Visa" className="h-8" />
-                      <img src="https://cdn.jsdelivr.net/gh/nicklasoverby/payment-icons/icons/mastercard.svg" alt="Mastercard" className="h-8" />
-                      <img src="https://cdn.jsdelivr.net/gh/nicklasoverby/payment-icons/icons/amex.svg" alt="Amex" className="h-8" />
-                    </div>
-
-                    {/* Amount */}
-                    <div className="mb-6 bg-primary/5 rounded-lg px-6 py-3 text-center">
-                      <p className="text-sm text-muted-foreground">ยอดที่ต้องชำระ</p>
-                      <p className="text-2xl font-bold text-primary">{formatPrice(order.total)}</p>
-                    </div>
-
-                    {/* Stripe Checkout Button */}
-                    <Button
-                      onClick={handleStripeCheckout}
-                      disabled={processingStripe}
-                      className="w-full py-6 bg-[#635BFF] hover:bg-[#5851DB]"
-                    >
-                      {processingStripe ? (
-                        <>
-                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                          กำลังดำเนินการ...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="h-5 w-5 mr-2" />
-                          ชำระเงินด้วยบัตร
-                        </>
-                      )}
-                    </Button>
-
-                    <p className="text-xs text-muted-foreground mt-3 text-center">
-                      🔒 การชำระเงินปลอดภัยผ่าน Stripe
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* PromptPay QR Code */}
-            {(paymentMethod === 'promptpay' || !stripeEnabled) && qrCodeUrl && (
+            {qrCodeUrl && (
               <Card className="mb-6">
                 <CardContent className="p-6">
                   <h3 className="font-semibold text-center mb-4">สแกนจ่ายผ่าน PromptPay</h3>
@@ -418,7 +291,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
             )}
 
             {/* No payment method available */}
-            {!qrCodeUrl && !stripeEnabled && (
+            {!qrCodeUrl && (
               <Card className="mb-6">
                 <CardContent className="p-6">
                   <p className="text-center text-muted-foreground">
@@ -428,8 +301,8 @@ export function PaymentPage({ order }: PaymentPageProps) {
               </Card>
             )}
 
-            {/* Upload Slip Section - Only for PromptPay */}
-            {(paymentMethod === 'promptpay' || !stripeEnabled) && qrCodeUrl && (
+            {/* Upload Slip Section */}
+            {qrCodeUrl && (
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-semibold mb-4">อัพโหลดสลิปการโอนเงิน</h3>
