@@ -1,7 +1,10 @@
+import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui';
 import { SettingsForm } from './settings-form';
+import { getCreatorInvoices } from '@/actions/plan';
+import type { PlanType } from '@/types';
 
 async function getCreator() {
   const supabase = await createClient();
@@ -20,8 +23,20 @@ async function getCreator() {
   return creator;
 }
 
+async function getBillingInfo(creator: any) {
+  const invoices = await getCreatorInvoices();
+  
+  return {
+    plan: (creator.plan || 'free') as PlanType,
+    hasSubscription: !!creator.stripe_subscription_id,
+    planExpiresAt: creator.plan_expires_at as string | null,
+    invoices,
+  };
+}
+
 export default async function SettingsPage() {
   const creator = await getCreator();
+  const billingInfo = await getBillingInfo(creator);
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -32,7 +47,9 @@ export default async function SettingsPage() {
 
       <Card>
         <CardContent className="p-6">
-          <SettingsForm creator={creator} />
+          <Suspense fallback={<div>กำลังโหลด...</div>}>
+            <SettingsForm creator={creator} billingInfo={billingInfo} />
+          </Suspense>
         </CardContent>
       </Card>
     </div>

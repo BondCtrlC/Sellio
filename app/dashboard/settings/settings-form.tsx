@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Label, Textarea } from '@/components/ui';
 import { updateSettings } from '@/actions/settings';
 import { settingsSchema, type SettingsInput } from '@/lib/validations/settings';
 import { AvatarUpload } from './avatar-upload';
-import type { Creator } from '@/types';
+import type { Creator, PlanType } from '@/types';
+import type { InvoiceItem } from '@/actions/plan';
+import Link from 'next/link';
 import { 
   User, 
   Wallet, 
@@ -21,25 +23,40 @@ import {
   QrCode,
   Building2,
   Link2,
-  AlertTriangle
+  AlertTriangle,
+  CreditCard,
+  Crown,
+  Download,
+  ExternalLink
 } from 'lucide-react';
 
 interface SettingsFormProps {
   creator: Creator;
+  billingInfo?: {
+    plan: PlanType;
+    hasSubscription: boolean;
+    planExpiresAt: string | null;
+    invoices: InvoiceItem[];
+  };
 }
 
-type SettingsTab = 'profile' | 'payments' | 'store' | 'seo';
+type SettingsTab = 'profile' | 'payments' | 'store' | 'seo' | 'billing';
 
 const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
   { id: 'profile', label: 'โปรไฟล์', icon: User },
   { id: 'payments', label: 'การรับเงิน', icon: Wallet },
   { id: 'store', label: 'ร้านค้า', icon: Store },
   { id: 'seo', label: 'SEO', icon: Search },
+  { id: 'billing', label: 'การเรียกเก็บเงิน', icon: CreditCard },
 ];
 
-export function SettingsForm({ creator }: SettingsFormProps) {
+export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get('tab') as SettingsTab) || 'profile';
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    tabs.some(t => t.id === initialTab) ? initialTab : 'profile'
+  );
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -561,6 +578,184 @@ export function SettingsForm({ creator }: SettingsFormProps) {
           </div>
         )}
       </form>
+
+      {/* ============================== */}
+      {/* TAB: การเรียกเก็บเงิน (outside form) */}
+      {/* ============================== */}
+      {activeTab === 'billing' && billingInfo && (
+        <BillingTab billingInfo={billingInfo} />
+      )}
     </div>
+  );
+}
+
+// ============================================
+// Billing Tab Component
+// ============================================
+function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProps['billingInfo']> }) {
+  const [cancelling, setCancelling] = useState(false);
+  const router = useRouter();
+  const isPro = billingInfo.plan === 'pro';
+
+  const handleCancel = async () => {
+    if (!confirm('คุณแน่ใจหรือไม่ที่จะยกเลิก Pro?\nคุณจะยังใช้ได้จนถึงวันหมดอายุของรอบบิลปัจจุบัน')) return;
+    
+    setCancelling(true);
+    try {
+      const res = await fetch('/api/stripe/cancel-subscription', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        router.refresh();
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาด');
+      }
+    } catch {
+      alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Current Plan */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="font-semibold text-lg">แพลนปัจจุบัน</h3>
+          <p className="text-sm text-muted-foreground">ข้อมูลการสมัครสมาชิกของคุณ</p>
+        </div>
+
+        <div className={`p-5 rounded-xl border-2 ${isPro ? 'border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50' : 'border-gray-200 bg-gray-50'}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2.5 rounded-xl ${isPro ? 'bg-amber-100' : 'bg-gray-200'}`}>
+                <Crown className={`h-5 w-5 ${isPro ? 'text-amber-600' : 'text-gray-500'}`} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-lg">{isPro ? 'Sellio Pro' : 'Free'}</span>
+                  {isPro && (
+                    <span className="text-[10px] font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-white px-2 py-0.5 rounded-full">
+                      PRO
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {isPro ? '99 บาท/เดือน' : '0 บาท/เดือน'}
+                </p>
+                {isPro && billingInfo.planExpiresAt && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    ต่ออายุถัดไป: {new Date(billingInfo.planExpiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              {isPro ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleCancel}
+                  disabled={cancelling}
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิก Subscription'}
+                </Button>
+              ) : (
+                <Link href="/dashboard/upgrade">
+                  <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+                    อัปเกรดเป็น Pro
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Invoice History */}
+      <div className="border-t pt-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-lg">ประวัติการชำระเงิน</h3>
+            <p className="text-sm text-muted-foreground">รายการ invoice ทั้งหมดจาก Stripe</p>
+          </div>
+        </div>
+
+        {billingInfo.invoices.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <CreditCard className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">ยังไม่มีประวัติการชำระเงิน</p>
+          </div>
+        ) : (
+          <div className="border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium">วันที่</th>
+                  <th className="text-left px-4 py-3 font-medium">จำนวน</th>
+                  <th className="text-left px-4 py-3 font-medium">สถานะ</th>
+                  <th className="text-right px-4 py-3 font-medium"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {billingInfo.invoices.map((invoice) => (
+                  <tr key={invoice.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3">
+                      {new Date(invoice.date).toLocaleDateString('th-TH', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}
+                    </td>
+                    <td className="px-4 py-3 font-medium">
+                      {invoice.amount.toLocaleString('th-TH')} {invoice.currency.toUpperCase() === 'THB' ? '฿' : invoice.currency.toUpperCase()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <InvoiceStatusBadge status={invoice.status} />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {invoice.invoice_pdf && (
+                        <a
+                          href={invoice.invoice_pdf}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          ดาวน์โหลด
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InvoiceStatusBadge({ status }: { status: string }) {
+  const config: Record<string, { label: string; className: string }> = {
+    paid: { label: 'ชำระแล้ว', className: 'bg-green-100 text-green-700' },
+    open: { label: 'รอชำระ', className: 'bg-amber-100 text-amber-700' },
+    void: { label: 'ยกเลิก', className: 'bg-gray-100 text-gray-600' },
+    uncollectible: { label: 'เก็บเงินไม่ได้', className: 'bg-red-100 text-red-700' },
+    draft: { label: 'แบบร่าง', className: 'bg-gray-100 text-gray-600' },
+  };
+
+  const c = config[status] || { label: status, className: 'bg-gray-100 text-gray-600' };
+
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${c.className}`}>
+      {c.label}
+    </span>
   );
 }

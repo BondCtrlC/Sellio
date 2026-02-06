@@ -148,15 +148,23 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
                   </p>
                 )}
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleCancel}
-                disabled={cancelling}
-                className="text-red-600 border-red-200 hover:bg-red-50"
-              >
-                {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิก Subscription'}
-              </Button>
+              <div className="flex flex-col gap-2 items-end">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleCancel}
+                  disabled={cancelling}
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิก Subscription'}
+                </Button>
+                <Link 
+                  href="/dashboard/settings?tab=billing"
+                  className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
+                >
+                  ดูประวัติการชำระเงิน →
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>
