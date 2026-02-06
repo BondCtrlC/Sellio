@@ -249,7 +249,7 @@ async function handleSubscriptionCheckout(session: Stripe.Checkout.Session) {
   }
 
   // Get subscription details for period end
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const subscription = (await stripe.subscriptions.retrieve(subscriptionId)) as Stripe.Subscription;
 
   const supabase = createAdminClient();
 
