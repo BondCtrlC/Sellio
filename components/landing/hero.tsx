@@ -26,7 +26,7 @@ export function Hero() {
 
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mb-6">
-            ขายของออนไลน์
+            ขายของออนไลน์ง่ายๆ
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
               ผ่านลิงก์เดียว
             </span>
@@ -34,8 +34,8 @@ export function Hero() {
 
           {/* Subheadline */}
           <p className="text-lg sm:text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-            แพลตฟอร์มขายสินค้าดิจิทัลที่ออกแบบมาสำหรับ Content Creator ไทย 
-            ไม่ต้องเขียนโค้ด ไม่ต้องมีเว็บไซต์ เริ่มขายได้ทันที
+            หยุดตอบแชทส่งไฟล์ทั้งวัน แพลตฟอร์มขายสินค้าดิจิทัลสำหรับ Content Creator ไทย
+            ไม่ต้องตอบแชท ไม่ต้องมีเว็บไซต์ เริ่มขายได้ทันที
           </p>
 
           {/* CTA Buttons */}
