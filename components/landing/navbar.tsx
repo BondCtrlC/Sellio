@@ -15,7 +15,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <Image src="/logo-black.png" alt="Sellio" width={370} height={120} className="h-[120px] w-auto" />
+            <Image src="/logo-black.png" alt="Sellio" width={100} height={32} className="h-8 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}

@@ -172,7 +172,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Logo - Sellio branding */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
           <Link href="/dashboard" className="flex items-center">
-            <Image src="/logo-black.png" alt="Sellio" width={370} height={120} className="h-[120px] w-auto" />
+            <Image src="/logo-black.png" alt="Sellio" width={100} height={32} className="h-8 w-auto" />
           </Link>
           <Button
             variant="ghost"

@@ -31,7 +31,7 @@ export default function DashboardLayout({
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <Image src="/logo-black.png" alt="Sellio" width={370} height={120} className="h-[120px] w-auto lg:hidden" />
+          <Image src="/logo-black.png" alt="Sellio" width={100} height={32} className="h-8 w-auto lg:hidden" />
           <div className="flex-1" />
           <StoreLink />
           <NotificationBell />

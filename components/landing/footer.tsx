@@ -58,7 +58,7 @@ export function Footer() {
             {/* Brand Column */}
             <div className="col-span-2">
               <Link href="/" className="flex items-center mb-2">
-                <Image src="/logo-black.png" alt="Sellio" width={370} height={120} className="h-[120px] w-auto" />
+                <Image src="/logo-black.png" alt="Sellio" width={120} height={40} className="h-10 w-auto" />
               </Link>
               <p className="text-gray-600 text-sm mb-6 max-w-xs">
                 แพลตฟอร์มขายสินค้าดิจิทัลที่ออกแบบมาสำหรับ Content Creator ไทย
