@@ -37,6 +37,16 @@ export async function POST(request: NextRequest) {
     step = 'stripe_customer';
     let customerId = creator.stripe_customer_id;
     
+    if (customerId) {
+      // Verify customer still exists on Stripe
+      try {
+        await stripe.customers.retrieve(customerId);
+      } catch {
+        // Customer doesn't exist anymore, clear it
+        customerId = null;
+      }
+    }
+    
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
