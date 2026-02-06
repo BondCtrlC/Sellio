@@ -83,7 +83,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       booking_date,
       booking_time,
       product:products(id, title, type, type_config),
-      creator:creators(id, display_name, contact_line, contact_ig)
+      creator:creators(id, email, display_name, contact_line, contact_ig)
     `)
     .eq('id', orderId)
     .single();
