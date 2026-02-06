@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
     case 'invoice.payment_failed': {
       const invoice = event.data.object as Stripe.Invoice;
-      console.log('Invoice payment failed:', invoice.id, 'subscription:', invoice.subscription);
+      console.log('Invoice payment failed:', invoice.id);
       break;
     }
     case 'payment_intent.succeeded': {
