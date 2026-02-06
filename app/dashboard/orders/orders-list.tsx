@@ -29,6 +29,7 @@ interface Order {
   refund_promptpay: string | null;
   booking_date: string | null;
   booking_time: string | null;
+  cancel_reason: string | null;
   created_at: string;
   product: {
     id: string;
