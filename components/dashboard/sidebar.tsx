@@ -228,8 +228,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Footer */}
         <div className="p-4 border-t border-sidebar-border space-y-1">
-          {/* Upgrade Banner - only show for free plan */}
-          {!isPro && (
+          {/* Upgrade / Manage Subscription */}
+          {isPro ? (
+            <Link
+              href="/dashboard/upgrade"
+              onClick={onClose}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-hover hover:text-sidebar-foreground transition-colors mb-2"
+            >
+              <Crown className="h-5 w-5 text-amber-500" />
+              <span className="flex-1">จัดการ Subscription</span>
+            </Link>
+          ) : (
             <Link
               href="/dashboard/upgrade"
               onClick={onClose}
