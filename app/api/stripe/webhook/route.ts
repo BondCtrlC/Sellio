@@ -249,7 +249,9 @@ async function handleSubscriptionCheckout(session: Stripe.Checkout.Session) {
   }
 
   // Get subscription details for period end
-  const subscription = (await stripe.subscriptions.retrieve(subscriptionId)) as Stripe.Subscription;
+  const subscriptionResponse = await stripe.subscriptions.retrieve(subscriptionId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const periodEnd = (subscriptionResponse as any).current_period_end as number;
 
   const supabase = createAdminClient();
 
@@ -259,7 +261,7 @@ async function handleSubscriptionCheckout(session: Stripe.Checkout.Session) {
       plan: 'pro',
       stripe_subscription_id: subscriptionId,
       stripe_customer_id: session.customer as string,
-      plan_expires_at: new Date(subscription.current_period_end * 1000).toISOString(),
+      plan_expires_at: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
     })
     .eq('id', creatorId);
 
@@ -272,7 +274,9 @@ async function handleSubscriptionCheckout(session: Stripe.Checkout.Session) {
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  const creatorId = subscription.metadata?.creator_id;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sub = subscription as any;
+  const creatorId = sub.metadata?.creator_id;
   if (!creatorId) {
     console.error('No creator_id in subscription metadata');
     return;
@@ -281,13 +285,14 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const supabase = createAdminClient();
 
   // Check if subscription is active or past_due
-  const isActive = ['active', 'trialing'].includes(subscription.status);
+  const isActive = ['active', 'trialing'].includes(sub.status);
+  const periodEnd = sub.current_period_end as number;
   
   const { error } = await supabase
     .from('creators')
     .update({
       plan: isActive ? 'pro' : 'free',
-      plan_expires_at: new Date(subscription.current_period_end * 1000).toISOString(),
+      plan_expires_at: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
     })
     .eq('id', creatorId);
 
@@ -300,7 +305,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  const creatorId = subscription.metadata?.creator_id;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sub = subscription as any;
+  const creatorId = sub.metadata?.creator_id;
   if (!creatorId) {
     console.error('No creator_id in deleted subscription metadata');
     return;
