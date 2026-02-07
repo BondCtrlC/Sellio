@@ -151,7 +151,7 @@ export async function getCreatorReviews() {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin'), reviews: [] };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED', reviews: [] };
   }
 
   const { data: creator } = await supabase
@@ -196,7 +196,7 @@ export async function toggleReviewPublished(reviewId: string) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const { data: creator } = await supabase
@@ -247,7 +247,7 @@ export async function toggleReviewFeatured(reviewId: string) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const { data: creator } = await supabase
@@ -296,7 +296,7 @@ export async function addReviewResponse(reviewId: string, response: string) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const { data: creator } = await supabase

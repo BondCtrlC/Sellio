@@ -48,7 +48,7 @@ export async function getCustomers() {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin'), customers: [] };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED', customers: [] };
   }
 
   const { data: creator } = await supabase
@@ -210,7 +210,7 @@ export async function exportCustomers() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const { data: creator } = await supabase

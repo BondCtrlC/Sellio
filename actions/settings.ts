@@ -8,6 +8,7 @@ import { getTranslations } from 'next-intl/server';
 export type SettingsResult = {
   success: boolean;
   error?: string;
+  errorCode?: string;
 };
 
 export async function updateSettings(data: SettingsInput): Promise<SettingsResult> {
@@ -24,7 +25,7 @@ export async function updateSettings(data: SettingsInput): Promise<SettingsResul
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   // Get current creator to check if username changed
@@ -136,7 +137,7 @@ export async function updateAvatar(formData: FormData): Promise<SettingsResult> 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   // Upload file

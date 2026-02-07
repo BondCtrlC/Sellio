@@ -22,7 +22,7 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
             <Link href="#features" className="text-gray-600 hover:text-black transition-colors">
               {t('features')}
             </Link>

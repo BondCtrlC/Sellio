@@ -6,6 +6,7 @@ import { StoreHeader } from './store-header';
 import { ProductGrid } from './product-grid';
 import { StoreWrapper } from './store-wrapper';
 import { ShareButtons } from '@/components/shared/share-buttons';
+import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { getTranslations } from 'next-intl/server';
 
 interface PageProps {
@@ -223,6 +224,11 @@ export default async function StorePage({ params }: PageProps) {
 
   return (
     <StoreWrapper design={creator.store_design}>
+      {/* Language Switcher */}
+      <div className="flex justify-end max-w-2xl mx-auto px-4 pt-3">
+        <LanguageSwitcher />
+      </div>
+
       {/* Store Header */}
       <StoreHeader creator={creator} />
 

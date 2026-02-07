@@ -31,14 +31,14 @@ export interface CalendarBooking {
 export async function getCalendarBookings(
   startDate?: string,
   endDate?: string
-): Promise<{ success: boolean; bookings: CalendarBooking[]; error?: string }> {
+): Promise<{ success: boolean; bookings: CalendarBooking[]; error?: string; errorCode?: string }> {
   const supabase = await createClient();
   const t = await getTranslations('ServerActions');
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, bookings: [], error: t('pleaseLogin') };
+    return { success: false, bookings: [], error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   // Get creator
@@ -113,6 +113,6 @@ export async function getCalendarBookings(
 // ============================================
 export async function getBookingsByDate(
   date: string
-): Promise<{ success: boolean; bookings: CalendarBooking[]; error?: string }> {
+): Promise<{ success: boolean; bookings: CalendarBooking[]; error?: string; errorCode?: string }> {
   return getCalendarBookings(date, date);
 }

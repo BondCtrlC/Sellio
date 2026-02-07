@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button, Input, Label } from '@/components/ui';
 import { X, FolderPlus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { createSection } from '@/actions/store-layout';
 import type { StoreSectionWithItems } from '@/types';
 
@@ -13,6 +14,7 @@ interface AddSectionModalProps {
 }
 
 export function AddSectionModal({ isOpen, onClose, onSectionCreated }: AddSectionModalProps) {
+  const t = useTranslations('MyStore');
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,7 +23,7 @@ export function AddSectionModal({ isOpen, onClose, onSectionCreated }: AddSectio
     e.preventDefault();
     
     if (!title.trim()) {
-      setError('กรุณาใส่ชื่อ Section');
+      setError(t('sectionNameRequired'));
       return;
     }
 
@@ -37,7 +39,7 @@ export function AddSectionModal({ isOpen, onClose, onSectionCreated }: AddSectio
       });
       setTitle('');
     } else {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('errorOccurred'));
     }
 
     setLoading(false);
@@ -62,7 +64,7 @@ export function AddSectionModal({ isOpen, onClose, onSectionCreated }: AddSectio
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <FolderPlus className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">สร้าง Section ใหม่</h2>
+            <h2 className="text-lg font-semibold">{t('createSection')}</h2>
           </div>
           <button
             onClick={handleClose}
@@ -76,10 +78,10 @@ export function AddSectionModal({ isOpen, onClose, onSectionCreated }: AddSectio
         <form onSubmit={handleSubmit}>
           <div className="p-4 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="section-title">ชื่อ Section</Label>
+              <Label htmlFor="section-title">{t('sectionName')}</Label>
               <Input
                 id="section-title"
-                placeholder="เช่น Links, Downloads, Services"
+                placeholder={t('sectionPlaceholder')}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 autoFocus
@@ -90,7 +92,7 @@ export function AddSectionModal({ isOpen, onClose, onSectionCreated }: AddSectio
             </div>
 
             <p className="text-sm text-muted-foreground">
-              Section ช่วยจัดกลุ่มสินค้าให้เป็นระเบียบ เช่น แยกประเภท Digital, Booking หรือ Links ออกจากกัน
+              {t('sectionHelp')}
             </p>
           </div>
 
@@ -102,10 +104,10 @@ export function AddSectionModal({ isOpen, onClose, onSectionCreated }: AddSectio
               onClick={handleClose}
               disabled={loading}
             >
-              ยกเลิก
+              {t('cancel')}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'กำลังสร้าง...' : 'สร้าง Section'}
+              {loading ? t('creating') : t('createSection')}
             </Button>
           </div>
         </form>

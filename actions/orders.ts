@@ -537,7 +537,7 @@ export async function getCreatorOrders(status?: string) {
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin'), orders: [] };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED', orders: [] };
   }
 
   // Get creator
@@ -608,14 +608,14 @@ export async function getCreatorOrders(status?: string) {
 // ============================================
 // CONFIRM PAYMENT
 // ============================================
-export async function confirmPayment(orderId: string): Promise<{ success: boolean; error?: string }> {
+export async function confirmPayment(orderId: string): Promise<{ success: boolean; error?: string; errorCode?: string }> {
   const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   // Get creator with contact info
@@ -793,14 +793,14 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
 export async function rejectPayment(
   orderId: string, 
   reason: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; errorCode?: string }> {
   const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   // Get creator with contact info
@@ -936,14 +936,14 @@ export async function getOrderStats() {
 export async function refundOrder(
   orderId: string, 
   formData: FormData
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; errorCode?: string }> {
   const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   // Get creator with contact info
@@ -1079,7 +1079,7 @@ export async function refundOrder(
 export async function cancelBooking(
   orderId: string,
   reason?: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; errorCode?: string }> {
   const t = await getTranslations('ServerActions');
   // Use admin client to bypass RLS (customer not logged in)
   const supabase = createAdminClient();
@@ -1199,7 +1199,7 @@ export async function cancelBooking(
 export async function rescheduleBooking(
   orderId: string,
   newSlotId: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; errorCode?: string }> {
   const t = await getTranslations('ServerActions');
   // Use admin client to bypass RLS (customer not logged in)
   const supabase = createAdminClient();

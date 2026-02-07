@@ -33,7 +33,7 @@ export default async function ReviewsPage() {
     getCreatorPlan(),
   ]);
   
-  if (!result.success && result.error === 'กรุณาเข้าสู่ระบบ') {
+  if (!result.success && (result as any).errorCode === 'AUTH_REQUIRED') {
     redirect('/login');
   }
 

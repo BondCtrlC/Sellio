@@ -10,6 +10,7 @@ import {
 import { Card, CardContent, Button, Input } from '@/components/ui';
 import { GripVertical, ChevronDown, ChevronRight, Plus, Pencil, Trash2, X, Check, FolderOpen } from 'lucide-react';
 import { DraggableProductItem } from './draggable-product-item';
+import { useTranslations } from 'next-intl';
 import { deleteSection, updateSection } from '@/actions/store-layout';
 import type { StoreSectionWithItems } from '@/types';
 
@@ -30,6 +31,7 @@ export function DraggableSection({
   onSectionDeleted,
   onSectionUpdated,
 }: DraggableSectionProps) {
+  const t = useTranslations('MyStore');
   const [isExpanded, setIsExpanded] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(section.title);
@@ -59,7 +61,7 @@ export function DraggableSection({
   };
 
   const handleDelete = async () => {
-    if (!confirm('ต้องการลบ Section นี้? สินค้าในนี้จะถูกย้ายไปด้านบน')) return;
+    if (!confirm(t('confirmDeleteSection'))) return;
     setLoading(true);
     await deleteSection(section.id);
     onSectionDeleted();
@@ -139,7 +141,7 @@ export function DraggableSection({
           <>
             <span className="font-medium text-sm flex-1">{section.title}</span>
             <span className="text-xs text-muted-foreground">
-              {section.items.length} รายการ
+              {t('itemCount', { count: section.items.length })}
             </span>
             <Button
               size="icon"
@@ -167,7 +169,7 @@ export function DraggableSection({
         <CardContent className="p-3 space-y-2">
           {section.items.length === 0 ? (
             <div className="text-center py-4 text-sm text-muted-foreground">
-              ยังไม่มีสินค้าใน Section นี้
+              {t('noProductsInSection')}
             </div>
           ) : (
             <SortableContext
@@ -192,7 +194,7 @@ export function DraggableSection({
             onClick={onAddProduct}
           >
             <Plus className="h-4 w-4 mr-1" />
-            เพิ่มสินค้า
+            {t('addProduct')}
           </Button>
         </CardContent>
       )}

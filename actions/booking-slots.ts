@@ -7,6 +7,7 @@ import { getTranslations } from 'next-intl/server';
 export type SlotResult = {
   success: boolean;
   error?: string;
+  errorCode?: string;
   slotId?: string;
 };
 
@@ -37,7 +38,7 @@ export async function createBookingSlot(input: CreateSlotInput): Promise<SlotRes
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   // Validate time
@@ -101,7 +102,7 @@ export async function createMultipleSlots(input: {
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -172,7 +173,7 @@ export async function deleteBookingSlot(slotId: string): Promise<SlotResult> {
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -215,7 +216,7 @@ export async function updateBookingSlot(
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -277,7 +278,7 @@ export async function bulkDeleteSlots(slotIds: string[]): Promise<SlotResult & {
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   if (slotIds.length === 0) {
@@ -331,7 +332,7 @@ export async function bulkToggleSlots(slotIds: string[], isAvailable: boolean): 
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   if (slotIds.length === 0) {
@@ -373,7 +374,7 @@ export async function toggleSlotAvailability(slotId: string, isAvailable: boolea
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -418,7 +419,7 @@ export async function createRecurringSlots(input: RecurringSlotInput): Promise<S
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   if (input.selectedDays.length === 0) {

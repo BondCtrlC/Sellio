@@ -9,6 +9,7 @@ import { getTranslations } from 'next-intl/server';
 export type AuthResult = {
   success: boolean;
   error?: string;
+  errorCode?: string;
 };
 
 export async function login(data: LoginInput): Promise<AuthResult> {

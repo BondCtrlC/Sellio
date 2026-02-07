@@ -1,6 +1,7 @@
 'use client';
 
 import { MobileFrame } from './mobile-frame';
+import { useTranslations } from 'next-intl';
 import { FileDown, Calendar, Video, ExternalLink, Package, Instagram, Phone, Mail } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { DEFAULT_STORE_DESIGN } from '@/types';
@@ -46,6 +47,7 @@ function LineIcon({ className }: { className?: string }) {
 }
 
 export function MobilePreview({ creator, sections, unsectionedItems, design }: MobilePreviewProps) {
+  const t = useTranslations('MyStore');
   const currentDesign = design || creator.store_design || DEFAULT_STORE_DESIGN;
   
   // Build contact links
@@ -269,7 +271,7 @@ export function MobilePreview({ creator, sections, unsectionedItems, design }: M
           {unsectionedItems.filter(item => item.is_visible).length === 0 && 
            sections.every(s => s.items.filter(i => i.is_visible).length === 0) && (
             <div className="text-center py-8 text-muted-foreground text-sm">
-              ยังไม่มีสินค้าในร้าน
+              {t('noProductsPreview')}
             </div>
           )}
         </div>
@@ -323,6 +325,7 @@ function ProductList({ items, productLayout, design }: {
 
 // Horizontal Product Card (default)
 function HorizontalProductCard({ item, design }: { item: StoreItemWithProduct; design: StoreDesign }) {
+  const t = useTranslations('MyStore');
   const product = item.product;
   const config = typeConfig[product.type as keyof typeof typeConfig];
   const Icon = config?.icon || Package;
@@ -351,10 +354,10 @@ function HorizontalProductCard({ item, design }: { item: StoreItemWithProduct; d
           <h3 className="text-xs font-semibold truncate">{product.title}</h3>
           <div className="flex items-center justify-between mt-1">
             <span className="text-xs font-bold">
-              {product.price > 0 ? formatPrice(product.price) : 'ฟรี'}
+              {product.price > 0 ? formatPrice(product.price) : t('free')}
             </span>
             <span className="text-[10px] font-medium" style={{ color: design.theme_color }}>
-              ดูเพิ่มเติม →
+              {t('viewMore')}
             </span>
           </div>
         </div>
@@ -365,6 +368,7 @@ function HorizontalProductCard({ item, design }: { item: StoreItemWithProduct; d
 
 // Vertical Product Card (grid layout)
 function VerticalProductCard({ item, design }: { item: StoreItemWithProduct; design: StoreDesign }) {
+  const t = useTranslations('MyStore');
   const product = item.product;
   const config = typeConfig[product.type as keyof typeof typeConfig];
   const Icon = config?.icon || Package;
@@ -392,7 +396,7 @@ function VerticalProductCard({ item, design }: { item: StoreItemWithProduct; des
         <h3 className="text-[10px] font-semibold truncate">{product.title}</h3>
         <div className="flex items-center justify-between mt-1">
           <span className="text-[10px] font-bold">
-            {product.price > 0 ? formatPrice(product.price) : 'ฟรี'}
+            {product.price > 0 ? formatPrice(product.price) : t('free')}
           </span>
         </div>
         {/* Action Button */}
@@ -400,7 +404,7 @@ function VerticalProductCard({ item, design }: { item: StoreItemWithProduct; des
           className="w-full mt-2 py-1 rounded-lg text-[10px] font-medium text-white"
           style={{ backgroundColor: design.theme_color }}
         >
-          ดูเพิ่มเติม
+          {t('viewMoreBtn')}
         </button>
       </div>
     </div>
@@ -409,6 +413,7 @@ function VerticalProductCard({ item, design }: { item: StoreItemWithProduct; des
 
 // Compact Product Card (minimal list)
 function CompactProductCard({ item, design }: { item: StoreItemWithProduct; design: StoreDesign }) {
+  const t = useTranslations('MyStore');
   const product = item.product;
   const config = typeConfig[product.type as keyof typeof typeConfig];
   const Icon = config?.icon || Package;
@@ -429,7 +434,7 @@ function CompactProductCard({ item, design }: { item: StoreItemWithProduct; desi
       <div className="flex-1 min-w-0">
         <h3 className="text-xs font-semibold truncate">{product.title}</h3>
         <span className="text-[10px] text-muted-foreground">
-          {product.price > 0 ? formatPrice(product.price) : 'ฟรี'}
+          {product.price > 0 ? formatPrice(product.price) : t('free')}
         </span>
       </div>
       {/* Arrow */}

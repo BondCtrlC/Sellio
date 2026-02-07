@@ -11,6 +11,7 @@ import type { PlanType } from '@/types';
 export type ProductResult = {
   success: boolean;
   error?: string;
+  errorCode?: string;
   productId?: string;
   fileUrl?: string;
 };
@@ -54,7 +55,7 @@ export async function createProduct(data: ProductInput): Promise<ProductResult> 
 
   const creator = await getCreatorWithPlan();
   if (!creator) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const creatorId = creator.id;
@@ -133,7 +134,7 @@ export async function updateProduct(productId: string, data: ProductInput): Prom
 
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -207,7 +208,7 @@ export async function deleteProduct(productId: string): Promise<ProductResult> {
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -259,7 +260,7 @@ export async function updateProductBookingSettings(
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -306,7 +307,7 @@ export async function toggleProductPublish(productId: string, isPublished: boole
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -356,7 +357,7 @@ export async function uploadProductImage(productId: string, formData: FormData):
     console.log('Creator ID:', creatorId);
     
     if (!creatorId) {
-      return { success: false, error: t('pleaseLogin') };
+      return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
     }
 
     const supabase = await createClient();
@@ -440,7 +441,7 @@ export async function saveDigitalFileInfo(
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -494,7 +495,7 @@ export async function saveDigitalRedirectInfo(
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -544,7 +545,7 @@ export async function deleteDigitalFile(productId: string): Promise<ProductResul
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -594,7 +595,7 @@ export async function updateBookingDuration(productId: string, durationMinutes: 
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -642,7 +643,7 @@ export async function updateLiveSettings(productId: string, settings: LiveSettin
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();

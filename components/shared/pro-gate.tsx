@@ -5,6 +5,7 @@ import { Crown, Lock } from 'lucide-react';
 import { Button } from '@/components/ui';
 import type { PlanType } from '@/types';
 import { hasFeature, type PlanFeature } from '@/lib/plan';
+import { useTranslations } from 'next-intl';
 
 interface ProGateProps {
   plan: PlanType;
@@ -21,6 +22,7 @@ interface ProGateProps {
  * If user is on Free plan, shows upgrade prompt instead.
  */
 export function ProGate({ plan, feature, children, fallback = 'overlay', message }: ProGateProps) {
+  const t = useTranslations('ProGate');
   const allowed = hasFeature(plan, feature);
 
   if (allowed) {
@@ -53,14 +55,14 @@ export function ProGate({ plan, feature, children, fallback = 'overlay', message
         <div className="w-14 h-14 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Lock className="h-7 w-7 text-amber-600" />
         </div>
-        <h3 className="font-semibold text-xl mb-2">ฟีเจอร์สำหรับ Pro</h3>
+        <h3 className="font-semibold text-xl mb-2">{t('proFeature')}</h3>
         <p className="text-sm text-muted-foreground mb-5 max-w-md mx-auto">
-          {message || 'อัปเกรดเป็น Pro เพื่อใช้งานฟีเจอร์นี้'}
+          {message || t('defaultMessage')}
         </p>
         <Link href="/dashboard/upgrade">
           <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600">
             <Crown className="h-4 w-4 mr-1.5" />
-            อัปเกรด 99 บาท/เดือน
+            {t('upgradeBtn')}
           </Button>
         </Link>
       </div>

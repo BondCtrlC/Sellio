@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, Button, Label, Input } from '@/components/ui';
 import { Palette, Type, Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { updateStoreDesign } from '@/actions/store-layout';
 import { DEFAULT_STORE_DESIGN, type StoreDesign } from '@/types';
 
@@ -16,7 +17,7 @@ const TEMPLATES: { id: string; name: string; description: string; design: StoreD
   {
     id: 'classic',
     name: 'Classic',
-    description: 'โปรไฟล์กลาง การ์ดแนวนอน',
+    description: 'templateClassicDesc',
     design: {
       ...DEFAULT_STORE_DESIGN,
     },
@@ -24,7 +25,7 @@ const TEMPLATES: { id: string; name: string; description: string; design: StoreD
   {
     id: 'hero',
     name: 'Hero',
-    description: 'รูปโปรไฟล์เป็นพื้นหลัง',
+    description: 'templateHeroDesc',
     design: {
       profile_layout: 'hero',
       product_layout: 'compact',
@@ -43,7 +44,7 @@ const TEMPLATES: { id: string; name: string; description: string; design: StoreD
   {
     id: 'spotlight',
     name: 'Spotlight',
-    description: 'Minimal โปรไฟล์ การ์ด compact',
+    description: 'templateSpotlightDesc',
     design: {
       profile_layout: 'minimal',
       product_layout: 'compact',
@@ -62,7 +63,7 @@ const TEMPLATES: { id: string; name: string; description: string; design: StoreD
   {
     id: 'nightview',
     name: 'Nightview',
-    description: 'สไตล์โดดเด่น การ์ดแนวตั้ง',
+    description: 'templateNightviewDesc',
     design: {
       profile_layout: 'centered',
       product_layout: 'vertical',
@@ -105,6 +106,7 @@ const FONT_OPTIONS = [
 ];
 
 export function DesignEditor({ initialDesign, onDesignChange }: DesignEditorProps) {
+  const t = useTranslations('MyStore');
   const [design, setDesign] = useState<StoreDesign>(initialDesign || DEFAULT_STORE_DESIGN);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -146,7 +148,7 @@ export function DesignEditor({ initialDesign, onDesignChange }: DesignEditorProp
       {/* Template Presets */}
       <Card>
         <CardContent className="p-4">
-          <h3 className="font-semibold mb-4">เลือก Template</h3>
+          <h3 className="font-semibold mb-4">{t('selectTemplate')}</h3>
           
           <div className="grid grid-cols-2 gap-3">
             {TEMPLATES.map((template) => {
@@ -264,7 +266,7 @@ export function DesignEditor({ initialDesign, onDesignChange }: DesignEditorProp
                   {/* Template Info */}
                   <div className="text-center">
                     <p className="text-sm font-medium">{template.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{template.description}</p>
+                    <p className="text-[10px] text-muted-foreground">{t(template.description as any)}</p>
                   </div>
                   
                   {/* Check mark */}
@@ -285,12 +287,12 @@ export function DesignEditor({ initialDesign, onDesignChange }: DesignEditorProp
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-4">
             <Palette className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">ปรับแต่งสี</h3>
+            <h3 className="font-semibold">{t('customizeColors')}</h3>
           </div>
 
           {/* Theme Color */}
           <div className="mb-4">
-            <Label className="text-sm text-muted-foreground mb-2 block">สีหลัก</Label>
+            <Label className="text-sm text-muted-foreground mb-2 block">{t('primaryColor')}</Label>
             <div className="flex items-center gap-2">
               <div className="grid grid-cols-6 gap-1.5 flex-1">
                 {PRESET_COLORS.map((color) => (
@@ -317,7 +319,7 @@ export function DesignEditor({ initialDesign, onDesignChange }: DesignEditorProp
 
           {/* Background Color */}
           <div>
-            <Label className="text-sm text-muted-foreground mb-2 block">พื้นหลัง</Label>
+            <Label className="text-sm text-muted-foreground mb-2 block">{t('background')}</Label>
             <div className="flex items-center gap-3">
               <Input
                 type="color"
@@ -350,7 +352,7 @@ export function DesignEditor({ initialDesign, onDesignChange }: DesignEditorProp
                     : 'bg-muted hover:bg-muted/80'
                 }`}
               >
-                ไล่สี
+                {t('gradient')}
               </button>
             </div>
           </div>
@@ -362,7 +364,7 @@ export function DesignEditor({ initialDesign, onDesignChange }: DesignEditorProp
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-3">
             <Type className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">ฟอนต์</h3>
+            <h3 className="font-semibold">{t('font')}</h3>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -390,7 +392,7 @@ export function DesignEditor({ initialDesign, onDesignChange }: DesignEditorProp
         className="w-full"
         size="lg"
       >
-        {saving ? 'กำลังบันทึก...' : saved ? '✓ บันทึกแล้ว' : 'บันทึก'}
+        {saving ? t('saving') : saved ? t('saved') : t('save')}
       </Button>
     </div>
   );

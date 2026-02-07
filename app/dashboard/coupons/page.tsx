@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function CouponsPage() {
   const result = await getCoupons();
   
-  if (!result.success && result.error === 'กรุณาเข้าสู่ระบบ') {
+  if (!result.success && (result as any).errorCode === 'AUTH_REQUIRED') {
     redirect('/login');
   }
 

@@ -1,5 +1,8 @@
+'use client';
+
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface SpinnerProps {
   size?: 'sm' | 'default' | 'lg';
@@ -26,11 +29,12 @@ interface FullPageSpinnerProps {
   message?: string;
 }
 
-export function FullPageSpinner({ message = 'กำลังโหลด...' }: FullPageSpinnerProps) {
+export function FullPageSpinner({ message }: FullPageSpinnerProps) {
+  const t = useTranslations('Spinner');
   return (
     <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
       <Spinner size="lg" />
-      <p className="text-sm text-muted-foreground">{message}</p>
+      <p className="text-sm text-muted-foreground">{message || t('loading')}</p>
     </div>
   );
 }

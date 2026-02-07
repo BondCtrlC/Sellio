@@ -27,6 +27,7 @@ import { AddSectionModal } from './add-section-modal';
 import { reorderItems, reorderSections } from '@/actions/store-layout';
 import type { Creator, StoreSectionWithItems, StoreItemWithProduct } from '@/types';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 interface StoreEditorProps {
   creator: Creator;
@@ -35,6 +36,7 @@ interface StoreEditorProps {
 }
 
 export function StoreEditor({ creator, sections: initialSections, unsectionedItems: initialUnsectioned }: StoreEditorProps) {
+  const t = useTranslations('MyStore');
   const [sections, setSections] = useState(initialSections);
   const [unsectionedItems, setUnsectionedItems] = useState(initialUnsectioned);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -247,7 +249,7 @@ export function StoreEditor({ creator, sections: initialSections, unsectionedIte
             <Link href="/dashboard/settings">
               <Button variant="outline" size="sm">
                 <Settings className="h-4 w-4 mr-1" />
-                แก้ไขโปรไฟล์
+                {t('editProfile')}
               </Button>
             </Link>
           </div>
@@ -318,14 +320,14 @@ export function StoreEditor({ creator, sections: initialSections, unsectionedIte
           className="flex-1"
         >
           <Plus className="h-4 w-4 mr-2" />
-          เพิ่มสินค้า
+          {t('addProduct')}
         </Button>
         <Button
           variant="outline"
           onClick={() => setShowAddSectionModal(true)}
         >
           <Plus className="h-4 w-4 mr-2" />
-          เพิ่ม Section
+          {t('addSection')}
         </Button>
       </div>
 

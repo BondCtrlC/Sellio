@@ -8,6 +8,7 @@ import type { StoreSection, StoreItem, StoreItemWithProduct, StoreSectionWithIte
 export type StoreLayoutResult<T = void> = {
   success: boolean;
   error?: string;
+  errorCode?: string;
   data?: T;
 };
 
@@ -36,7 +37,7 @@ export async function getStoreLayout(): Promise<StoreLayoutResult<StoreLayoutDat
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -113,7 +114,7 @@ export async function getAllProducts(): Promise<StoreLayoutResult<Product[]>> {
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -138,7 +139,7 @@ export async function createSection(title: string): Promise<StoreLayoutResult<St
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -180,7 +181,7 @@ export async function updateSection(sectionId: string, title: string): Promise<S
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -206,7 +207,7 @@ export async function deleteSection(sectionId: string): Promise<StoreLayoutResul
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -240,7 +241,7 @@ export async function addProductToStore(productId: string, sectionId?: string | 
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -296,7 +297,7 @@ export async function removeProductFromStore(itemId: string): Promise<StoreLayou
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -322,7 +323,7 @@ export async function toggleItemVisibility(itemId: string, isVisible: boolean): 
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -350,7 +351,7 @@ export async function reorderItems(
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -382,7 +383,7 @@ export async function reorderSections(
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -411,7 +412,7 @@ export async function moveItemToSection(itemId: string, sectionId: string | null
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();
@@ -449,7 +450,7 @@ export async function updateStoreDesign(design: StoreDesign): Promise<StoreLayou
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const supabase = await createClient();

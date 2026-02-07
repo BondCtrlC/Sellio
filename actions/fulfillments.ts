@@ -169,14 +169,14 @@ export async function getFulfillmentByToken(token: string): Promise<{
 export async function updateFulfillment(
   orderId: string,
   content: Partial<FulfillmentContent>
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; errorCode?: string }> {
   const supabase = await createClient();
   const t = await getTranslations('ServerActions');
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   // Verify order belongs to this creator

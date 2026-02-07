@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card } from '@/components/ui';
 import { GripVertical, Eye, EyeOff, Trash2, MoreVertical, Package, FileDown, Calendar, Video, ExternalLink } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 import { removeProductFromStore, toggleItemVisibility } from '@/actions/store-layout';
 import { useState } from 'react';
 import type { StoreItemWithProduct } from '@/types';
@@ -40,6 +41,7 @@ const typeConfig = {
 };
 
 export function DraggableProductItem({ item, onRemove, onToggleVisibility, isDragging }: DraggableProductItemProps) {
+  const t = useTranslations('MyStore');
   const [showMenu, setShowMenu] = useState(false);
   const [loading, setLoading] = useState(false);
   
@@ -114,12 +116,12 @@ export function DraggableProductItem({ item, onRemove, onToggleVisibility, isDra
               {config?.label || 'Product'}
             </span>
             {!item.is_visible && (
-              <span className="text-[10px] text-muted-foreground">(ซ่อนอยู่)</span>
+              <span className="text-[10px] text-muted-foreground">{t('hidden')}</span>
             )}
           </div>
           <p className="font-medium text-sm truncate">{product.title}</p>
           <p className="text-xs text-muted-foreground">
-            {product.price > 0 ? formatPrice(product.price) : 'ฟรี'}
+            {product.price > 0 ? formatPrice(product.price) : t('free')}
           </p>
         </div>
 
@@ -129,7 +131,7 @@ export function DraggableProductItem({ item, onRemove, onToggleVisibility, isDra
             onClick={handleToggleVisibility}
             disabled={loading}
             className="p-2 hover:bg-muted rounded-lg transition-colors"
-            title={item.is_visible ? 'ซ่อนสินค้า' : 'แสดงสินค้า'}
+            title={item.is_visible ? t('hideProduct') : t('showProduct')}
           >
             {item.is_visible ? (
               <Eye className="h-4 w-4 text-muted-foreground" />
@@ -159,7 +161,7 @@ export function DraggableProductItem({ item, onRemove, onToggleVisibility, isDra
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                 >
                   <Trash2 className="h-4 w-4" />
-                  นำออกจากร้าน
+                  {t('removeFromStore')}
                 </button>
               </div>
             </>

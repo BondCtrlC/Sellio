@@ -60,7 +60,7 @@ export async function getCoupons() {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin'), coupons: [] };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED', coupons: [] };
   }
 
   const { data: creator } = await supabase
@@ -103,7 +103,7 @@ export async function createCoupon(input: CouponInput) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const { data: creator } = await supabase
@@ -173,7 +173,7 @@ export async function updateCoupon(couponId: string, input: Partial<CouponInput>
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const { data: creator } = await supabase
@@ -253,7 +253,7 @@ export async function deleteCoupon(couponId: string) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const { data: creator } = await supabase
@@ -290,7 +290,7 @@ export async function toggleCouponActive(couponId: string) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: t('pleaseLogin') };
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
   }
 
   const { data: creator } = await supabase

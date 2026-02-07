@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from './button';
 import { createClient } from '@/lib/supabase/client';
+import { useTranslations } from 'next-intl';
 
 interface RichTextEditorProps {
   value: string;
@@ -27,9 +28,10 @@ interface RichTextEditorProps {
 export function RichTextEditor({ 
   value, 
   onChange, 
-  placeholder = 'เขียนรายละเอียด...',
+  placeholder,
   error 
 }: RichTextEditorProps) {
+  const t = useTranslations('RichTextEditor');
   const editorRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -97,13 +99,13 @@ export function RichTextEditor({
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+      alert(t('imageFileOnly'));
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('ไฟล์รูปภาพต้องมีขนาดไม่เกิน 5MB');
+      alert(t('imageMaxSize'));
       return;
     }
 
@@ -128,7 +130,7 @@ export function RichTextEditor({
       execCommand('insertImage', publicUrl);
     } catch (err) {
       console.error('Upload error:', err);
-      alert('เกิดข้อผิดพลาดในการอัปโหลด');
+      alert(t('uploadError'));
     } finally {
       setUploading(false);
       if (imageInputRef.current) {
@@ -144,13 +146,13 @@ export function RichTextEditor({
 
     // Validate file type
     if (!file.type.startsWith('video/')) {
-      alert('กรุณาเลือกไฟล์วิดีโอเท่านั้น');
+      alert(t('videoFileOnly'));
       return;
     }
 
     // Validate file size (max 50MB - Supabase Storage limit)
     if (file.size > 50 * 1024 * 1024) {
-      alert('ไฟล์วิดีโอต้องมีขนาดไม่เกิน 50MB\n\nสำหรับวิดีโอที่ใหญ่กว่านี้ แนะนำให้อัปโหลดไปยัง YouTube หรือ Loom แล้ววาง URL แทน');
+      alert(t('videoMaxSize'));
       return;
     }
 
@@ -178,14 +180,14 @@ export function RichTextEditor({
     } catch (err: any) {
       console.error('Video upload error:', err);
       // Show more specific error message
-      let errorMessage = 'เกิดข้อผิดพลาดในการอัปโหลด';
+      let errorMessage = t('uploadError');
       if (err?.message) {
         if (err.message.includes('Payload too large') || err.message.includes('413') || err.message.includes('exceeded')) {
-          errorMessage = 'ไฟล์ใหญ่เกินไป - Supabase Storage มี limit ที่ 50MB\n\nแนะนำ: อัปโหลดวิดีโอไปยัง YouTube หรือ Loom แล้ววาง URL แทน';
+          errorMessage = t('fileTooLargeError');
         } else if (err.message.includes('bucket') || err.message.includes('Bucket')) {
-          errorMessage = 'Storage bucket ยังไม่ได้ตั้งค่า กรุณาสร้าง bucket "products"';
+          errorMessage = t('bucketNotConfigured');
         } else {
-          errorMessage = `อัปโหลดไม่สำเร็จ: ${err.message}`;
+          errorMessage = t('uploadFailed', { error: err.message });
         }
       }
       alert(errorMessage);
@@ -302,7 +304,7 @@ export function RichTextEditor({
           size="icon"
           className="h-8 w-8"
           onClick={handleHeading}
-          title="หัวข้อ"
+          title={t('heading')}
         >
           <Heading className="h-4 w-4" />
         </Button>
@@ -312,7 +314,7 @@ export function RichTextEditor({
           size="icon"
           className="h-8 w-8"
           onClick={handleBold}
-          title="ตัวหนา"
+          title={t('bold')}
         >
           <Bold className="h-4 w-4" />
         </Button>
@@ -322,7 +324,7 @@ export function RichTextEditor({
           size="icon"
           className="h-8 w-8"
           onClick={handleStrikethrough}
-          title="ขีดฆ่า"
+          title={t('strikethrough')}
         >
           <Strikethrough className="h-4 w-4" />
         </Button>
@@ -332,7 +334,7 @@ export function RichTextEditor({
           size="icon"
           className="h-8 w-8"
           onClick={handleItalic}
-          title="ตัวเอียง"
+          title={t('italic')}
         >
           <Italic className="h-4 w-4" />
         </Button>
@@ -342,7 +344,7 @@ export function RichTextEditor({
           size="icon"
           className="h-8 w-8"
           onClick={handleList}
-          title="รายการ"
+          title={t('list')}
         >
           <List className="h-4 w-4" />
         </Button>
@@ -356,7 +358,7 @@ export function RichTextEditor({
           size="icon"
           className="h-8 w-8"
           onClick={() => imageInputRef.current?.click()}
-          title="แทรกรูปภาพ"
+          title={t('insertImage')}
           disabled={uploading}
         >
           {uploading ? (
@@ -379,7 +381,7 @@ export function RichTextEditor({
           size="icon"
           className="h-8 w-8"
           onClick={() => setShowVideoModal(true)}
-          title="แทรกวิดีโอ"
+          title={t('insertVideo')}
         >
           <Video className="h-4 w-4" />
         </Button>
@@ -397,7 +399,7 @@ export function RichTextEditor({
           size="icon"
           className="h-8 w-8"
           onClick={() => setShowLinkModal(true)}
-          title="แทรกลิงก์"
+          title={t('insertLink')}
         >
           <Link2 className="h-4 w-4" />
         </Button>
@@ -410,7 +412,7 @@ export function RichTextEditor({
         className="rich-text-editor min-h-[150px] p-3 focus:outline-none max-w-none"
         onInput={handleInput}
         onClick={handleEditorClick}
-        data-placeholder={placeholder}
+        data-placeholder={placeholder ?? t('placeholder')}
         style={{
           minHeight: '150px',
         }}
@@ -421,7 +423,7 @@ export function RichTextEditor({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-background p-4 rounded-lg shadow-lg w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
-              <h4 className="font-medium">แทรกลิงก์</h4>
+              <h4 className="font-medium">{t('insertLink')}</h4>
               <Button
                 type="button"
                 variant="ghost"
@@ -453,10 +455,10 @@ export function RichTextEditor({
                   setLinkUrl('');
                 }}
               >
-                ยกเลิก
+                {t('cancelBtn')}
               </Button>
               <Button type="button" size="sm" onClick={handleInsertLink}>
-                แทรก
+                {t('insertBtn')}
               </Button>
             </div>
           </div>
@@ -468,7 +470,7 @@ export function RichTextEditor({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-background p-5 rounded-lg shadow-lg w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
-              <h4 className="font-medium">แทรกวิดีโอ</h4>
+              <h4 className="font-medium">{t('insertVideo')}</h4>
               <Button
                 type="button"
                 variant="ghost"
@@ -487,7 +489,7 @@ export function RichTextEditor({
             <div className="mb-4">
               <div className="flex items-center gap-2 mb-2">
                 <Link2 className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">วาง URL วิดีโอ</span>
+                <span className="text-sm font-medium">{t('pasteVideoUrl')}</span>
               </div>
               <input
                 type="url"
@@ -511,7 +513,7 @@ export function RichTextEditor({
                 <div className="w-full border-t"></div>
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">หรือ</span>
+                <span className="bg-background px-2 text-muted-foreground">{t('or')}</span>
               </div>
             </div>
 
@@ -526,17 +528,17 @@ export function RichTextEditor({
               {uploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  กำลังอัปโหลด...
+                  {t('uploading')}
                 </>
               ) : (
                 <>
                   <Upload className="h-4 w-4 mr-2" />
-                  อัปโหลดจากเครื่อง
+                  {t('uploadFromDevice')}
                 </>
               )}
             </Button>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              รองรับ MP4, WebM (สูงสุด 50MB)
+              {t('videoFormats')}
             </p>
           </div>
         </div>

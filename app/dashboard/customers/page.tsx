@@ -31,7 +31,7 @@ export default async function CustomersPage() {
     getCreatorPlan(),
   ]);
   
-  if (!result.success && result.error === 'กรุณาเข้าสู่ระบบ') {
+  if (!result.success && (result as any).errorCode === 'AUTH_REQUIRED') {
     redirect('/login');
   }
 
