@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui';
 import { SettingsForm } from './settings-form';
 import { getCreatorInvoices } from '@/actions/plan';
+import { stripe } from '@/lib/stripe';
 import type { PlanType } from '@/types';
 
 async function getCreator() {
@@ -26,10 +27,22 @@ async function getCreator() {
 async function getBillingInfo(creator: any) {
   const invoices = await getCreatorInvoices();
   
+  // Check if subscription is scheduled for cancellation
+  let cancelAtPeriodEnd = false;
+  if (creator.stripe_subscription_id) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(creator.stripe_subscription_id);
+      cancelAtPeriodEnd = subscription.cancel_at_period_end === true;
+    } catch {
+      // Subscription might not exist in Stripe anymore
+    }
+  }
+
   return {
     plan: (creator.plan || 'free') as PlanType,
     hasSubscription: !!creator.stripe_subscription_id,
     planExpiresAt: creator.plan_expires_at as string | null,
+    cancelAtPeriodEnd,
     invoices,
   };
 }

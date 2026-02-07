@@ -36,6 +36,7 @@ interface SettingsFormProps {
     plan: PlanType;
     hasSubscription: boolean;
     planExpiresAt: string | null;
+    cancelAtPeriodEnd: boolean;
     invoices: InvoiceItem[];
   };
 }
@@ -594,7 +595,9 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
 // ============================================
 function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProps['billingInfo']> }) {
   const [cancelling, setCancelling] = useState(false);
-  const [cancelStatus, setCancelStatus] = useState<'none' | 'scheduled' | 'cancelled'>('none');
+  const [cancelStatus, setCancelStatus] = useState<'none' | 'scheduled' | 'cancelled'>(
+    billingInfo.cancelAtPeriodEnd ? 'scheduled' : 'none'
+  );
   const router = useRouter();
   const isPro = billingInfo.plan === 'pro';
 
