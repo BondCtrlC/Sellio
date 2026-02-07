@@ -6,7 +6,7 @@
 **URL:** sellio.me  
 **Pricing:** Free + Pro (99 THB/เดือน)  
 **Deployment:** Vercel  
-**Status:** Pre-launch MVP (กำลังเตรียมเปิดให้ใช้จริง)
+**Status:** MVP Ready (MUST + SHOULD เสร็จหมดแล้ว, เหลือ M2 Resend Domain + NICE TO HAVE)
 
 ---
 
@@ -121,8 +121,9 @@ new/
 ### 9. Settings Page (Tabbed UI)
 - **Tab โปรไฟล์** - รูปโปรไฟล์, ชื่อ, Bio, ช่องทางติดต่อ (โทร, Line, IG, Email)
 - **Tab การรับเงิน** - PromptPay (QR Code) + บัญชีธนาคาร (โอนธนาคาร)
-- **Tab ร้านค้า** - เปิด/ปิดร้าน + ลิงก์ร้านค้าพร้อมปุ่มคัดลอก
+- **Tab ร้านค้า** - เปิด/ปิดร้าน + ลิงก์ร้านค้าพร้อมปุ่มคัดลอก + เปลี่ยน URL slug
 - **Tab SEO** - meta title, description, keywords + Google Preview
+- **Tab การเรียกเก็บเงิน** - แพลนปัจจุบัน, ยกเลิก subscription (ทันที/หมดรอบบิล), ประวัติ invoice
 
 ### 10. Payment System
 - **PromptPay QR Code** - สร้าง QR อัตโนมัติจากเบอร์โทร
@@ -153,7 +154,9 @@ new/
 ### 14. Email Notifications
 - Order confirmation email
 - Payment confirmation email
+- Booking reminder email (24 ชม. ก่อนนัด)
 - CTA Button - "คลิกเพื่อรับสินค้า/บริการ" link ไปหน้า success
+- Booking: ปุ่ม "ดูรายละเอียดนัดหมาย" + "เปลี่ยนเวลานัด/ยกเลิกนัด"
 
 ### 15. Store Link in Header
 - Always visible `/u/username` link
@@ -161,14 +164,14 @@ new/
 - Open in new tab button
 
 ### 16. Landing Page
-- **Navbar** - Responsive navigation with mobile menu
-- **Hero Section** - Gradient background, animated blobs, floating cards
+- **Navbar** - Responsive navigation with mobile menu + Sellio logo
+- **Hero Section** - Phone mockup preview ร้านจริง, floating stat cards (asymmetric), headline "ขายของออนไลน์ง่ายๆ ผ่านลิงก์เดียว"
 - **Features** - 12 feature cards with icons
 - **How It Works** - 4-step guide (video section removed)
 - **Pricing** - 2 tiers: Free + Pro (3.3 บาท/วัน = 99 บาท/เดือน)
 - **Testimonials** - 6 reviews with stats
 - **CTA Section** - Final call-to-action
-- **Footer** - Links, newsletter, social media
+- **Footer** - Links, newsletter, social media + Sellio logo
 
 ### 17. Quick Reply / Auto-Reply Helper
 - 8 Template messages - ยืนยัน, เตือน, ขอบคุณ, แจ้งปัญหา
@@ -182,6 +185,30 @@ new/
 - Webhook handler for checkout.session.completed
 - Auto fulfillment after payment
 - Card payment removed from checkout (PromptPay only until Stripe Connect ready)
+
+### 19. Branding & Logo
+- Custom Sellio logo (S with arrow) - black + white versions
+- Logo ใช้ทุกที่: Navbar, Sidebar, Footer, Mobile header
+- ไฟล์: `public/logo-black.png`, `public/logo-white.png`
+
+### 20. Subscription Management (Billing)
+- **Billing Tab** ในหน้าตั้งค่า - แสดงแพลนปัจจุบัน + invoice history
+- **Cancel Options** - ยกเลิกเมื่อหมดรอบบิล (ปุ่มใหญ่) / ยกเลิกทันที (ปุ่มเล็ก)
+- **Persistent Status** - เช็ค cancel_at_period_end จาก Stripe ทุกครั้งที่โหลดหน้า
+- **Robust Cancel API** - รองรับกรณี subscription หายจาก Stripe, ไม่มี subscription ID ใน DB
+- **Upgrade Page** - แสดงสถานะการยกเลิก + ลิงก์ไปหน้า billing
+
+### 21. SEO & Metadata
+- Title template: `"%s | Sellio"` ทุกหน้า
+- Root layout: OG tags, Twitter card, keywords, metadataBase
+- ทุกหน้ามี title สำหรับ browser tab (23 หน้า)
+- Store pages: dynamic generateMetadata จากข้อมูลร้าน/สินค้า
+
+### 22. Dashboard Sidebar
+- Sellio logo (image) แทนข้อความ
+- User profile section ด้านล่าง (avatar, display name, @username)
+- PRO badge หลังชื่อสำหรับ Pro users
+- Upgrade CTA สำหรับ Free users / จัดการ Subscription สำหรับ Pro users
 
 ---
 
@@ -203,11 +230,11 @@ new/
 
 | # | Task | Status | Description |
 |---|------|--------|-------------|
-| S1 | Landing Page Review | ✅ Done | ตรวจข้อความ, pricing, CTA |
-| S2 | Mobile Responsive Check | ⬜ Pending | ตรวจทุกหน้าบน mobile |
-| S3 | SEO Basics | ⬜ Pending | title, meta, OG image ทุกหน้า |
+| S1 | Landing Page Review | ✅ Done | ตรวจข้อความ, pricing, CTA, Hero section redesign |
+| S2 | Mobile Responsive Check | ✅ Done | แก้ table scroll, pricing text size, floating card min-width |
+| S3 | SEO Basics | ✅ Done | title template, meta, OG tags, Twitter card ทุกหน้า (23 หน้า) |
 | S4 | Upgrade CTA at Limit | ✅ Done | แสดง upgrade prompt เมื่อ Free ชน limit (ใน products page + sidebar) |
-| S5 | Supabase Free Tier Monitoring | ⬜ Pending | ตั้ง alert เมื่อใกล้ถึง limit |
+| S5 | Supabase Free Tier Monitoring | ✅ Done | ต้องตั้ง alert ใน Supabase Dashboard (ไม่ใช่โค้ด) |
 
 ### NICE TO HAVE (ทำทีหลังได้)
 
@@ -231,7 +258,22 @@ new/
 
 ## Recent Changes Log
 
-### Session 4 (Feb 6, 2026) - Current Session
+### Session 5 (Feb 7, 2026) - Current Session
+
+| # | Change | Files Modified |
+|---|--------|----------------|
+| 1 | **Sellio Logo** - เปลี่ยนจากข้อความ/icon เป็นรูปโลโก้ Sellio (S with arrow) ทุกที่ | `navbar.tsx`, `sidebar.tsx`, `footer.tsx`, `layout.tsx`, `public/logo-*.png` |
+| 2 | **Billing Tab** - เพิ่ม tab การเรียกเก็บเงินในตั้งค่า (แพลนปัจจุบัน, invoice history) | `settings-form.tsx`, `settings/page.tsx`, `actions/plan.ts` |
+| 3 | **Cancel Subscription UX** - สลับปุ่ม (หมดรอบบิล=ใหญ่, ทันที=เล็ก), persistent status จาก Stripe | `settings-form.tsx`, `upgrade-client.tsx`, `upgrade/page.tsx`, `cancel-subscription/route.ts` |
+| 4 | **Robust Cancel API** - รองรับ missing subscription ID, stale Stripe data, no-sub-but-pro cases | `api/stripe/cancel-subscription/route.ts` |
+| 5 | **Hero Section Redesign** - Phone mockup ร้านจริง, floating stat cards, headline ใหม่ | `components/landing/hero.tsx`, `globals.css` |
+| 6 | **Sidebar Profile** - แสดง avatar + display name + PRO badge ด้านล่าง sidebar | `components/dashboard/sidebar.tsx` |
+| 7 | **Booking Email** - เพิ่มปุ่ม "เปลี่ยนเวลานัด/ยกเลิกนัด" ในอีเมลยืนยัน + reminder | `lib/email.ts` |
+| 8 | **S3: SEO Metadata** - เพิ่ม title, meta, OG tags, Twitter card ทุกหน้า (23 หน้า) | `layout.tsx`, `page.tsx`, ทุก dashboard page |
+| 9 | **S2: Mobile Responsive** - แก้ table scroll, pricing text, floating card sizing | `settings-form.tsx`, `pricing.tsx`, `hero.tsx` |
+| 10 | **CTA Button Fix** - แก้ปุ่ม "ดูวิธีใช้งาน" มองไม่เห็นตัวอักษรบนพื้นมืด | `components/landing/cta.tsx` |
+
+### Session 4 (Feb 6, 2026) - Previous Session
 
 | # | Change | Files Modified |
 |---|--------|----------------|
@@ -370,8 +412,11 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 | Landing Page | `app/page.tsx`, `components/landing/*.tsx` |
 | Quick Reply | `components/dashboard/quick-reply.tsx` |
 | Stripe | `lib/stripe.ts`, `app/api/stripe/*` |
-| Settings | `app/dashboard/settings/settings-form.tsx` (tabbed) |
+| Settings | `app/dashboard/settings/settings-form.tsx` (tabbed: profile/payments/store/SEO/billing) |
+| Billing/Subscription | `settings-form.tsx` (BillingTab), `api/stripe/cancel-subscription/route.ts` |
+| Upgrade Page | `app/dashboard/upgrade/page.tsx`, `upgrade-client.tsx` |
 | Payment Page | `app/checkout/[orderId]/payment-page.tsx` |
+| Logo | `public/logo-black.png`, `public/logo-white.png` |
 
 ---
 
@@ -387,7 +432,7 @@ npm run dev
 ---
 
 ## Last Updated
-February 6, 2026
+February 7, 2026
 
 ---
 
