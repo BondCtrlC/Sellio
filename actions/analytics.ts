@@ -337,25 +337,29 @@ export async function getAnalyticsData(
       ...stats,
     }));
 
-    // Customer insights
-    const customerOrderMap = new Map<string, number>();
-    orders.forEach(order => {
-      if ('buyer_email' in order) {
-        const email = (order as { buyer_email?: string }).buyer_email?.toLowerCase() || 'unknown';
-        customerOrderMap.set(email, (customerOrderMap.get(email) || 0) + 1);
-      }
-    });
-    
-    // If buyer_email is not in the select, let's fetch it
-    const { data: ordersWithEmail } = await supabase
+    // Customer insights (with date filter applied)
+    let customerQuery = supabase
       .from('orders')
       .select('buyer_email')
       .eq('creator_id', creator.id);
+
+    // Apply same date filter as main query
+    if (customStart && customEnd) {
+      customerQuery = customerQuery
+        .gte('created_at', new Date(customStart).toISOString())
+        .lte('created_at', new Date(customEnd + 'T23:59:59').toISOString());
+    } else if (days !== 'all') {
+      customerQuery = customerQuery.gte('created_at', new Date(Date.now() - (typeof days === 'number' ? days : 30) * 24 * 60 * 60 * 1000).toISOString());
+    }
+
+    const { data: ordersWithEmail } = await customerQuery;
     
     const emailMap = new Map<string, number>();
     ordersWithEmail?.forEach(o => {
-      const email = o.buyer_email.toLowerCase();
-      emailMap.set(email, (emailMap.get(email) || 0) + 1);
+      const email = o.buyer_email?.toLowerCase();
+      if (email) {
+        emailMap.set(email, (emailMap.get(email) || 0) + 1);
+      }
     });
     
     const totalCustomers = emailMap.size;
@@ -369,16 +373,33 @@ export async function getAnalyticsData(
     };
 
     // Revenue growth (current period vs previous period)
-    const numDays = typeof days === 'number' ? days : 30;
-    const currentPeriodStart = new Date(Date.now() - numDays * 24 * 60 * 60 * 1000);
-    const previousPeriodStart = new Date(Date.now() - numDays * 2 * 24 * 60 * 60 * 1000);
+    // Calculate period boundaries based on actual filter
+    let currentPeriodStart: Date;
+    let currentPeriodEnd: Date;
+
+    if (customStart && customEnd) {
+      currentPeriodStart = new Date(customStart);
+      currentPeriodEnd = new Date(customEnd + 'T23:59:59');
+    } else if (days === 'all') {
+      // For 'all', use last 30 days as "current" and 30 days before that as "previous"
+      currentPeriodStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      currentPeriodEnd = new Date();
+    } else {
+      const numDays = typeof days === 'number' ? days : 30;
+      currentPeriodStart = new Date(Date.now() - numDays * 24 * 60 * 60 * 1000);
+      currentPeriodEnd = new Date();
+    }
+
+    const periodDuration = currentPeriodEnd.getTime() - currentPeriodStart.getTime();
+    const previousPeriodStart = new Date(currentPeriodStart.getTime() - periodDuration);
+    const previousPeriodEnd = currentPeriodStart;
 
     const { data: prevOrders } = await supabase
       .from('orders')
       .select('status, total')
       .eq('creator_id', creator.id)
       .gte('created_at', previousPeriodStart.toISOString())
-      .lt('created_at', currentPeriodStart.toISOString());
+      .lt('created_at', previousPeriodEnd.toISOString());
 
     const prevConfirmed = prevOrders?.filter(o => o.status === 'confirmed') || [];
     const previousPeriodRevenue = prevConfirmed.reduce((sum, o) => sum + Number(o.total), 0);

@@ -303,7 +303,7 @@ export default async function DashboardPage() {
       {/* Onboarding Checklist */}
       <OnboardingChecklist
         hasProfile={!!(creator.display_name && creator.avatar_url)}
-        hasPayment={!!(creator.promptpay_id || creator.bank_name)}
+        hasPayment={!!(creator.promptpay_id || (creator.bank_name && creator.bank_account_number && creator.bank_account_name))}
         hasProduct={stats.totalProducts > 0}
         isPublished={creator.is_published}
       />
