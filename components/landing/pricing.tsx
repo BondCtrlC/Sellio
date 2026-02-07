@@ -45,7 +45,7 @@ const plans = [
     ],
     cta: 'อัปเกรดเป็น Pro',
     ctaVariant: 'default' as const,
-    ctaNote: 'แค่วันละ 3 บาท ยกเลิกได้ทุกเมื่อ',
+    ctaNote: 'แค่วันละ 3.3 บาท ยกเลิกได้ทุกเมื่อ',
   },
 ];
 
@@ -176,14 +176,10 @@ export function Pricing() {
             ไม่มีค่าใช้จ่ายซ่อนเร้น
           </div>
           <p className="text-gray-500">
-            มีคำถาม? ดู{' '}
-            <Link href="#faq" className="text-black font-medium hover:underline">
-              คำถามที่พบบ่อย
-            </Link>
-            {' '}หรือ{' '}
-            <Link href="#contact" className="text-black font-medium hover:underline">
-              ติดต่อเรา
-            </Link>
+            มีคำถาม? ส่งอีเมลมาที่{' '}
+            <a href="mailto:support@sellio.me" className="text-black font-medium hover:underline">
+              support@sellio.me
+            </a>
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Facebook, Instagram, Twitter, Youtube, Mail } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Mail } from 'lucide-react';
 
 const footerLinks = {
   product: {
@@ -9,25 +9,13 @@ const footerLinks = {
       { label: 'ฟีเจอร์', href: '#features' },
       { label: 'ราคา', href: '#pricing' },
       { label: 'วิธีใช้งาน', href: '#how-it-works' },
-      { label: 'Changelog', href: '#' },
     ]
   },
-  resources: {
-    title: 'แหล่งข้อมูล',
+  support: {
+    title: 'ช่วยเหลือ',
     links: [
-      { label: 'Help Center', href: '#' },
-      { label: 'บล็อก', href: '#' },
-      { label: 'วิดีโอสอนใช้งาน', href: '#' },
-      { label: 'API Docs', href: '#' },
-    ]
-  },
-  company: {
-    title: 'บริษัท',
-    links: [
-      { label: 'เกี่ยวกับเรา', href: '#' },
-      { label: 'ติดต่อเรา', href: '#' },
-      { label: 'ร่วมงานกับเรา', href: '#' },
-      { label: 'Press Kit', href: '#' },
+      { label: 'ติดต่อเรา', href: 'mailto:support@sellio.me' },
+      { label: 'เริ่มต้นใช้งาน', href: '/signup' },
     ]
   },
   legal: {
@@ -42,10 +30,9 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { icon: Facebook, href: '#', label: 'Facebook' },
-  { icon: Instagram, href: '#', label: 'Instagram' },
-  { icon: Twitter, href: '#', label: 'X (Twitter)' },
-  { icon: Youtube, href: '#', label: 'YouTube' },
+  { icon: Facebook, href: 'https://facebook.com/sellio.me', label: 'Facebook' },
+  { icon: Instagram, href: 'https://instagram.com/sellio.me', label: 'Instagram' },
+  { icon: Twitter, href: 'https://x.com/sellio_me', label: 'X (Twitter)' },
 ];
 
 export function Footer() {
@@ -54,7 +41,7 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer */}
         <div className="py-12 lg:py-16">
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
             {/* Brand Column */}
             <div className="col-span-2">
               <Link href="/" className="flex items-center mb-2">

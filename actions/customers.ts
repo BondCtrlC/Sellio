@@ -1,6 +1,8 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { hasFeature } from '@/lib/plan';
+import type { PlanType } from '@/types';
 
 // ============================================
 // Types
@@ -199,6 +201,24 @@ export async function getCustomerDetails(email: string): Promise<CustomerDetails
 // EXPORT CUSTOMERS (CSV format)
 // ============================================
 export async function exportCustomers() {
+  // Check plan permission server-side
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+  }
+
+  const { data: creator } = await supabase
+    .from('creators')
+    .select('plan')
+    .eq('user_id', user.id)
+    .single();
+
+  const plan = (creator?.plan || 'free') as PlanType;
+  if (!hasFeature(plan, 'export_csv')) {
+    return { success: false, error: 'ฟีเจอร์ Export สำหรับแพลน Pro เท่านั้น' };
+  }
+
   const result = await getCustomers();
   
   if (!result.success) {
