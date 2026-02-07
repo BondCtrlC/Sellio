@@ -1,5 +1,8 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getAnalyticsData } from '@/actions/analytics';
+
+export const metadata: Metadata = { title: "สถิติ" };
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { 
   DollarSign, 

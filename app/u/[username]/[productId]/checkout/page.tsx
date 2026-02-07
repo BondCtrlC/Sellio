@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { notFound, redirect } from 'next/navigation';
 import { CheckoutForm } from './checkout-form';
+
+export const metadata: Metadata = { title: "สั่งซื้อ" };
 
 interface PageProps {
   params: Promise<{ username: string; productId: string }>;

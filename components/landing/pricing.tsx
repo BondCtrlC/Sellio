@@ -100,7 +100,7 @@ export function Pricing() {
               <div className="mb-8">
                 <div className="flex items-baseline gap-2">
                   <span className="text-sm">฿</span>
-                  <span className={`text-5xl font-bold ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
+                  <span className={`text-4xl sm:text-5xl font-bold ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
                     {plan.price}
                   </span>
                   <span className={`text-sm ${plan.highlight ? 'text-gray-300' : 'text-gray-500'}`}>

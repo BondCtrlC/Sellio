@@ -1,8 +1,11 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
 import { UpgradeClient } from './upgrade-client';
 import type { PlanType } from '@/types';
+
+export const metadata: Metadata = { title: "อัปเกรด Pro" };
 
 async function getCreatorSubscriptionInfo() {
   const supabase = await createClient();

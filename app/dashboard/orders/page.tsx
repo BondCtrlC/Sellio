@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getCreatorOrders, getOrderStats } from '@/actions/orders';
 import { OrdersList } from './orders-list';
+
+export const metadata: Metadata = { title: "คำสั่งซื้อ" };
 
 export default async function OrdersPage({
   searchParams,

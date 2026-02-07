@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCreatorReviews } from '@/actions/reviews';
 import { ReviewsList } from './reviews-list';
+
+export const metadata: Metadata = { title: "รีวิว" };
 import { ProGate } from '@/components/shared/pro-gate';
 import type { PlanType } from '@/types';
 

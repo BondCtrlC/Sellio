@@ -1,6 +1,12 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui';
 import { SignupForm } from './signup-form';
+
+export const metadata: Metadata = {
+  title: "สมัครสมาชิก",
+  description: "สมัคร Sellio ฟรี เริ่มขายสินค้าดิจิทัลผ่านลิงก์เดียวได้ทันที",
+};
 
 export default function SignupPage() {
   return (

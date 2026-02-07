@@ -1,5 +1,8 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
+
+export const metadata: Metadata = { title: "ตั้งค่า" };
 import { redirect } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui';
 import { SettingsForm } from './settings-form';

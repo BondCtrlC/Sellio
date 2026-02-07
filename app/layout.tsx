@@ -43,8 +43,33 @@ const pridi = Pridi({
 });
 
 export const metadata: Metadata = {
-  title: "Sellio",
-  description: "ขายของออนไลน์ผ่านลิงก์เดียว สำหรับ Content Creator ไทย",
+  title: {
+    default: "Sellio - ขายของออนไลน์ง่ายๆ ผ่านลิงก์เดียว",
+    template: "%s | Sellio",
+  },
+  description: "แพลตฟอร์มขายสินค้าดิจิทัลสำหรับ Content Creator ไทย ไม่ต้องตอบแชท ไม่ต้องมีเว็บไซต์ เริ่มขายได้ทันที",
+  keywords: ["ขายของออนไลน์", "content creator", "สินค้าดิจิทัล", "ขายผ่านลิงก์", "Sellio", "stan store ไทย", "creator store"],
+  authors: [{ name: "Sellio" }],
+  creator: "Sellio",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://sellio.me"),
+  openGraph: {
+    type: "website",
+    locale: "th_TH",
+    siteName: "Sellio",
+    title: "Sellio - ขายของออนไลน์ง่ายๆ ผ่านลิงก์เดียว",
+    description: "แพลตฟอร์มขายสินค้าดิจิทัลสำหรับ Content Creator ไทย ไม่ต้องตอบแชท ไม่ต้องมีเว็บไซต์ เริ่มขายได้ทันที",
+    images: [{ url: "/logo-black.png", width: 1000, height: 500, alt: "Sellio" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Sellio - ขายของออนไลน์ง่ายๆ ผ่านลิงก์เดียว",
+    description: "แพลตฟอร์มขายสินค้าดิจิทัลสำหรับ Content Creator ไทย",
+    images: ["/logo-black.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

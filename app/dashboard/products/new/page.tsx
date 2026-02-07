@@ -1,5 +1,8 @@
+import type { Metadata } from 'next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import { ProductForm } from '../product-form';
+
+export const metadata: Metadata = { title: "เพิ่มสินค้า" };
 
 export default function NewProductPage() {
   return (

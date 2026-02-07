@@ -1,6 +1,12 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui';
 import { LoginForm } from './login-form';
+
+export const metadata: Metadata = {
+  title: "เข้าสู่ระบบ",
+  description: "เข้าสู่ระบบ Sellio เพื่อจัดการร้านค้าออนไลน์ของคุณ",
+};
 
 export default function LoginPage() {
   return (

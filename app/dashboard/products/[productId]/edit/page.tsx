@@ -1,8 +1,11 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@/components/ui';
 import { ProductForm } from '../../product-form';
+
+export const metadata: Metadata = { title: "แก้ไขสินค้า" };
 import { ProductImageUpload } from './product-image-upload';
 import { DigitalFileUpload } from './digital-file-upload';
 import { BookingSlotsManager } from './booking-slots-manager';

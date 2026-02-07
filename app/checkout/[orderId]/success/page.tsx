@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getOrderById } from '@/actions/orders';
 import { getFulfillmentByOrderId } from '@/actions/fulfillments';
+
+export const metadata: Metadata = { title: "สั่งซื้อสำเร็จ" };
 import { CheckCircle, Package, Calendar, Mail, MessageCircle, Download, Video, MapPin, ExternalLink, Clock, XCircle } from 'lucide-react';
 import { Card, CardContent, Button } from '@/components/ui';
 import { formatPrice, formatDate } from '@/lib/utils';

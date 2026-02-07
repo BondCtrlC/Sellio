@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCustomers } from '@/actions/customers';
 import { CustomersList } from './customers-list';
+
+export const metadata: Metadata = { title: "ลูกค้า" };
 import type { PlanType } from '@/types';
 
 async function getCreatorPlan() {

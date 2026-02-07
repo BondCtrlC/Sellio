@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { getOrderById } from '@/actions/orders';
 import { PaymentPage } from './payment-page';
 import Link from 'next/link';
+
+export const metadata: Metadata = { title: "ชำระเงิน" };
 
 interface PageProps {
   params: Promise<{ orderId: string }>;

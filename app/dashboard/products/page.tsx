@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { ProductsList } from './products-list';
 import type { PlanType } from '@/types';
+
+export const metadata: Metadata = { title: "สินค้า" };
 
 async function getProducts() {
   const supabase = await createClient();

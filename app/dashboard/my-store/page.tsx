@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { getStoreLayout } from '@/actions/store-layout';
 import { redirect } from 'next/navigation';
 import { MyStoreClient } from './my-store-client';
+
+export const metadata: Metadata = { title: "ร้านค้าของฉัน" };
 
 export default async function MyStorePage() {
   const result = await getStoreLayout();
