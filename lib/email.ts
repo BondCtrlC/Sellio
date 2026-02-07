@@ -182,9 +182,17 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
               
               <!-- View Order Button -->
               <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/checkout/${data.orderId}/success" 
-                 style="display: block; background: linear-gradient(135deg, ${isBooking ? '#8b5cf6, #7c3aed' : '#22c55e, #16a34a'}); color: white; text-decoration: none; padding: 15px 30px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 20px;">
+                 style="display: block; background: linear-gradient(135deg, ${isBooking ? '#8b5cf6, #7c3aed' : '#22c55e, #16a34a'}); color: white; text-decoration: none; padding: 15px 30px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: ${isBooking ? '10px' : '20px'};">
                 ${isBooking ? '📅 ดูรายละเอียดนัดหมาย' : '🎁 คลิกเพื่อรับสินค้า/บริการ'}
               </a>
+              
+              ${isBooking ? `
+              <!-- Reschedule/Cancel Button -->
+              <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/checkout/${data.orderId}/success" 
+                 style="display: block; background: #f3f4f6; color: #374151; text-decoration: none; padding: 12px 30px; border-radius: 10px; text-align: center; font-weight: 600; margin-bottom: 20px; border: 1px solid #e5e7eb;">
+                🔄 เปลี่ยนเวลานัด / ยกเลิกนัด
+              </a>
+              ` : ''}
               
               <!-- Creator Contact -->
               ${data.creatorContact && (data.creatorContact.line || data.creatorContact.ig) ? `
@@ -602,8 +610,14 @@ export async function sendBookingReminderEmail(data: {
               
               <!-- View Order Button -->
               <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/checkout/${data.orderId}/success" 
-                 style="display: block; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; text-decoration: none; padding: 15px 30px; border-radius: 10px; text-align: center; font-weight: bold;">
+                 style="display: block; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; text-decoration: none; padding: 15px 30px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 10px;">
                 📋 ดูรายละเอียดนัดหมาย
+              </a>
+              
+              <!-- Reschedule/Cancel Button -->
+              <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/checkout/${data.orderId}/success" 
+                 style="display: block; background: #f3f4f6; color: #374151; text-decoration: none; padding: 12px 30px; border-radius: 10px; text-align: center; font-weight: 600; border: 1px solid #e5e7eb;">
+                🔄 เปลี่ยนเวลานัด / ยกเลิกนัด
               </a>
             </div>
             
