@@ -49,7 +49,7 @@ const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
   { id: 'payments', label: 'การรับเงิน', icon: Wallet },
   { id: 'store', label: 'ร้านค้า', icon: Store },
   { id: 'seo', label: 'SEO', icon: Search },
-  { id: 'notifications', label: 'แจ้งเตือน', icon: Bell },
+  { id: 'notifications', label: 'แจ้งเตือนผ่าน LINE', icon: Bell },
   { id: 'billing', label: 'การเรียกเก็บเงิน', icon: CreditCard },
 ];
 
