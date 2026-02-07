@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -62,6 +62,14 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
   );
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Sync activeTab when URL search params change (e.g. from onboarding overlay)
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab') as SettingsTab;
+    if (tabFromUrl && tabs.some(t => t.id === tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
 
   const {
     register,

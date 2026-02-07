@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { 
   Check, 
   User, 
@@ -14,8 +14,6 @@ import {
   Sparkles,
   Phone,
   MessageCircle,
-  SkipForward,
-  X
 } from 'lucide-react';
 import { getOnboardingStatus, type OnboardingStatus } from '@/actions/onboarding';
 
@@ -32,6 +30,8 @@ interface OnboardingStep {
 }
 
 export function OnboardingOverlay() {
+  const router = useRouter();
+  const pathname = usePathname();
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
@@ -40,14 +40,18 @@ export function OnboardingOverlay() {
 
   // Load status on mount and periodically
   useEffect(() => {
-    // Check if LINE skip was saved
     const skipped = localStorage.getItem('sellio_line_notify_skipped');
     if (skipped === 'true') setLineSkipped(true);
 
     loadStatus();
-    const interval = setInterval(loadStatus, 15000); // Refresh every 15s
+    const interval = setInterval(loadStatus, 15000);
     return () => clearInterval(interval);
   }, []);
+
+  // Reload status when navigating between pages
+  useEffect(() => {
+    loadStatus();
+  }, [pathname]);
 
   const loadStatus = async () => {
     try {
@@ -65,6 +69,11 @@ export function OnboardingOverlay() {
     localStorage.setItem('sellio_line_notify_skipped', 'true');
   };
 
+  // Navigate to a step - use router.push for reliable navigation
+  const navigateToStep = (href: string) => {
+    router.push(href);
+  };
+
   if (loading || !status || dismissed) return null;
 
   const steps: OnboardingStep[] = [
@@ -74,7 +83,7 @@ export function OnboardingOverlay() {
       description: 'เพิ่มรูปภาพและชื่อที่แสดง',
       icon: User,
       completed: status.hasProfile,
-      href: '/dashboard/settings',
+      href: '/dashboard/settings?tab=profile',
       color: 'bg-blue-100 text-blue-700',
       required: true,
     },
@@ -84,7 +93,7 @@ export function OnboardingOverlay() {
       description: 'เบอร์โทร, Line, IG หรืออีเมล',
       icon: Phone,
       completed: status.hasContact,
-      href: '/dashboard/settings',
+      href: '/dashboard/settings?tab=profile',
       color: 'bg-cyan-100 text-cyan-700',
       required: true,
     },
@@ -143,9 +152,6 @@ export function OnboardingOverlay() {
   const totalRequired = requiredSteps.length;
   const progressPercent = Math.round((requiredCompleted / totalRequired) * 100);
 
-  // Find the next uncompleted required step
-  const nextStep = requiredSteps.find(s => !s.completed);
-
   return (
     <div className="fixed bottom-4 right-4 z-50 w-[360px] max-w-[calc(100vw-2rem)]">
       <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
@@ -166,7 +172,6 @@ export function OnboardingOverlay() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Mini progress */}
             <div className="w-12 bg-gray-100 rounded-full h-1.5">
               <div 
                 className="bg-primary rounded-full h-1.5 transition-all duration-500"
@@ -192,15 +197,15 @@ export function OnboardingOverlay() {
             {requiredSteps.map((step) => {
               const Icon = step.icon;
               return (
-                <Link
+                <button
                   key={step.id}
-                  href={step.completed ? '#' : step.href}
-                  className={`flex items-center gap-3 p-2.5 rounded-xl transition-all ${
+                  onClick={() => !step.completed && navigateToStep(step.href)}
+                  disabled={step.completed}
+                  className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-all text-left ${
                     step.completed 
-                      ? 'opacity-50' 
-                      : 'hover:bg-gray-50'
+                      ? 'opacity-50 cursor-default' 
+                      : 'hover:bg-gray-50 cursor-pointer'
                   }`}
-                  onClick={(e) => step.completed && e.preventDefault()}
                 >
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                     step.completed ? 'bg-green-100' : step.color
@@ -220,7 +225,7 @@ export function OnboardingOverlay() {
                   {!step.completed && (
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                   )}
-                </Link>
+                </button>
               );
             })}
 
@@ -251,12 +256,12 @@ export function OnboardingOverlay() {
                   </div>
                   {optionalStep.completed ? null : (
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      <Link
-                        href={optionalStep.href}
+                      <button
+                        onClick={() => navigateToStep(optionalStep.href)}
                         className="text-[11px] text-primary font-medium hover:underline"
                       >
                         ตั้งค่า
-                      </Link>
+                      </button>
                       <span className="text-gray-300 mx-0.5">|</span>
                       <button
                         onClick={handleSkipLine}
@@ -290,5 +295,5 @@ export function OnboardingOverlay() {
 export function OnboardingChecklist({ 
   hasProfile, hasPayment, hasProduct, isPublished 
 }: { hasProfile: boolean; hasPayment: boolean; hasProduct: boolean; isPublished: boolean }) {
-  return null; // Replaced by OnboardingOverlay
+  return null;
 }
