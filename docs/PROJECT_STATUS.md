@@ -6,8 +6,8 @@
 **URL:** sellio.me  
 **Pricing:** Free + Pro (99 THB/เดือน)  
 **Deployment:** Vercel  
-**Status:** MVP Ready (MUST + SHOULD + NICE TO HAVE เสร็จหมดแล้ว, เหลือ M2 Resend Domain) | ✅ i18n Complete  
-**Last Updated:** February 7, 2026 (Session 8)
+**Status:** MVP Ready (MUST + SHOULD + NICE TO HAVE เสร็จหมดแล้ว, เหลือ M2 Resend Domain) | ✅ i18n Complete + Polished  
+**Last Updated:** February 7, 2026 (Session 9)
 
 ---
 
@@ -177,7 +177,7 @@ new/
 - Open in new tab button
 
 ### 16. Landing Page
-- **Navbar** - Responsive navigation with mobile menu + Sellio logo
+- **Navbar** - Responsive navigation with mobile menu + Sellio logo + **centered menu tabs**
 - **Hero Section** - Phone mockup preview ร้านจริง, floating stat cards (asymmetric), headline "ขายของออนไลน์ง่ายๆ ผ่านลิงก์เดียว"
 - **Features** - 12 feature cards with icons
 - **How It Works** - 4-step guide (video section removed)
@@ -271,8 +271,9 @@ new/
 
 | # | Task | Status | Description |
 |---|------|--------|-------------|
-| I1 | Multi-language (i18n) | ✅ Done | รองรับ ไทย/อังกฤษ ทั้ง platform ด้วย next-intl (cookie-based, ไม่เปลี่ยน URL) — 9 steps ครบ! |
+| I1 | Multi-language (i18n) | ✅ Done | รองรับ ไทย/อังกฤษ ทั้ง platform ด้วย next-intl (cookie-based, ไม่เปลี่ยน URL) — 9 steps + polish ครบ! |
 | I2 | Onboarding: Customize Store | ⬜ Pending | เพิ่มขั้นตอน "ปรับแต่งร้านค้า" (ไม่บังคับ) ใน onboarding flow |
+| I3 | i18n Polish (Session 9) | ✅ Done | แปลภาษาที่เหลือ (~100 keys), แก้ navbar, เพิ่มปุ่มเปลี่ยนภาษาหน้าร้าน, แก้ auth bug |
 
 **i18n Rollout Plan (Incremental - ทำทีละส่วน, server รันได้ตลอด):**
 
@@ -291,6 +292,7 @@ new/
 | 7 | Server Actions + Emails (~18 files) | ✅ Done | `actions/*.ts` (13 files), `lib/email.ts` — namespaces: ServerActions, Notifications, Emails |
 | 8 | DB + Store Language Setting | ✅ Done | `016_store_language.sql`, `types/index.ts`, `settings-form.tsx`, `settings.ts`, `validations/settings.ts`, `store page.tsx` — store_language column + UI selector + cookie sync |
 | 9 | Onboarding: Customize Store Step | ✅ Done | `onboarding-checklist.tsx` — namespace: Onboarding |
+| 10 | **i18n Polish & Fixes (Session 9)** | ✅ Done | แปล my-store (7 files), UI components (3 files), เพิ่ม language switcher หน้าร้าน, แก้ navbar centering, แก้ auth errorCode bug — ~100 keys ใหม่ใน 4 namespaces |
 
 ### FUTURE (Roadmap หลัง MVP)
 
@@ -299,17 +301,34 @@ new/
 | F1 | Stripe Connect | ให้ creator เชื่อม Stripe รับเงินโดยตรง (Stan Store model) |
 | F2 | Remove Manual PromptPay | ลบ upload slip แบบ manual หลัง Stripe Connect พร้อม |
 | F3 | LINE Messaging API | แจ้งเตือนผ่าน LINE OA (ทดแทน LINE Notify ที่ปิดบริการแล้ว) |
+| F4 | i18n: Zod Validation Messages | แปล validation messages ใน `lib/validations/*.ts` (ต้องใช้ custom Zod error map) |
+| F5 | i18n: Constants & Calendar | แปล `lib/constants.ts` labels + `lib/ics.ts` calendar descriptions |
+| F6 | i18n: Time Format | แก้ hardcoded "น." suffix ให้ใช้ locale-aware time formatting |
 
 ---
 
 ## Recent Changes Log
 
-### Session 8 (Feb 7, 2026) - Current Session
+### Session 9 (Feb 7, 2026) - Current Session
 
 | # | Change | Files Modified |
 |---|--------|----------------|
-| 1 | **Multi-language Plan** - ร่าง plan สำหรับ i18n ทั้ง platform (Thai/English) ด้วย next-intl | `docs/PROJECT_STATUS.md` |
-| 2 | **Incremental Rollout** - เปลี่ยนจากทำทีเดียว → ทำทีละส่วน (9 steps) เพื่อให้ server รันได้ตลอด | Plan file |
+| 1 | **Center Navbar Tabs** - จัดเมนู landing page ให้อยู่กลาง (absolute + translate) | `components/landing/navbar.tsx` |
+| 2 | **Translate My Store** - แปล 7 components: store-editor, design-editor, add-product-modal, add-section-modal, draggable-product-item, draggable-section, mobile-preview | `components/my-store/*.tsx` (7 files) |
+| 3 | **Translate UI Components** - แปล rich-text-editor (~30 strings), pro-gate (3 strings), spinner | `components/ui/rich-text-editor.tsx`, `components/shared/pro-gate.tsx`, `components/ui/spinner.tsx` |
+| 4 | **Language Switcher on Store** - เพิ่มปุ่มเปลี่ยนภาษาบนหน้าร้านสาธารณะสำหรับลูกค้า | `app/u/[username]/page.tsx` |
+| 5 | **Fix Auth Error Bug (Critical)** - เปลี่ยนจากเทียบ string ไทย `'กรุณาเข้าสู่ระบบ'` → `errorCode: 'AUTH_REQUIRED'` เพื่อให้ทำงานทุกภาษา | `actions/*.ts` (10 files), `app/dashboard/coupons/page.tsx`, `reviews/page.tsx`, `customers/page.tsx` |
+| 6 | **Add errorCode to Action Types** - เพิ่ม `errorCode?: string` ใน return types ของ server actions ทั้งหมด | `actions/auth.ts`, `booking-slots.ts`, `calendar.ts`, `fulfillments.ts`, `orders.ts`, `products.ts`, `settings.ts`, `store-layout.ts` |
+| 7 | **~100 New Translation Keys** - เพิ่ม 4 namespaces ใหม่: MyStore (50+ keys), ProGate (3 keys), RichTextEditor (25+ keys), Spinner (1 key) | `messages/th.json`, `messages/en.json` |
+
+### Session 8 (Feb 7, 2026) - Previous Session
+
+| # | Change | Files Modified |
+|---|--------|----------------|
+| 1 | **i18n Rollout Steps 1-9** - ทำ i18n ทั้ง platform ผ่าน 9 steps (infrastructure, landing, auth, dashboard nav, all dashboard pages, store+checkout, server actions+emails, DB+store language, onboarding) | ~80 files, ~1000 translation keys |
+| 2 | **DB Migration 016** - เพิ่ม `store_language` column ใน creators table | `016_store_language.sql` |
+| 3 | **Cookie-based Locale** - ระบบเปลี่ยนภาษาผ่าน cookie (ไม่เปลี่ยน URL) + sync กับ store_language ของ creator | `i18n/request.ts`, `actions/locale.ts`, `settings-form.tsx`, `store/page.tsx` |
+| 4 | **Audit & Deploy** - ตรวจสอบงาน i18n ทั้งหมด, พบ bugs (auth string, น. suffix), commit + push to Vercel | All i18n files |
 
 ### Session 7 (Feb 7, 2026) - Previous Session
 
@@ -403,12 +422,13 @@ Run in order via Supabase SQL Editor:
 3. `013_plan_subscription.sql` - Plan & subscription fields
 4. `014_line_notify.sql` - LINE Notify token field (ถูกแทนที่ด้วย 015)
 5. `015_notification_email.sql` - Replace LINE Notify → Email Notifications
+6. `016_store_language.sql` - Store language preference (th/en)
 
-**Latest migration (015):**
+**Latest migration (016):**
 ```sql
--- Replace LINE Notify (discontinued) with Email Notifications
-ALTER TABLE public.creators DROP COLUMN IF EXISTS line_notify_token;
-ALTER TABLE public.creators ADD COLUMN IF NOT EXISTS notification_email TEXT;
+ALTER TABLE creators
+ADD COLUMN IF NOT EXISTS store_language TEXT NOT NULL DEFAULT 'th'
+CHECK (store_language IN ('th', 'en'));
 ```
 
 ---
@@ -433,6 +453,21 @@ ALTER TABLE public.creators ADD COLUMN IF NOT EXISTS notification_email TEXT;
 ---
 
 ## Known Issues / Notes
+
+### i18n Remaining Items (ไม่ block launch)
+| Item | Priority | Description |
+|------|----------|-------------|
+| `lib/constants.ts` labels | Low | ORDER_STATUS, PAYMENT_STATUS, PRODUCT_TYPES descriptions ยังเป็นไทย (ใช้ในไม่กี่ที่, label ภาษาอังกฤษแล้ว) |
+| Zod validation messages | Low | Error messages ใน `lib/validations/*.ts` ยังเป็นไทย (module-level, ต้องใช้ custom error map) |
+| Hardcoded "น." suffix | Low | Thai time suffix "น." (นาฬิกา) hardcoded ใน `lib/email.ts`, `checkout/success/page.tsx`, `manage-booking.tsx` |
+| `lib/constants.ts` APP_DESCRIPTION | Low | "ขายของออนไลน์ผ่านลิงก์เดียว สำหรับ Content Creator ไทย" - ใช้ใน SEO metadata |
+| `lib/ics.ts` calendar strings | Low | Calendar event descriptions ยังเป็นไทย |
+| Quick Reply templates | OK | เป็น Thai intentional content (template สำหรับตลาดไทย) |
+| Terms/Privacy pages | OK | เป็น Thai legal content (intentional) |
+
+### Auth Error Handling (Fixed in Session 9)
+- ~~เดิมเช็ค `result.error === 'กรุณาเข้าสู่ระบบ'` ซึ่ง fail เมื่อเปลี่ยนเป็นภาษาอังกฤษ~~
+- ✅ แก้แล้ว: ใช้ `errorCode: 'AUTH_REQUIRED'` ซึ่งทำงานได้ทุกภาษา
 
 ### Timezone
 - All date handling for Thai users uses UTC+7
@@ -496,7 +531,9 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 | Onboarding | `components/dashboard/onboarding-checklist.tsx`, `actions/onboarding.ts` |
 | Logo | `public/logo-black.png`, `public/logo-white.png` |
 | i18n Config | `i18n/request.ts`, `messages/th.json`, `messages/en.json` |
-| Language Switcher | `components/shared/language-switcher.tsx` |
+| Language Switcher | `components/shared/language-switcher.tsx` (ใช้ใน navbar, dashboard header, store page) |
+| My Store Components | `components/my-store/*.tsx` (store-editor, design-editor, modals, draggables, preview) |
+| Store Design | `components/my-store/design-editor.tsx` (templates, colors, fonts) |
 
 ---
 
@@ -511,8 +548,49 @@ npm run dev
 
 ---
 
+## i18n Translation Summary
+
+### Namespaces (ทั้งหมดใน `messages/th.json` + `messages/en.json`)
+
+| Namespace | Keys | Used In |
+|-----------|------|---------|
+| Navbar | 6 | Landing page navigation |
+| Hero, Features, HowItWorks, Pricing, Testimonials, CTA, Footer | ~80 | Landing page sections |
+| Auth | ~20 | Login/Signup pages |
+| Dashboard | ~15 | Dashboard overview |
+| Sidebar, Header | ~20 | Dashboard navigation |
+| Analytics, DateFilter | ~30 | Analytics page |
+| Products, ProductForm, ProductNew, ProductEdit | ~60 | Product management |
+| BookingSettings, BookingSlots | ~40 | Booking system |
+| Orders, Fulfillment | ~30 | Order management |
+| Customers | ~15 | Customer list |
+| Reviews | ~20 | Review management |
+| Coupons | ~25 | Coupon management |
+| CalendarPage | ~10 | Calendar view |
+| Settings | ~50 | Settings page (all tabs) |
+| Upgrade | ~20 | Upgrade page |
+| **MyStore** | **~50** | **Store editor, design, modals, preview** |
+| QuickReply | ~15 | Quick reply templates |
+| StoreFront, ProductDetail | ~25 | Public store pages |
+| Checkout, Payment, OrderSuccess, ManageBooking | ~60 | Checkout flow |
+| ReviewSection, ProductReviews | ~15 | Public reviews |
+| ShareButtons, DownloadButton | ~10 | Shared components |
+| ServerActions | ~140 | Server action error/success messages |
+| Notifications | ~14 | Dashboard notifications |
+| Emails | ~60 | Email templates |
+| Onboarding | ~18 | Onboarding checklist |
+| **ProGate** | **3** | **Pro feature gate** |
+| **RichTextEditor** | **~25** | **Rich text editor UI** |
+| **Spinner** | **1** | **Loading spinner** |
+| LanguageSwitcher | 2 | Language switcher component |
+| **Total** | **~1,100+** | **ทั้ง platform** |
+
+(Bold = เพิ่มใน Session 9)
+
+---
+
 ## Last Updated
-February 7, 2026 (Session 8)
+February 7, 2026 (Session 9)
 
 ---
 
