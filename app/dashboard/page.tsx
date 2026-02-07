@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Package, ShoppingCart, DollarSign, Clock, ExternalLink, Store, TrendingUp, ArrowRight, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { formatPrice, formatDate } from '@/lib/utils';
+import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist';
 
 interface RecentOrder {
   id: string;
@@ -299,62 +300,13 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Quick Actions - show only if there are setup tasks */}
-      {((!creator.promptpay_id && !creator.bank_name) || stats.totalProducts === 0 || !creator.is_published) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>เริ่มต้นใช้งาน</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {!creator.promptpay_id && !creator.bank_name && (
-                <Link
-                  href="/dashboard/settings"
-                  className="flex items-center gap-4 p-4 rounded-xl border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all"
-                >
-                  <div className="p-3 rounded-xl bg-primary/10">
-                    <DollarSign className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">ตั้งค่าการรับชำระเงิน</p>
-                    <p className="text-sm text-muted-foreground">PromptPay หรือ บัญชีธนาคาร</p>
-                  </div>
-                </Link>
-              )}
-              
-              {stats.totalProducts === 0 && (
-                <Link
-                  href="/dashboard/products/new"
-                  className="flex items-center gap-4 p-4 rounded-xl border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all"
-                >
-                  <div className="p-3 rounded-xl bg-primary/10">
-                    <Package className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">เพิ่มสินค้าแรก</p>
-                    <p className="text-sm text-muted-foreground">สร้างสินค้าใหม่</p>
-                  </div>
-                </Link>
-              )}
-
-              {!creator.is_published && (
-                <Link
-                  href="/dashboard/settings"
-                  className="flex items-center gap-4 p-4 rounded-xl border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all"
-                >
-                  <div className="p-3 rounded-xl bg-secondary/10">
-                    <Package className="h-5 w-5 text-secondary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">เปิดร้านค้า</p>
-                    <p className="text-sm text-muted-foreground">Publish หน้าร้าน</p>
-                  </div>
-                </Link>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Onboarding Checklist */}
+      <OnboardingChecklist
+        hasProfile={!!(creator.display_name && creator.avatar_url)}
+        hasPayment={!!(creator.promptpay_id || creator.bank_name)}
+        hasProduct={stats.totalProducts > 0}
+        isPublished={creator.is_published}
+      />
     </div>
   );
 }

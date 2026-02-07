@@ -17,7 +17,8 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { formatPrice } from '@/lib/utils';
-import type { DailyStats, ProductStats } from '@/actions/analytics';
+import { TrendingUp, TrendingDown, Users, Repeat, Clock } from 'lucide-react';
+import type { DailyStats, ProductStats, HourlyStats, DayOfWeekStats, CustomerInsights, RevenueGrowth } from '@/actions/analytics';
 
 // ============================================
 // Revenue Chart
@@ -397,6 +398,209 @@ export function TopProductsTable({ products }: TopProductsTableProps) {
               </div>
             </div>
           ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============================================
+// ADVANCED: Revenue Growth Card
+// ============================================
+interface RevenueGrowthCardProps {
+  data: RevenueGrowth;
+}
+
+export function RevenueGrowthCard({ data }: RevenueGrowthCardProps) {
+  const isPositive = data.growthPercent >= 0;
+  const isOrdersPositive = data.ordersGrowthPercent >= 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5" />
+          การเติบโต
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+          <div>
+            <p className="text-sm text-muted-foreground">รายได้ช่วงนี้</p>
+            <p className="text-xl font-bold">{formatPrice(data.currentPeriodRevenue)}</p>
+          </div>
+          <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${
+            isPositive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}>
+            {isPositive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+            {isPositive ? '+' : ''}{data.growthPercent.toFixed(1)}%
+          </div>
+        </div>
+        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+          <div>
+            <p className="text-sm text-muted-foreground">คำสั่งซื้อช่วงนี้</p>
+            <p className="text-xl font-bold">{data.currentPeriodOrders}</p>
+          </div>
+          <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${
+            isOrdersPositive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}>
+            {isOrdersPositive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+            {isOrdersPositive ? '+' : ''}{data.ordersGrowthPercent.toFixed(1)}%
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground text-center">
+          เทียบกับช่วงก่อนหน้า (รายได้ {formatPrice(data.previousPeriodRevenue)}, {data.previousPeriodOrders} ออเดอร์)
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============================================
+// ADVANCED: Hourly Stats Chart
+// ============================================
+interface HourlyChartProps {
+  data: HourlyStats[];
+}
+
+export function HourlyChart({ data }: HourlyChartProps) {
+  const formatHour = (hour: number) => {
+    return `${String(hour).padStart(2, '0')}:00`;
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Clock className="h-5 w-5" />
+          ช่วงเวลาที่ขายดี
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[250px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis 
+                dataKey="hour" 
+                tickFormatter={formatHour}
+                className="text-xs"
+                tick={{ fill: 'currentColor' }}
+                interval={2}
+              />
+              <YAxis 
+                className="text-xs"
+                tick={{ fill: 'currentColor' }}
+                allowDecimals={false}
+              />
+              <Tooltip 
+                formatter={(value) => [Number(value) || 0, 'คำสั่งซื้อ']}
+                labelFormatter={(label) => `เวลา ${formatHour(Number(label))}`}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                }}
+              />
+              <Bar dataKey="orders" fill="#8b5cf6" radius={[2, 2, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============================================
+// ADVANCED: Day of Week Chart
+// ============================================
+interface DayOfWeekChartProps {
+  data: DayOfWeekStats[];
+}
+
+export function DayOfWeekChart({ data }: DayOfWeekChartProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>วันที่ขายดี</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[250px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis 
+                dataKey="dayName" 
+                className="text-xs"
+                tick={{ fill: 'currentColor' }}
+              />
+              <YAxis 
+                className="text-xs"
+                tick={{ fill: 'currentColor' }}
+                allowDecimals={false}
+              />
+              <Tooltip 
+                formatter={(value, name) => [
+                  name === 'revenue' ? formatPrice(Number(value) || 0) : Number(value) || 0,
+                  name === 'revenue' ? 'รายได้' : 'คำสั่งซื้อ'
+                ]}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                }}
+              />
+              <Bar dataKey="orders" fill="#6366f1" radius={[2, 2, 0, 0]} name="orders" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============================================
+// ADVANCED: Customer Insights Card
+// ============================================
+interface CustomerInsightsCardProps {
+  data: CustomerInsights;
+}
+
+export function CustomerInsightsCard({ data }: CustomerInsightsCardProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          ข้อมูลลูกค้า
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center p-3 rounded-lg bg-blue-50">
+            <p className="text-2xl font-bold text-blue-700">{data.totalCustomers}</p>
+            <p className="text-xs text-blue-600">ลูกค้าทั้งหมด</p>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-purple-50">
+            <p className="text-2xl font-bold text-purple-700">{data.repeatCustomers}</p>
+            <p className="text-xs text-purple-600">ลูกค้าซื้อซ้ำ</p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              <Repeat className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">อัตราซื้อซ้ำ</span>
+            </div>
+            <span className="font-semibold">{data.repeatRate.toFixed(1)}%</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">ออเดอร์เฉลี่ย/คน</span>
+            </div>
+            <span className="font-semibold">{data.averageOrdersPerCustomer.toFixed(1)}</span>
+          </div>
         </div>
       </CardContent>
     </Card>

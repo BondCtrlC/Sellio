@@ -19,8 +19,14 @@ import {
   OrdersChart, 
   StatusPieChart, 
   ProductTypePieChart,
-  TopProductsTable 
+  TopProductsTable,
+  RevenueGrowthCard,
+  HourlyChart,
+  DayOfWeekChart,
+  CustomerInsightsCard,
 } from './analytics-charts';
+import Link from 'next/link';
+import { Crown, Lock } from 'lucide-react';
 import { DateFilter } from './date-filter';
 
 interface PageProps {
@@ -188,6 +194,59 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
         <ProductTypePieChart data={data.productTypeBreakdown} />
         <TopProductsTable products={data.topProducts} />
       </div>
+
+      {/* Advanced Analytics Section */}
+      {data.plan === 'pro' ? (
+        <>
+          {/* Pro Header */}
+          <div className="flex items-center gap-2 pt-4">
+            <Crown className="h-5 w-5 text-yellow-500" />
+            <h3 className="text-lg font-bold">สถิติขั้นสูง</h3>
+            <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-full font-medium">
+              PRO
+            </span>
+          </div>
+
+          {/* Growth + Customer Insights */}
+          {(data.revenueGrowth || data.customerInsights) && (
+            <div className="grid gap-6 lg:grid-cols-2">
+              {data.revenueGrowth && <RevenueGrowthCard data={data.revenueGrowth} />}
+              {data.customerInsights && <CustomerInsightsCard data={data.customerInsights} />}
+            </div>
+          )}
+
+          {/* Hourly + Day of Week */}
+          {(data.hourlyStats || data.dayOfWeekStats) && (
+            <div className="grid gap-6 lg:grid-cols-2">
+              {data.hourlyStats && <HourlyChart data={data.hourlyStats} />}
+              {data.dayOfWeekStats && <DayOfWeekChart data={data.dayOfWeekStats} />}
+            </div>
+          )}
+        </>
+      ) : (
+        /* Free Plan - Show upgrade CTA */
+        <div className="relative rounded-2xl border-2 border-dashed border-gray-200 bg-gradient-to-br from-gray-50 to-white p-8 text-center">
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] rounded-2xl" />
+          <div className="relative space-y-4">
+            <div className="w-14 h-14 rounded-full bg-yellow-100 flex items-center justify-center mx-auto">
+              <Lock className="h-6 w-6 text-yellow-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold">สถิติขั้นสูง</h3>
+              <p className="text-muted-foreground text-sm mt-1 max-w-md mx-auto">
+                อัปเกรดเป็น Pro เพื่อดูข้อมูลเชิงลึก: การเติบโต, ช่วงเวลาขายดี, วันที่ขายดี, อัตราซื้อซ้ำ
+              </p>
+            </div>
+            <Link
+              href="/dashboard/upgrade"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              <Crown className="h-4 w-4" />
+              อัปเกรดเป็น Pro
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { Instagram, Phone, Mail, MessageCircle } from 'lucide-react';
+import { Instagram, Phone, Mail, MessageCircle, BadgeCheck } from 'lucide-react';
 import { DEFAULT_STORE_DESIGN, type StoreDesign } from '@/types';
 
 interface Creator {
@@ -9,6 +9,7 @@ interface Creator {
   username: string;
   bio: string | null;
   avatar_url: string | null;
+  plan?: string | null;
   contact_phone?: string | null;
   contact_line?: string | null;
   contact_ig?: string | null;
@@ -38,9 +39,19 @@ function LineIcon({ className }: { className?: string }) {
   );
 }
 
+// Pro Badge Component
+function ProBadge({ className = '' }: { className?: string }) {
+  return (
+    <span className={`inline-flex items-center gap-0.5 ${className}`} title="Pro Creator">
+      <BadgeCheck className="w-5 h-5 text-blue-500 fill-blue-500 stroke-white" />
+    </span>
+  );
+}
+
 export function StoreHeader({ creator }: StoreHeaderProps) {
   const design = creator.store_design || DEFAULT_STORE_DESIGN;
   const profileLayout = design.profile_layout || 'centered';
+  const isPro = creator.plan === 'pro';
   
   // Avatar size based on design
   const avatarSizeMap = {
@@ -110,8 +121,9 @@ export function StoreHeader({ creator }: StoreHeaderProps) {
         
         {/* Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white px-4">
-          <h1 className="text-3xl sm:text-4xl font-bold text-center drop-shadow-lg">
+          <h1 className="text-3xl sm:text-4xl font-bold text-center drop-shadow-lg flex items-center gap-1.5 justify-center">
             {creator.display_name || creator.username}
+            {isPro && <ProBadge />}
           </h1>
           
           {creator.bio && (
@@ -174,8 +186,9 @@ export function StoreHeader({ creator }: StoreHeaderProps) {
             )}
 
             {/* Name */}
-            <h1 className="text-2xl font-bold text-foreground mt-3 mb-1">
+            <h1 className="text-2xl font-bold text-foreground mt-3 mb-1 flex items-center gap-1.5 justify-center">
               {creator.display_name || creator.username}
+              {isPro && <ProBadge />}
             </h1>
             
             {/* Username */}
@@ -240,8 +253,9 @@ export function StoreHeader({ creator }: StoreHeaderProps) {
 
             <div className="flex-1 min-w-0">
               {/* Name */}
-              <h1 className="text-xl font-bold text-foreground truncate">
+              <h1 className="text-xl font-bold text-foreground truncate flex items-center gap-1.5">
                 {creator.display_name || creator.username}
+                {isPro && <ProBadge />}
               </h1>
               
               {/* Username */}
@@ -306,8 +320,9 @@ export function StoreHeader({ creator }: StoreHeaderProps) {
         </div>
 
         {/* Name */}
-        <h1 className="text-2xl font-bold text-foreground mb-1">
+        <h1 className="text-2xl font-bold text-foreground mb-1 flex items-center gap-1.5 justify-center">
           {creator.display_name || creator.username}
+          {isPro && <ProBadge />}
         </h1>
         
         {/* Username */}

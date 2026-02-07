@@ -73,6 +73,9 @@ export interface Creator extends BaseEntity {
   seo_description: string | null;
   seo_keywords: string | null;
   og_image_url: string | null;
+  
+  // LINE Notify
+  line_notify_token: string | null;
 }
 
 export type CreatorInsert = Omit<Creator, 'id' | 'created_at' | 'updated_at'>;

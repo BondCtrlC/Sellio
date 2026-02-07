@@ -6,7 +6,7 @@
 **URL:** sellio.me  
 **Pricing:** Free + Pro (99 THB/เดือน)  
 **Deployment:** Vercel  
-**Status:** MVP Ready (MUST + SHOULD เสร็จหมดแล้ว, เหลือ M2 Resend Domain + NICE TO HAVE)
+**Status:** MVP Ready (MUST + SHOULD + NICE TO HAVE เสร็จหมดแล้ว, เหลือ M2 Resend Domain)
 
 ---
 
@@ -240,10 +240,10 @@ new/
 
 | # | Task | Status | Description |
 |---|------|--------|-------------|
-| N1 | LINE Notify Integration | ⬜ Pending | แจ้งเตือน creator ผ่าน LINE เมื่อมีออเดอร์ |
-| N2 | Pro Badge on Store | ⬜ Pending | แสดง badge บนหน้าร้านว่าเป็น Pro |
-| N3 | Onboarding Flow | ⬜ Pending | Flow แนะนำสำหรับ creator ใหม่ |
-| N4 | Advanced Analytics (Pro) | ⬜ Pending | Analytics dashboard ขั้นสูง |
+| N1 | LINE Notify Integration | ✅ Done | แจ้งเตือน creator ผ่าน LINE เมื่อมีออเดอร์ |
+| N2 | Pro Badge on Store | ✅ Done | แสดง badge บนหน้าร้านว่าเป็น Pro |
+| N3 | Onboarding Flow | ✅ Done | Flow แนะนำสำหรับ creator ใหม่ |
+| N4 | Advanced Analytics (Pro) | ✅ Done | Analytics dashboard ขั้นสูง |
 
 ### FUTURE (Roadmap หลัง MVP)
 
@@ -258,7 +258,18 @@ new/
 
 ## Recent Changes Log
 
-### Session 5 (Feb 7, 2026) - Current Session
+### Session 6 (Feb 7, 2026) - Current Session
+
+| # | Change | Files Modified |
+|---|--------|----------------|
+| 1 | **SHOULD Fixes** - Fix 6 issues: server-side export check, calendar SEO, product limit on new page, pricing text, broken links, footer placeholders | `actions/customers.ts`, `calendar/layout.tsx`, `products/new/page.tsx`, `pricing.tsx`, `footer.tsx` |
+| 2 | **N1: LINE Notify** - แจ้งเตือน creator ผ่าน LINE เมื่อมี: สร้างออเดอร์, อัพโหลดสลิป, ยืนยันชำระ | `lib/line-notify.ts`, `actions/orders.ts`, `settings-form.tsx`, `validations/settings.ts`, `actions/settings.ts`, `014_line_notify.sql` |
+| 3 | **N2: Pro Badge on Store** - แสดง verified badge (✓) ข้างชื่อ creator ที่เป็น Pro ทุก layout | `store-header.tsx` |
+| 4 | **N3: Onboarding Flow** - Checklist progress bar สำหรับ creator ใหม่ (โปรไฟล์/การรับเงิน/สินค้า/เปิดร้าน) | `onboarding-checklist.tsx`, `dashboard/page.tsx` |
+| 5 | **N4: Advanced Analytics (Pro)** - การเติบโต, ช่วงเวลาขายดี, วันที่ขายดี, ข้อมูลลูกค้า + Pro gate | `actions/analytics.ts`, `analytics-charts.tsx`, `analytics/page.tsx` |
+| 6 | **Settings Notifications Tab** - เพิ่ม tab แจ้งเตือนในตั้งค่า (LINE Notify setup guide) | `settings-form.tsx` |
+
+### Session 5 (Feb 7, 2026) - Previous Session
 
 | # | Change | Files Modified |
 |---|--------|----------------|
@@ -412,10 +423,12 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 | Landing Page | `app/page.tsx`, `components/landing/*.tsx` |
 | Quick Reply | `components/dashboard/quick-reply.tsx` |
 | Stripe | `lib/stripe.ts`, `app/api/stripe/*` |
-| Settings | `app/dashboard/settings/settings-form.tsx` (tabbed: profile/payments/store/SEO/billing) |
+| Settings | `app/dashboard/settings/settings-form.tsx` (tabbed: profile/payments/store/SEO/notifications/billing) |
 | Billing/Subscription | `settings-form.tsx` (BillingTab), `api/stripe/cancel-subscription/route.ts` |
 | Upgrade Page | `app/dashboard/upgrade/page.tsx`, `upgrade-client.tsx` |
 | Payment Page | `app/checkout/[orderId]/payment-page.tsx` |
+| LINE Notify | `lib/line-notify.ts` |
+| Onboarding | `components/dashboard/onboarding-checklist.tsx` |
 | Logo | `public/logo-black.png`, `public/logo-white.png` |
 
 ---

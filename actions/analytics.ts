@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import type { PlanType } from '@/types';
 
 // ============================================
 // Types
@@ -17,6 +18,35 @@ export interface ProductStats {
   type: string;
   orders: number;
   revenue: number;
+}
+
+export interface HourlyStats {
+  hour: number;
+  orders: number;
+  revenue: number;
+}
+
+export interface DayOfWeekStats {
+  day: number; // 0=Sun, 6=Sat
+  dayName: string;
+  orders: number;
+  revenue: number;
+}
+
+export interface CustomerInsights {
+  totalCustomers: number;
+  repeatCustomers: number;
+  repeatRate: number;
+  averageOrdersPerCustomer: number;
+}
+
+export interface RevenueGrowth {
+  currentPeriodRevenue: number;
+  previousPeriodRevenue: number;
+  growthPercent: number;
+  currentPeriodOrders: number;
+  previousPeriodOrders: number;
+  ordersGrowthPercent: number;
 }
 
 export interface AnalyticsData {
@@ -56,6 +86,13 @@ export interface AnalyticsData {
     live: number;
     link: number;
   };
+
+  // Advanced Analytics (Pro)
+  plan: PlanType;
+  hourlyStats?: HourlyStats[];
+  dayOfWeekStats?: DayOfWeekStats[];
+  customerInsights?: CustomerInsights;
+  revenueGrowth?: RevenueGrowth;
 }
 
 // ============================================
@@ -77,13 +114,15 @@ export async function getAnalyticsData(
   // Get creator
   const { data: creator } = await supabase
     .from('creators')
-    .select('id')
+    .select('id, plan')
     .eq('user_id', user.id)
     .single();
 
   if (!creator) {
     return null;
   }
+
+  const plan = (creator.plan || 'free') as PlanType;
 
   // Build query based on date filter
   let query = supabase
@@ -251,6 +290,116 @@ export async function getAnalyticsData(
     }
   });
 
+  // ============================================
+  // ADVANCED ANALYTICS (Pro only)
+  // ============================================
+  let hourlyStats: HourlyStats[] | undefined;
+  let dayOfWeekStats: DayOfWeekStats[] | undefined;
+  let customerInsights: CustomerInsights | undefined;
+  let revenueGrowth: RevenueGrowth | undefined;
+
+  if (plan === 'pro') {
+    // Hourly stats - best selling hours
+    const hourlyMap = new Map<number, { orders: number; revenue: number }>();
+    for (let h = 0; h < 24; h++) {
+      hourlyMap.set(h, { orders: 0, revenue: 0 });
+    }
+    orders.forEach(order => {
+      const hour = new Date(order.created_at).getHours();
+      const existing = hourlyMap.get(hour)!;
+      existing.orders += 1;
+      if (order.status === 'confirmed') {
+        existing.revenue += Number(order.total);
+      }
+    });
+    hourlyStats = Array.from(hourlyMap.entries()).map(([hour, stats]) => ({
+      hour,
+      ...stats,
+    }));
+
+    // Day of week stats
+    const dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์'];
+    const dayMap = new Map<number, { orders: number; revenue: number }>();
+    for (let d = 0; d < 7; d++) {
+      dayMap.set(d, { orders: 0, revenue: 0 });
+    }
+    orders.forEach(order => {
+      const day = new Date(order.created_at).getDay();
+      const existing = dayMap.get(day)!;
+      existing.orders += 1;
+      if (order.status === 'confirmed') {
+        existing.revenue += Number(order.total);
+      }
+    });
+    dayOfWeekStats = Array.from(dayMap.entries()).map(([day, stats]) => ({
+      day,
+      dayName: dayNames[day],
+      ...stats,
+    }));
+
+    // Customer insights
+    const customerOrderMap = new Map<string, number>();
+    orders.forEach(order => {
+      if ('buyer_email' in order) {
+        const email = (order as { buyer_email?: string }).buyer_email?.toLowerCase() || 'unknown';
+        customerOrderMap.set(email, (customerOrderMap.get(email) || 0) + 1);
+      }
+    });
+    
+    // If buyer_email is not in the select, let's fetch it
+    const { data: ordersWithEmail } = await supabase
+      .from('orders')
+      .select('buyer_email')
+      .eq('creator_id', creator.id);
+    
+    const emailMap = new Map<string, number>();
+    ordersWithEmail?.forEach(o => {
+      const email = o.buyer_email.toLowerCase();
+      emailMap.set(email, (emailMap.get(email) || 0) + 1);
+    });
+    
+    const totalCustomers = emailMap.size;
+    const repeatCustomers = Array.from(emailMap.values()).filter(count => count > 1).length;
+    
+    customerInsights = {
+      totalCustomers,
+      repeatCustomers,
+      repeatRate: totalCustomers > 0 ? (repeatCustomers / totalCustomers) * 100 : 0,
+      averageOrdersPerCustomer: totalCustomers > 0 ? (ordersWithEmail?.length || 0) / totalCustomers : 0,
+    };
+
+    // Revenue growth (current period vs previous period)
+    const numDays = typeof days === 'number' ? days : 30;
+    const currentPeriodStart = new Date(Date.now() - numDays * 24 * 60 * 60 * 1000);
+    const previousPeriodStart = new Date(Date.now() - numDays * 2 * 24 * 60 * 60 * 1000);
+
+    const { data: prevOrders } = await supabase
+      .from('orders')
+      .select('status, total')
+      .eq('creator_id', creator.id)
+      .gte('created_at', previousPeriodStart.toISOString())
+      .lt('created_at', currentPeriodStart.toISOString());
+
+    const prevConfirmed = prevOrders?.filter(o => o.status === 'confirmed') || [];
+    const previousPeriodRevenue = prevConfirmed.reduce((sum, o) => sum + Number(o.total), 0);
+    const currentPeriodRevenue = totalRevenue;
+    const previousPeriodOrders = prevOrders?.length || 0;
+    const currentPeriodOrders = totalOrders;
+
+    revenueGrowth = {
+      currentPeriodRevenue,
+      previousPeriodRevenue,
+      growthPercent: previousPeriodRevenue > 0 
+        ? ((currentPeriodRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100 
+        : currentPeriodRevenue > 0 ? 100 : 0,
+      currentPeriodOrders,
+      previousPeriodOrders,
+      ordersGrowthPercent: previousPeriodOrders > 0
+        ? ((currentPeriodOrders - previousPeriodOrders) / previousPeriodOrders) * 100
+        : currentPeriodOrders > 0 ? 100 : 0,
+    };
+  }
+
   return {
     totalOrders,
     totalRevenue,
@@ -266,6 +415,11 @@ export async function getAnalyticsData(
     topProducts,
     statusBreakdown,
     productTypeBreakdown,
+    plan,
+    hourlyStats,
+    dayOfWeekStats,
+    customerInsights,
+    revenueGrowth,
   };
 }
 
@@ -296,5 +450,6 @@ function getEmptyAnalytics(): AnalyticsData {
       live: 0,
       link: 0,
     },
+    plan: 'free',
   };
 }

@@ -27,7 +27,8 @@ import {
   CreditCard,
   Crown,
   Download,
-  ExternalLink
+  ExternalLink,
+  Bell
 } from 'lucide-react';
 
 interface SettingsFormProps {
@@ -41,13 +42,14 @@ interface SettingsFormProps {
   };
 }
 
-type SettingsTab = 'profile' | 'payments' | 'store' | 'seo' | 'billing';
+type SettingsTab = 'profile' | 'payments' | 'store' | 'seo' | 'notifications' | 'billing';
 
 const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
   { id: 'profile', label: 'โปรไฟล์', icon: User },
   { id: 'payments', label: 'การรับเงิน', icon: Wallet },
   { id: 'store', label: 'ร้านค้า', icon: Store },
   { id: 'seo', label: 'SEO', icon: Search },
+  { id: 'notifications', label: 'แจ้งเตือน', icon: Bell },
   { id: 'billing', label: 'การเรียกเก็บเงิน', icon: CreditCard },
 ];
 
@@ -85,6 +87,7 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
       seo_title: creator.seo_title || '',
       seo_description: creator.seo_description || '',
       seo_keywords: creator.seo_keywords || '',
+      line_notify_token: creator.line_notify_token || '',
     },
   });
 
@@ -570,6 +573,102 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                 <p className="text-sm text-gray-600 line-clamp-2 mt-1">
                   {creator.seo_description || creator.bio || 'คำอธิบายร้านค้าของคุณจะแสดงที่นี่...'}
                 </p>
+              </div>
+            </div>
+
+            <Button type="submit" isLoading={isSubmitting}>
+              บันทึกการเปลี่ยนแปลง
+            </Button>
+          </div>
+        )}
+
+        {/* ============================== */}
+        {/* TAB: แจ้งเตือน */}
+        {/* ============================== */}
+        {activeTab === 'notifications' && (
+          <div className="space-y-8">
+            {/* LINE Notify */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-green-100">
+                  <MessageCircle className="h-5 w-5 text-green-700" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">LINE Notify</h3>
+                  <p className="text-sm text-muted-foreground">รับแจ้งเตือนผ่าน LINE เมื่อมีคำสั่งซื้อใหม่</p>
+                </div>
+              </div>
+
+              <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                <p className="text-sm font-medium">วิธีตั้งค่า:</p>
+                <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
+                  <li>ไปที่ <a href="https://notify-bot.line.me/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">notify-bot.line.me</a></li>
+                  <li>Login ด้วยบัญชี LINE ของคุณ</li>
+                  <li>คลิก &quot;Generate token&quot; (สร้าง token)</li>
+                  <li>ตั้งชื่อ เช่น &quot;Sellio แจ้งเตือน&quot;</li>
+                  <li>เลือก &quot;1-on-1 chat with LINE Notify&quot; หรือกลุ่มที่ต้องการ</li>
+                  <li>คัดลอก token มาใส่ด้านล่าง</li>
+                </ol>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="line_notify_token">LINE Notify Token</Label>
+                <Input
+                  id="line_notify_token"
+                  type="password"
+                  placeholder="ใส่ LINE Notify Token ที่ได้จากขั้นตอนด้านบน"
+                  error={!!errors.line_notify_token}
+                  {...register('line_notify_token')}
+                />
+                {errors.line_notify_token && (
+                  <p className="text-sm text-destructive">{errors.line_notify_token.message}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  เมื่อตั้งค่าแล้ว คุณจะได้รับแจ้งเตือนผ่าน LINE เมื่อ: ลูกค้าสั่งซื้อ, อัพโหลดสลิป, ยืนยันชำระเงิน
+                </p>
+              </div>
+            </div>
+
+            {/* What you'll receive */}
+            <div className="border-t pt-6 space-y-4">
+              <h3 className="font-semibold text-lg">การแจ้งเตือนที่คุณจะได้รับ</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex items-start gap-3 p-3 rounded-lg border">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm">🛒</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">คำสั่งซื้อใหม่</p>
+                    <p className="text-xs text-muted-foreground">เมื่อลูกค้าสร้างคำสั่งซื้อ</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg border">
+                  <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm">💳</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">อัพโหลดสลิป</p>
+                    <p className="text-xs text-muted-foreground">เมื่อลูกค้าอัพโหลดสลิปชำระเงิน</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg border">
+                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm">✅</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">ยืนยันชำระเงิน</p>
+                    <p className="text-xs text-muted-foreground">เมื่อยืนยันการชำระเงินสำเร็จ</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg border">
+                  <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm">📧</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">อีเมลแจ้งเตือน</p>
+                    <p className="text-xs text-muted-foreground">ส่งอัตโนมัติอยู่แล้ว (ไม่ต้องตั้งค่า)</p>
+                  </div>
+                </div>
               </div>
             </div>
 
