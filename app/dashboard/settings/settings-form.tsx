@@ -669,26 +669,30 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
             </div>
 
             <div className="flex flex-col gap-2 items-end">
-              {isPro ? (
+              {isPro && cancelStatus === 'none' ? (
                 <>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => handleCancel(true)}
+                    onClick={() => handleCancel(false)}
                     disabled={cancelling}
                     className="text-red-600 border-red-200 hover:bg-red-50"
                   >
-                    {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิกทันที'}
+                    {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิกเมื่อหมดรอบบิล'}
                   </Button>
                   <button
                     type="button"
-                    onClick={() => handleCancel(false)}
+                    onClick={() => handleCancel(true)}
                     disabled={cancelling}
                     className="text-xs text-muted-foreground hover:text-red-600 hover:underline transition-colors"
                   >
-                    ยกเลิกเมื่อหมดรอบบิล
+                    ยกเลิกทันที
                   </button>
                 </>
+              ) : isPro && cancelStatus === 'scheduled' ? (
+                <span className="text-sm text-amber-600 font-medium">ตั้งเวลายกเลิกแล้ว</span>
+              ) : isPro && cancelStatus === 'cancelled' ? (
+                <span className="text-sm text-green-600 font-medium">ยกเลิกแล้ว</span>
               ) : (
                 <Link href="/dashboard/upgrade">
                   <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">

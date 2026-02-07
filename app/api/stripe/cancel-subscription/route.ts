@@ -16,12 +16,12 @@ export async function POST(request: NextRequest) {
     step = 'get_creator';
     const { data: creator } = await supabase
       .from('creators')
-      .select('id, stripe_subscription_id')
+      .select('id, plan, stripe_subscription_id')
       .eq('user_id', user.id)
       .single();
 
-    if (!creator || !creator.stripe_subscription_id) {
-      return NextResponse.json({ error: 'No active subscription found' }, { status: 400 });
+    if (!creator) {
+      return NextResponse.json({ error: 'Creator not found' }, { status: 400 });
     }
 
     // Check if request wants immediate cancellation
@@ -33,10 +33,31 @@ export async function POST(request: NextRequest) {
       // No body or invalid JSON, default to period end
     }
 
+    // If no subscription ID but still pro, just downgrade directly
+    if (!creator.stripe_subscription_id) {
+      if (creator.plan === 'pro') {
+        step = 'downgrade_no_sub';
+        await supabase
+          .from('creators')
+          .update({ 
+            plan: 'free', 
+            stripe_subscription_id: null,
+            plan_expires_at: null,
+          })
+          .eq('id', creator.id);
+        return NextResponse.json({ success: true, immediate: true });
+      }
+      return NextResponse.json({ error: 'No active subscription found' }, { status: 400 });
+    }
+
     step = 'cancel_stripe';
     if (immediate) {
       // Cancel immediately
-      await stripe.subscriptions.cancel(creator.stripe_subscription_id);
+      try {
+        await stripe.subscriptions.cancel(creator.stripe_subscription_id);
+      } catch {
+        // Subscription may already be cancelled in Stripe, continue with DB update
+      }
 
       // Update DB immediately
       step = 'update_db';
@@ -52,9 +73,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, immediate: true });
     } else {
       // Cancel at period end
-      await stripe.subscriptions.update(creator.stripe_subscription_id, {
-        cancel_at_period_end: true,
-      });
+      try {
+        await stripe.subscriptions.update(creator.stripe_subscription_id, {
+          cancel_at_period_end: true,
+        });
+      } catch {
+        // If subscription doesn't exist in Stripe, downgrade immediately
+        await supabase
+          .from('creators')
+          .update({ 
+            plan: 'free', 
+            stripe_subscription_id: null,
+            plan_expires_at: null,
+          })
+          .eq('id', creator.id);
+        return NextResponse.json({ success: true, immediate: true });
+      }
 
       return NextResponse.json({ success: true, immediate: false });
     }
