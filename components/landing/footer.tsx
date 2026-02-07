@@ -1,33 +1,9 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Facebook, Instagram, Twitter, Mail } from 'lucide-react';
-
-const footerLinks = {
-  product: {
-    title: 'ผลิตภัณฑ์',
-    links: [
-      { label: 'ฟีเจอร์', href: '#features' },
-      { label: 'ราคา', href: '#pricing' },
-      { label: 'วิธีใช้งาน', href: '#how-it-works' },
-    ]
-  },
-  support: {
-    title: 'ช่วยเหลือ',
-    links: [
-      { label: 'ติดต่อเรา', href: 'mailto:support@sellio.me' },
-      { label: 'เริ่มต้นใช้งาน', href: '/signup' },
-    ]
-  },
-  legal: {
-    title: 'กฎหมาย',
-    links: [
-      { label: 'เงื่อนไขการใช้งาน', href: '/terms' },
-      { label: 'นโยบายความเป็นส่วนตัว', href: '/privacy' },
-      { label: 'นโยบายคุกกี้', href: '/privacy#cookies' },
-      { label: 'นโยบายคืนเงิน', href: '/terms#refund' },
-    ]
-  }
-};
+import { useTranslations } from 'next-intl';
 
 const socialLinks = [
   { icon: Facebook, href: 'https://facebook.com/sellio.me', label: 'Facebook' },
@@ -36,6 +12,35 @@ const socialLinks = [
 ];
 
 export function Footer() {
+  const t = useTranslations('Footer');
+
+  const footerLinks = {
+    product: {
+      title: t('product'),
+      links: [
+        { label: t('features'), href: '#features' },
+        { label: t('pricing'), href: '#pricing' },
+        { label: t('howItWorks'), href: '#how-it-works' },
+      ]
+    },
+    support: {
+      title: t('support'),
+      links: [
+        { label: t('contactUs'), href: 'mailto:support@sellio.me' },
+        { label: t('getStarted'), href: '/signup' },
+      ]
+    },
+    legal: {
+      title: t('legal'),
+      links: [
+        { label: t('terms'), href: '/terms' },
+        { label: t('privacy'), href: '/privacy' },
+        { label: t('cookies'), href: '/privacy#cookies' },
+        { label: t('refund'), href: '/terms#refund' },
+      ]
+    }
+  };
+
   return (
     <footer className="bg-gray-50 border-t border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -48,14 +53,14 @@ export function Footer() {
                 <Image src="/logo-black.png" alt="Sellio" width={120} height={40} className="h-10 w-auto" />
               </Link>
               <p className="text-gray-600 text-sm mb-6 max-w-xs">
-                แพลตฟอร์มขายสินค้าดิจิทัลที่ออกแบบมาสำหรับ Content Creator ไทย
+                {t('description')}
               </p>
               
               {/* Newsletter */}
               <div className="flex gap-2">
                 <input
                   type="email"
-                  placeholder="อีเมลของคุณ"
+                  placeholder={t('emailPlaceholder')}
                   className="flex-1 px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/10"
                 />
                 <button className="px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors">
@@ -92,7 +97,7 @@ export function Footer() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Copyright */}
             <p className="text-sm text-gray-500">
-              © 2026 Sellio. All rights reserved.
+              {t('copyright')}
             </p>
 
             {/* Social Links */}

@@ -1,15 +1,18 @@
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
+import { getTranslations } from 'next-intl/server';
 
-export const metadata: Metadata = { title: "ภาพรวม" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Dashboard');
+  return { title: t('totalProducts').split(' ')[0] || 'Overview' };
+}
+
 import { redirect } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { Badge } from '@/components/ui/badge';
 import { Package, ShoppingCart, DollarSign, Clock, ExternalLink, Store, TrendingUp, ArrowRight, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { formatPrice, formatDate } from '@/lib/utils';
-// OnboardingOverlay is now in layout.tsx
-
 interface RecentOrder {
   id: string;
   status: string;
@@ -105,46 +108,47 @@ async function getCreatorWithStats() {
   };
 }
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' }> = {
-  pending_payment: { label: 'รอชำระเงิน', variant: 'outline' },
-  pending_confirmation: { label: 'รอยืนยัน', variant: 'warning' },
-  confirmed: { label: 'สำเร็จ', variant: 'success' },
-  cancelled: { label: 'ยกเลิก', variant: 'destructive' },
-  refunded: { label: 'คืนเงินแล้ว', variant: 'secondary' },
-};
-
-const productTypeLabels: Record<string, string> = {
-  digital: 'Digital',
-  booking: 'Booking',
-  live: 'Live',
-  link: 'Link',
-};
-
 export default async function DashboardPage() {
   const { creator, stats, recentOrders } = await getCreatorWithStats();
+  const t = await getTranslations('Dashboard');
+
+  const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' }> = {
+    pending_payment: { label: t('statusPending'), variant: 'outline' },
+    pending_confirmation: { label: t('statusConfirming'), variant: 'warning' },
+    confirmed: { label: t('statusConfirmed'), variant: 'success' },
+    cancelled: { label: t('statusCancelled'), variant: 'destructive' },
+    refunded: { label: t('statusRefunded'), variant: 'secondary' },
+  };
+
+  const productTypeLabels: Record<string, string> = {
+    digital: 'Digital',
+    booking: 'Booking',
+    live: 'Live',
+    link: 'Link',
+  };
 
   const statCards = [
     {
-      title: 'สินค้าทั้งหมด',
+      title: t('totalProducts'),
       value: stats.totalProducts,
       icon: Package,
       href: '/dashboard/products',
     },
     {
-      title: 'คำสั่งซื้อทั้งหมด',
+      title: t('totalOrders'),
       value: stats.totalOrders,
       icon: ShoppingCart,
       href: '/dashboard/orders',
     },
     {
-      title: 'รอยืนยัน',
+      title: t('pendingConfirm'),
       value: stats.pendingOrders,
       icon: Clock,
       href: '/dashboard/orders?status=pending_confirmation',
       highlight: stats.pendingOrders > 0,
     },
     {
-      title: 'รายได้รวม',
+      title: t('totalRevenue'),
       value: formatPrice(stats.totalRevenue),
       icon: DollarSign,
       href: '/dashboard/orders',
@@ -156,11 +160,9 @@ export default async function DashboardPage() {
       {/* Welcome */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-2xl font-bold">สวัสดี, {creator.display_name}!</h2>
+          <h2 className="text-2xl font-bold">{t('hello', { name: creator.display_name })}</h2>
           <p className="text-muted-foreground">
-            {creator.is_published 
-              ? 'ร้านค้าของคุณเปิดให้บริการอยู่' 
-              : 'ร้านค้าของคุณยังไม่เปิดให้บริการ'}
+            {creator.is_published ? t('storeOpen') : t('storeClosed')}
           </p>
         </div>
         
@@ -173,7 +175,7 @@ export default async function DashboardPage() {
             className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Store className="h-4 w-4" />
-            <span>ดูหน้าร้าน</span>
+            <span>{t('viewStore')}</span>
             <ExternalLink className="h-3 w-3" />
           </a>
         )}
@@ -206,17 +208,17 @@ export default async function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-medium">วันนี้</CardTitle>
+            <CardTitle className="text-base font-medium">{t('today')}</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-sm text-muted-foreground">คำสั่งซื้อ</p>
+                <p className="text-sm text-muted-foreground">{t('orders')}</p>
                 <p className="text-2xl font-bold">{stats.ordersToday}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">รายได้</p>
+                <p className="text-sm text-muted-foreground">{t('revenue')}</p>
                 <p className="text-2xl font-bold text-green-600">{formatPrice(stats.revenueToday)}</p>
               </div>
             </div>
@@ -225,17 +227,17 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-medium">สัปดาห์นี้</CardTitle>
+            <CardTitle className="text-base font-medium">{t('thisWeek')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-sm text-muted-foreground">คำสั่งซื้อ</p>
+                <p className="text-sm text-muted-foreground">{t('orders')}</p>
                 <p className="text-2xl font-bold">{stats.ordersThisWeek}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">รายได้</p>
+                <p className="text-sm text-muted-foreground">{t('revenue')}</p>
                 <p className="text-2xl font-bold text-green-600">{formatPrice(stats.revenueThisWeek)}</p>
               </div>
             </div>
@@ -246,12 +248,12 @@ export default async function DashboardPage() {
       {/* Recent Orders */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>คำสั่งซื้อล่าสุด</CardTitle>
+          <CardTitle>{t('recentOrders')}</CardTitle>
           <Link 
             href="/dashboard/orders" 
             className="text-sm text-primary hover:underline flex items-center gap-1"
           >
-            ดูทั้งหมด
+            {t('viewAll')}
             <ArrowRight className="h-3 w-3" />
           </Link>
         </CardHeader>
@@ -259,8 +261,8 @@ export default async function DashboardPage() {
           {recentOrders.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>ยังไม่มีคำสั่งซื้อ</p>
-              <p className="text-sm mt-1">เมื่อมีลูกค้าสั่งซื้อ จะแสดงที่นี่</p>
+              <p>{t('noOrders')}</p>
+              <p className="text-sm mt-1">{t('noOrdersHint')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -280,7 +282,7 @@ export default async function DashboardPage() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground truncate">
-                        {order.product?.title || 'สินค้า'} 
+                        {order.product?.title || t('product')} 
                         {order.product?.type && (
                           <span className="text-xs ml-1">
                             ({productTypeLabels[order.product.type] || order.product.type})

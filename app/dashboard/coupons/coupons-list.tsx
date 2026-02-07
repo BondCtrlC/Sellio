@@ -17,6 +17,7 @@ import {
 import { formatPrice } from '@/lib/utils';
 import { deleteCoupon, toggleCouponActive, type Coupon } from '@/actions/coupons';
 import { CouponForm } from './coupon-form';
+import { useTranslations } from 'next-intl';
 
 interface CouponsListProps {
   initialCoupons: Coupon[];
@@ -27,10 +28,10 @@ export function CouponsList({ initialCoupons }: CouponsListProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | undefined>();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const t = useTranslations('Coupons');
 
   const handleCopy = async (code: string) => {
     await navigator.clipboard.writeText(code);
-    // Could add toast notification here
   };
 
   const handleToggle = async (couponId: string) => {
@@ -43,7 +44,7 @@ export function CouponsList({ initialCoupons }: CouponsListProps) {
   };
 
   const handleDelete = async (couponId: string) => {
-    if (!confirm('ยืนยันการลบคูปองนี้?')) return;
+    if (!confirm(t('confirmDelete'))) return;
     
     setIsDeleting(couponId);
     const result = await deleteCoupon(couponId);
@@ -64,27 +65,26 @@ export function CouponsList({ initialCoupons }: CouponsListProps) {
   };
 
   const handleSuccess = () => {
-    // Refresh page to get updated data
     window.location.reload();
   };
 
   const getCouponStatus = (coupon: Coupon) => {
     if (!coupon.is_active) {
-      return { label: 'ปิดใช้งาน', variant: 'secondary' as const };
+      return { label: t('statusInactive'), variant: 'secondary' as const };
     }
     
     const now = new Date();
     if (coupon.expires_at && new Date(coupon.expires_at) < now) {
-      return { label: 'หมดอายุ', variant: 'destructive' as const };
+      return { label: t('statusExpired'), variant: 'destructive' as const };
     }
     if (coupon.starts_at && new Date(coupon.starts_at) > now) {
-      return { label: 'ยังไม่เริ่ม', variant: 'warning' as const };
+      return { label: t('statusNotStarted'), variant: 'warning' as const };
     }
     if (coupon.usage_limit && coupon.usage_count >= coupon.usage_limit) {
-      return { label: 'ใช้ครบแล้ว', variant: 'outline' as const };
+      return { label: t('statusFullyUsed'), variant: 'outline' as const };
     }
     
-    return { label: 'ใช้งานได้', variant: 'success' as const };
+    return { label: t('statusActive'), variant: 'success' as const };
   };
 
   const formatDate = (dateStr: string | null) => {
@@ -101,12 +101,12 @@ export function CouponsList({ initialCoupons }: CouponsListProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">คูปองส่วนลด</h2>
-          <p className="text-muted-foreground">จัดการคูปองสำหรับลูกค้าของคุณ</p>
+          <h2 className="text-2xl font-bold">{t('title')}</h2>
+          <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          สร้างคูปอง
+          {t('createCoupon')}
         </Button>
       </div>
 
@@ -115,13 +115,11 @@ export function CouponsList({ initialCoupons }: CouponsListProps) {
         <Card>
           <CardContent className="py-12 text-center">
             <Ticket className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <h3 className="font-semibold mb-2">ยังไม่มีคูปอง</h3>
-            <p className="text-muted-foreground mb-4">
-              สร้างคูปองส่วนลดเพื่อดึงดูดลูกค้า
-            </p>
+            <h3 className="font-semibold mb-2">{t('noCouponsYet')}</h3>
+            <p className="text-muted-foreground mb-4">{t('noCouponsDesc')}</p>
             <Button onClick={() => setShowForm(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              สร้างคูปองแรก
+              {t('createFirstCoupon')}
             </Button>
           </CardContent>
         </Card>
@@ -148,7 +146,7 @@ export function CouponsList({ initialCoupons }: CouponsListProps) {
                           <button
                             onClick={() => handleCopy(coupon.code)}
                             className="p-1 hover:bg-muted rounded"
-                            title="คัดลอก"
+                            title={t('copy')}
                           >
                             <Copy className="h-3 w-3 text-muted-foreground" />
                           </button>
@@ -167,24 +165,26 @@ export function CouponsList({ initialCoupons }: CouponsListProps) {
                       ? `${coupon.discount_value}%`
                       : formatPrice(coupon.discount_value)}
                     <span className="text-sm font-normal text-muted-foreground ml-1">
-                      {coupon.discount_type === 'percentage' ? 'ส่วนลด' : 'ส่วนลดคงที่'}
+                      {coupon.discount_type === 'percentage' ? t('percentDiscount') : t('fixedDiscount')}
                     </span>
                   </div>
 
                   {/* Details */}
                   <div className="space-y-1 text-sm text-muted-foreground mb-4">
                     {coupon.min_purchase > 0 && (
-                      <p>ขั้นต่ำ: {formatPrice(coupon.min_purchase)}</p>
+                      <p>{t('minPurchase', { amount: formatPrice(coupon.min_purchase) })}</p>
                     )}
                     {coupon.max_discount && (
-                      <p>ลดสูงสุด: {formatPrice(coupon.max_discount)}</p>
+                      <p>{t('maxDiscountInfo', { amount: formatPrice(coupon.max_discount) })}</p>
                     )}
                     <p>
-                      ใช้แล้ว: {coupon.usage_count}
-                      {coupon.usage_limit && ` / ${coupon.usage_limit}`} ครั้ง
+                      {coupon.usage_limit 
+                        ? t('usedOfLimit', { count: coupon.usage_count, limit: coupon.usage_limit })
+                        : t('usedCount', { count: coupon.usage_count })
+                      } {t('times')}
                     </p>
                     <p>
-                      ระยะเวลา: {formatDate(coupon.starts_at)} - {formatDate(coupon.expires_at)}
+                      {t('period', { start: formatDate(coupon.starts_at), end: formatDate(coupon.expires_at) })}
                     </p>
                   </div>
 
@@ -194,7 +194,7 @@ export function CouponsList({ initialCoupons }: CouponsListProps) {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleToggle(coupon.id)}
-                      title={coupon.is_active ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}
+                      title={coupon.is_active ? t('deactivate') : t('activate')}
                     >
                       {coupon.is_active ? (
                         <ToggleRight className="h-4 w-4 text-green-600" />

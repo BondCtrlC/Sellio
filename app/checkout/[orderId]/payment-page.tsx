@@ -19,6 +19,7 @@ import {
 import { formatPrice, formatDate } from '@/lib/utils';
 import { uploadSlip, type OrderDetails } from '@/actions/orders';
 import { generatePromptPayQR } from '@/lib/promptpay';
+import { useTranslations } from 'next-intl';
 
 interface PaymentPageProps {
   order: OrderDetails;
@@ -26,6 +27,7 @@ interface PaymentPageProps {
 
 export function PaymentPage({ order }: PaymentPageProps) {
   const router = useRouter();
+  const t = useTranslations('Payment');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [uploading, setUploading] = useState(false);
@@ -94,12 +96,12 @@ export function PaymentPage({ order }: PaymentPageProps) {
     // Validate file
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      setError('รองรับเฉพาะไฟล์ภาพ (JPG, PNG, WebP)');
+      setError(t('imageOnly'));
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setError('ไฟล์ต้องมีขนาดไม่เกิน 5MB');
+      setError(t('maxSize5MB'));
       return;
     }
 
@@ -118,7 +120,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      setError('กรุณาเลือกไฟล์สลิป');
+      setError(t('selectSlipFile'));
       return;
     }
 
@@ -132,7 +134,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
       const result = await uploadSlip(order.id, formData);
 
       if (!result.success) {
-        setError(result.error || 'เกิดข้อผิดพลาด');
+        setError(result.error || t('error'));
         setUploading(false);
         return;
       }
@@ -141,7 +143,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
       router.refresh();
     } catch (err) {
       console.error(err);
-      setError('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      setError(t('errorRetry'));
       setUploading(false);
     }
   };
@@ -151,9 +153,9 @@ export function PaymentPage({ order }: PaymentPageProps) {
       <div className="max-w-lg mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold">ชำระเงิน</h1>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            หมายเลขคำสั่งซื้อ: #{order.id.slice(0, 8).toUpperCase()}
+            {t('orderNumber', { id: order.id.slice(0, 8).toUpperCase() })}
           </p>
         </div>
 
@@ -163,18 +165,18 @@ export function PaymentPage({ order }: PaymentPageProps) {
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center gap-3">
               <Clock className="h-5 w-5 text-yellow-600 flex-shrink-0" />
               <div>
-                <p className="font-medium text-yellow-800">รอตรวจสอบการชำระเงิน</p>
-                <p className="text-sm text-yellow-700">ระบบได้รับสลิปของคุณแล้ว กรุณารอการยืนยันจากผู้ขาย</p>
+                <p className="font-medium text-yellow-800">{t('pendingConfirm')}</p>
+                <p className="text-sm text-yellow-700">{t('pendingConfirmDesc')}</p>
               </div>
             </div>
             
             {/* Info: Can close tab */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <span className="font-medium">📧 คุณสามารถปิดหน้านี้ได้เลย</span>
+                <span className="font-medium">📧 {t('canCloseTab')}</span>
                 <br />
                 <span className="text-blue-700">
-                  เมื่อผู้ขายยืนยันการชำระเงินแล้ว เราจะส่งอีเมลแจ้งไปที่ <strong>{order.buyer_email}</strong> พร้อมลิงก์รับสินค้า/บริการ
+                  {t('canCloseTabDesc', { email: order.buyer_email })}
                 </span>
               </p>
             </div>
@@ -247,7 +249,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
                   }`}
                 >
                   <Building2 className="h-4 w-4" />
-                  โอนผ่านธนาคาร
+                  {t('bankTransfer')}
                 </button>
               </div>
             )}
@@ -256,7 +258,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
             {hasPromptPay && paymentTab === 'promptpay' && qrCodeUrl && (
               <Card className="mb-6">
                 <CardContent className="p-6">
-                  <h3 className="font-semibold text-center mb-4">สแกนจ่ายผ่าน PromptPay</h3>
+                  <h3 className="font-semibold text-center mb-4">{t('scanPromptPay')}</h3>
                   
                   <div className="flex flex-col items-center">
                     {/* QR Code */}
@@ -276,19 +278,19 @@ export function PaymentPage({ order }: PaymentPageProps) {
                       className="mb-4"
                     >
                       <Download className="h-4 w-4 mr-2" />
-                      บันทึกรูป QR
+                      {t('saveQR')}
                     </Button>
 
                     {/* Account Info */}
                     <div className="text-center">
-                      <p className="text-sm text-muted-foreground">โอนเข้าบัญชี</p>
+                      <p className="text-sm text-muted-foreground">{t('transferTo')}</p>
                       <p className="font-semibold">{order.creator.promptpay_name || 'PromptPay'}</p>
                       <p className="text-muted-foreground">{order.creator.promptpay_id}</p>
                     </div>
 
                     {/* Amount */}
                     <div className="mt-4 bg-primary/5 rounded-lg px-6 py-3 text-center">
-                      <p className="text-sm text-muted-foreground">ยอดที่ต้องชำระ</p>
+                      <p className="text-sm text-muted-foreground">{t('amountToPay')}</p>
                       <p className="text-2xl font-bold text-primary">{formatPrice(order.total)}</p>
                     </div>
                   </div>
@@ -300,30 +302,30 @@ export function PaymentPage({ order }: PaymentPageProps) {
             {hasBank && paymentTab === 'bank' && (
               <Card className="mb-6">
                 <CardContent className="p-6">
-                  <h3 className="font-semibold text-center mb-4">โอนเงินผ่านธนาคาร</h3>
+                  <h3 className="font-semibold text-center mb-4">{t('bankTransferTitle')}</h3>
                   
                   <div className="space-y-4">
                     {/* Bank Info */}
                     <div className="bg-gray-50 rounded-xl p-5 space-y-3">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">ธนาคาร</span>
+                        <span className="text-sm text-muted-foreground">{t('bank')}</span>
                         <span className="font-semibold">{order.creator.bank_name}</span>
                       </div>
                       <div className="border-t border-gray-200" />
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">เลขที่บัญชี</span>
+                        <span className="text-sm text-muted-foreground">{t('accountNumber')}</span>
                         <span className="font-semibold font-mono tracking-wider">{order.creator.bank_account_number}</span>
                       </div>
                       <div className="border-t border-gray-200" />
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">ชื่อบัญชี</span>
+                        <span className="text-sm text-muted-foreground">{t('accountName')}</span>
                         <span className="font-semibold">{order.creator.bank_account_name}</span>
                       </div>
                     </div>
 
                     {/* Amount */}
                     <div className="bg-primary/5 rounded-lg px-6 py-3 text-center">
-                      <p className="text-sm text-muted-foreground">ยอดที่ต้องชำระ</p>
+                      <p className="text-sm text-muted-foreground">{t('amountToPay')}</p>
                       <p className="text-2xl font-bold text-primary">{formatPrice(order.total)}</p>
                     </div>
                   </div>
@@ -336,7 +338,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
               <Card className="mb-6">
                 <CardContent className="p-6">
                   <p className="text-center text-muted-foreground">
-                    ไม่พบวิธีการชำระเงิน กรุณาติดต่อผู้ขาย
+                    {t('noPaymentMethod')}
                   </p>
                 </CardContent>
               </Card>
@@ -346,7 +348,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
             {hasAnyPayment && (
             <Card>
               <CardContent className="p-6">
-                <h3 className="font-semibold mb-4">อัพโหลดสลิปการโอนเงิน</h3>
+                <h3 className="font-semibold mb-4">{t('uploadSlip')}</h3>
 
                 {/* File Input */}
                 <input
@@ -379,9 +381,9 @@ export function PaymentPage({ order }: PaymentPageProps) {
                     className="w-full border-2 border-dashed rounded-xl p-8 text-center hover:border-primary hover:bg-primary/5 transition-colors mb-4"
                   >
                     <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-                    <p className="font-medium">คลิกเพื่อเลือกรูปสลิป</p>
+                    <p className="font-medium">{t('clickSelectSlip')}</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      รองรับ JPG, PNG, WebP (ไม่เกิน 5MB)
+                      {t('slipFormats')}
                     </p>
                   </button>
                 )}
@@ -402,12 +404,12 @@ export function PaymentPage({ order }: PaymentPageProps) {
                   {uploading ? (
                     <>
                       <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                      กำลังอัพโหลด...
+                      {t('uploading')}
                     </>
                   ) : (
                     <>
                       <Upload className="h-5 w-5 mr-2" />
-                      ส่งสลิป
+                      {t('sendSlip')}
                     </>
                   )}
                 </Button>
@@ -423,7 +425,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-4">
                 <CheckCircle className="h-5 w-5 text-green-500" />
-                <h3 className="font-semibold">อัพโหลดสลิปเรียบร้อยแล้ว</h3>
+                <h3 className="font-semibold">{t('slipUploaded')}</h3>
               </div>
               
               <img
@@ -433,7 +435,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
               />
 
               <p className="text-sm text-muted-foreground text-center">
-                อัพโหลดเมื่อ {new Date(order.payment!.slip_uploaded_at!).toLocaleString('th-TH')}
+                {t('slipUploadedAt', { date: new Date(order.payment!.slip_uploaded_at!).toLocaleString('th-TH') })}
               </p>
             </CardContent>
           </Card>
@@ -441,7 +443,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
 
         {/* Contact Creator */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-muted-foreground mb-2">มีปัญหา? ติดต่อผู้ขาย</p>
+          <p className="text-sm text-muted-foreground mb-2">{t('contactSeller')}</p>
           <div className="flex justify-center gap-3">
             {order.creator.contact_line && (
               <a
@@ -472,7 +474,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
             href={`/u/${order.creator.username}`}
             className="text-sm text-muted-foreground hover:text-foreground"
           >
-            ← กลับไปร้านค้า
+            ← {t('backToStore')}
           </Link>
         </div>
       </div>

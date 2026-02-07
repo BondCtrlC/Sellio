@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 
 // ============================================
@@ -54,11 +55,12 @@ export type CouponInput = z.infer<typeof couponSchema>;
 // GET COUPONS
 // ============================================
 export async function getCoupons() {
+  const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ', coupons: [] };
+    return { success: false, error: t('pleaseLogin'), coupons: [] };
   }
 
   const { data: creator } = await supabase
@@ -68,7 +70,7 @@ export async function getCoupons() {
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator', coupons: [] };
+    return { success: false, error: t('creatorNotFound'), coupons: [] };
   }
 
   const { data: coupons, error } = await supabase
@@ -79,7 +81,7 @@ export async function getCoupons() {
 
   if (error) {
     console.error('Get coupons error:', error);
-    return { success: false, error: 'ไม่สามารถโหลดคูปองได้', coupons: [] };
+    return { success: false, error: t('cannotLoadCoupons'), coupons: [] };
   }
 
   return { success: true, coupons: coupons as Coupon[] };
@@ -89,18 +91,19 @@ export async function getCoupons() {
 // CREATE COUPON
 // ============================================
 export async function createCoupon(input: CouponInput) {
+  const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   // Validate input
   const parsed = couponSchema.safeParse(input);
   if (!parsed.success) {
     const firstError = parsed.error.issues[0];
-    return { success: false, error: firstError?.message || 'ข้อมูลไม่ถูกต้อง' };
+    return { success: false, error: firstError?.message || t('invalidData') };
   }
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const { data: creator } = await supabase
@@ -110,7 +113,7 @@ export async function createCoupon(input: CouponInput) {
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator' };
+    return { success: false, error: t('creatorNotFound') };
   }
 
   // Check for duplicate code
@@ -122,12 +125,12 @@ export async function createCoupon(input: CouponInput) {
     .single();
 
   if (existing) {
-    return { success: false, error: 'รหัสคูปองนี้มีอยู่แล้ว' };
+    return { success: false, error: t('couponCodeExists') };
   }
 
   // Validate percentage discount
   if (parsed.data.discount_type === 'percentage' && parsed.data.discount_value > 100) {
-    return { success: false, error: 'ส่วนลดเปอร์เซ็นต์ต้องไม่เกิน 100%' };
+    return { success: false, error: t('percentMax100') };
   }
 
   const { data: coupon, error } = await supabase
@@ -154,7 +157,7 @@ export async function createCoupon(input: CouponInput) {
 
   if (error) {
     console.error('Create coupon error:', error);
-    return { success: false, error: 'ไม่สามารถสร้างคูปองได้' };
+    return { success: false, error: t('cannotCreateCoupon') };
   }
 
   revalidatePath('/dashboard/coupons');
@@ -165,11 +168,12 @@ export async function createCoupon(input: CouponInput) {
 // UPDATE COUPON
 // ============================================
 export async function updateCoupon(couponId: string, input: Partial<CouponInput>) {
+  const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const { data: creator } = await supabase
@@ -179,7 +183,7 @@ export async function updateCoupon(couponId: string, input: Partial<CouponInput>
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator' };
+    return { success: false, error: t('creatorNotFound') };
   }
 
   // Verify ownership
@@ -191,7 +195,7 @@ export async function updateCoupon(couponId: string, input: Partial<CouponInput>
     .single();
 
   if (!existing) {
-    return { success: false, error: 'ไม่พบคูปอง' };
+    return { success: false, error: t('couponNotFound') };
   }
 
   // Check for duplicate code if code is being updated
@@ -205,7 +209,7 @@ export async function updateCoupon(couponId: string, input: Partial<CouponInput>
       .single();
 
     if (duplicate) {
-      return { success: false, error: 'รหัสคูปองนี้มีอยู่แล้ว' };
+      return { success: false, error: t('couponCodeExists') };
     }
   }
 
@@ -233,7 +237,7 @@ export async function updateCoupon(couponId: string, input: Partial<CouponInput>
 
   if (error) {
     console.error('Update coupon error:', error);
-    return { success: false, error: 'ไม่สามารถอัพเดทคูปองได้' };
+    return { success: false, error: t('cannotUpdateCoupon') };
   }
 
   revalidatePath('/dashboard/coupons');
@@ -244,11 +248,12 @@ export async function updateCoupon(couponId: string, input: Partial<CouponInput>
 // DELETE COUPON
 // ============================================
 export async function deleteCoupon(couponId: string) {
+  const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const { data: creator } = await supabase
@@ -258,7 +263,7 @@ export async function deleteCoupon(couponId: string) {
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator' };
+    return { success: false, error: t('creatorNotFound') };
   }
 
   const { error } = await supabase
@@ -269,7 +274,7 @@ export async function deleteCoupon(couponId: string) {
 
   if (error) {
     console.error('Delete coupon error:', error);
-    return { success: false, error: 'ไม่สามารถลบคูปองได้' };
+    return { success: false, error: t('cannotDeleteCoupon') };
   }
 
   revalidatePath('/dashboard/coupons');
@@ -280,11 +285,12 @@ export async function deleteCoupon(couponId: string) {
 // TOGGLE COUPON ACTIVE STATUS
 // ============================================
 export async function toggleCouponActive(couponId: string) {
+  const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const { data: creator } = await supabase
@@ -294,7 +300,7 @@ export async function toggleCouponActive(couponId: string) {
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator' };
+    return { success: false, error: t('creatorNotFound') };
   }
 
   // Get current status
@@ -306,7 +312,7 @@ export async function toggleCouponActive(couponId: string) {
     .single();
 
   if (!coupon) {
-    return { success: false, error: 'ไม่พบคูปอง' };
+    return { success: false, error: t('couponNotFound') };
   }
 
   const { error } = await supabase
@@ -319,7 +325,7 @@ export async function toggleCouponActive(couponId: string) {
 
   if (error) {
     console.error('Toggle coupon error:', error);
-    return { success: false, error: 'ไม่สามารถเปลี่ยนสถานะได้' };
+    return { success: false, error: t('cannotToggleStatus') };
   }
 
   revalidatePath('/dashboard/coupons');
@@ -337,6 +343,7 @@ export async function validateCoupon(
   totalAmount: number,
   buyerEmail: string
 ) {
+  const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   // Find coupon
@@ -349,21 +356,21 @@ export async function validateCoupon(
     .single();
 
   if (error || !coupon) {
-    return { success: false, error: 'ไม่พบคูปองนี้' };
+    return { success: false, error: t('couponNotFound') };
   }
 
   // Check validity period
   const now = new Date();
   if (coupon.starts_at && new Date(coupon.starts_at) > now) {
-    return { success: false, error: 'คูปองยังไม่เริ่มใช้งาน' };
+    return { success: false, error: t('couponNotStarted') };
   }
   if (coupon.expires_at && new Date(coupon.expires_at) < now) {
-    return { success: false, error: 'คูปองหมดอายุแล้ว' };
+    return { success: false, error: t('couponExpired') };
   }
 
   // Check usage limit
   if (coupon.usage_limit && coupon.usage_count >= coupon.usage_limit) {
-    return { success: false, error: 'คูปองถูกใช้งานครบจำนวนแล้ว' };
+    return { success: false, error: t('couponUsedUp') };
   }
 
   // Check per user limit
@@ -374,27 +381,27 @@ export async function validateCoupon(
     .eq('buyer_email', buyerEmail.toLowerCase());
 
   if (userUsage && coupon.per_user_limit && userUsage >= coupon.per_user_limit) {
-    return { success: false, error: 'คุณใช้คูปองนี้ครบจำนวนแล้ว' };
+    return { success: false, error: t('couponPersonalLimit') };
   }
 
   // Check min purchase
   if (coupon.min_purchase && totalAmount < coupon.min_purchase) {
     return { 
       success: false, 
-      error: `ยอดขั้นต่ำสำหรับใช้คูปองนี้คือ ฿${coupon.min_purchase.toLocaleString()}` 
+      error: t('couponMinPurchase', { amount: coupon.min_purchase.toLocaleString() }) 
     };
   }
 
   // Check product restrictions
   if (coupon.product_ids && coupon.product_ids.length > 0) {
     if (!coupon.product_ids.includes(productId)) {
-      return { success: false, error: 'คูปองนี้ไม่สามารถใช้กับสินค้านี้ได้' };
+      return { success: false, error: t('couponNotForProduct') };
     }
   }
 
   if (coupon.product_types && coupon.product_types.length > 0) {
     if (!coupon.product_types.includes(productType)) {
-      return { success: false, error: 'คูปองนี้ไม่สามารถใช้กับสินค้าประเภทนี้ได้' };
+      return { success: false, error: t('couponNotForType') };
     }
   }
 

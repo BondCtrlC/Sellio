@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 import type { StoreSection, StoreItem, StoreItemWithProduct, StoreSectionWithItems, StoreLayoutData, Product, Creator, StoreDesign } from '@/types';
 
 export type StoreLayoutResult<T = void> = {
@@ -32,9 +33,10 @@ async function getCreatorId(): Promise<string | null> {
 // GET: Full Store Layout
 // ============================================
 export async function getStoreLayout(): Promise<StoreLayoutResult<StoreLayoutData>> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -47,7 +49,7 @@ export async function getStoreLayout(): Promise<StoreLayoutResult<StoreLayoutDat
     .single();
 
   if (creatorError || !creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator' };
+    return { success: false, error: t('creatorNotFound') };
   }
 
   // Get sections with items
@@ -58,7 +60,7 @@ export async function getStoreLayout(): Promise<StoreLayoutResult<StoreLayoutDat
     .order('sort_order', { ascending: true });
 
   if (sectionsError) {
-    return { success: false, error: 'ไม่สามารถโหลด sections ได้' };
+    return { success: false, error: t('cannotLoadSections') };
   }
 
   // Get all store items with product details
@@ -72,7 +74,7 @@ export async function getStoreLayout(): Promise<StoreLayoutResult<StoreLayoutDat
     .order('sort_order', { ascending: true });
 
   if (itemsError) {
-    return { success: false, error: 'ไม่สามารถโหลดรายการสินค้าได้' };
+    return { success: false, error: t('cannotLoadProducts') };
   }
 
   // Organize items by sections
@@ -108,9 +110,10 @@ export async function getStoreLayout(): Promise<StoreLayoutResult<StoreLayoutDat
 // GET: All Products (for add product modal)
 // ============================================
 export async function getAllProducts(): Promise<StoreLayoutResult<Product[]>> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -122,7 +125,7 @@ export async function getAllProducts(): Promise<StoreLayoutResult<Product[]>> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    return { success: false, error: 'ไม่สามารถโหลดสินค้าได้' };
+    return { success: false, error: t('cannotLoadProductsList') };
   }
 
   return { success: true, data: products as Product[] };
@@ -132,9 +135,10 @@ export async function getAllProducts(): Promise<StoreLayoutResult<Product[]>> {
 // SECTION: Create
 // ============================================
 export async function createSection(title: string): Promise<StoreLayoutResult<StoreSection>> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -162,7 +166,7 @@ export async function createSection(title: string): Promise<StoreLayoutResult<St
 
   if (error) {
     console.error('Create section error:', error);
-    return { success: false, error: 'ไม่สามารถสร้าง section ได้' };
+    return { success: false, error: t('cannotCreateSection') };
   }
 
   revalidatePath('/dashboard/my-store');
@@ -173,9 +177,10 @@ export async function createSection(title: string): Promise<StoreLayoutResult<St
 // SECTION: Update
 // ============================================
 export async function updateSection(sectionId: string, title: string): Promise<StoreLayoutResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -187,7 +192,7 @@ export async function updateSection(sectionId: string, title: string): Promise<S
     .eq('creator_id', creatorId);
 
   if (error) {
-    return { success: false, error: 'ไม่สามารถแก้ไข section ได้' };
+    return { success: false, error: t('cannotEditSection') };
   }
 
   revalidatePath('/dashboard/my-store');
@@ -198,9 +203,10 @@ export async function updateSection(sectionId: string, title: string): Promise<S
 // SECTION: Delete
 // ============================================
 export async function deleteSection(sectionId: string): Promise<StoreLayoutResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -220,7 +226,7 @@ export async function deleteSection(sectionId: string): Promise<StoreLayoutResul
     .eq('creator_id', creatorId);
 
   if (error) {
-    return { success: false, error: 'ไม่สามารถลบ section ได้' };
+    return { success: false, error: t('cannotDeleteSection') };
   }
 
   revalidatePath('/dashboard/my-store');
@@ -231,9 +237,10 @@ export async function deleteSection(sectionId: string): Promise<StoreLayoutResul
 // ITEM: Add product to store
 // ============================================
 export async function addProductToStore(productId: string, sectionId?: string | null): Promise<StoreLayoutResult<StoreItem>> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -247,7 +254,7 @@ export async function addProductToStore(productId: string, sectionId?: string | 
     .single();
 
   if (existing) {
-    return { success: false, error: 'สินค้านี้อยู่ในร้านแล้ว' };
+    return { success: false, error: t('productAlreadyInStore') };
   }
 
   // Get max sort order
@@ -275,7 +282,7 @@ export async function addProductToStore(productId: string, sectionId?: string | 
 
   if (error) {
     console.error('Add product to store error:', error);
-    return { success: false, error: 'ไม่สามารถเพิ่มสินค้าได้' };
+    return { success: false, error: t('cannotAddProduct') };
   }
 
   revalidatePath('/dashboard/my-store');
@@ -286,9 +293,10 @@ export async function addProductToStore(productId: string, sectionId?: string | 
 // ITEM: Remove from store
 // ============================================
 export async function removeProductFromStore(itemId: string): Promise<StoreLayoutResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -300,7 +308,7 @@ export async function removeProductFromStore(itemId: string): Promise<StoreLayou
     .eq('creator_id', creatorId);
 
   if (error) {
-    return { success: false, error: 'ไม่สามารถลบสินค้าได้' };
+    return { success: false, error: t('cannotRemoveProduct') };
   }
 
   revalidatePath('/dashboard/my-store');
@@ -311,9 +319,10 @@ export async function removeProductFromStore(itemId: string): Promise<StoreLayou
 // ITEM: Toggle visibility
 // ============================================
 export async function toggleItemVisibility(itemId: string, isVisible: boolean): Promise<StoreLayoutResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -325,7 +334,7 @@ export async function toggleItemVisibility(itemId: string, isVisible: boolean): 
     .eq('creator_id', creatorId);
 
   if (error) {
-    return { success: false, error: 'ไม่สามารถเปลี่ยนสถานะได้' };
+    return { success: false, error: t('cannotToggleStatus') };
   }
 
   revalidatePath('/dashboard/my-store');
@@ -338,9 +347,10 @@ export async function toggleItemVisibility(itemId: string, isVisible: boolean): 
 export async function reorderItems(
   items: { id: string; sort_order: number; section_id: string | null }[]
 ): Promise<StoreLayoutResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -355,7 +365,7 @@ export async function reorderItems(
 
     if (error) {
       console.error('Reorder item error:', error);
-      return { success: false, error: 'ไม่สามารถจัดลำดับได้' };
+      return { success: false, error: t('cannotReorderProducts') };
     }
   }
 
@@ -369,9 +379,10 @@ export async function reorderItems(
 export async function reorderSections(
   sections: { id: string; sort_order: number }[]
 ): Promise<StoreLayoutResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -385,7 +396,7 @@ export async function reorderSections(
 
     if (error) {
       console.error('Reorder section error:', error);
-      return { success: false, error: 'ไม่สามารถจัดลำดับ section ได้' };
+      return { success: false, error: t('cannotReorderSections') };
     }
   }
 
@@ -397,9 +408,10 @@ export async function reorderSections(
 // MOVE: Move item to different section
 // ============================================
 export async function moveItemToSection(itemId: string, sectionId: string | null): Promise<StoreLayoutResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -423,7 +435,7 @@ export async function moveItemToSection(itemId: string, sectionId: string | null
     .eq('creator_id', creatorId);
 
   if (error) {
-    return { success: false, error: 'ไม่สามารถย้ายสินค้าได้' };
+    return { success: false, error: t('cannotMoveProduct') };
   }
 
   revalidatePath('/dashboard/my-store');
@@ -434,9 +446,10 @@ export async function moveItemToSection(itemId: string, sectionId: string | null
 // DESIGN: Update store design settings
 // ============================================
 export async function updateStoreDesign(design: StoreDesign): Promise<StoreLayoutResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -448,7 +461,7 @@ export async function updateStoreDesign(design: StoreDesign): Promise<StoreLayou
 
   if (error) {
     console.error('Update store design error:', error);
-    return { success: false, error: 'ไม่สามารถบันทึกการตั้งค่าได้' };
+    return { success: false, error: t('cannotSaveSettings') };
   }
 
   revalidatePath('/dashboard/my-store');

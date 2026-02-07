@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui';
 import { Share2, Facebook, Copy, Check, MessageCircle } from 'lucide-react';
 
@@ -30,6 +31,7 @@ function LineIcon({ className }: { className?: string }) {
 }
 
 export function ShareButtons({ url, title, description, compact = false }: ShareButtonsProps) {
+  const t = useTranslations('ShareButtons');
   const [copied, setCopied] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -93,7 +95,7 @@ export function ShareButtons({ url, title, description, compact = false }: Share
           className="gap-2"
         >
           <Share2 className="h-4 w-4" />
-          แชร์
+          {t('share')}
         </Button>
 
         {isOpen && (
@@ -135,7 +137,7 @@ export function ShareButtons({ url, title, description, compact = false }: Share
                 size="icon"
                 onClick={handleCopy}
                 className="h-9 w-9"
-                title="คัดลอกลิงก์"
+                title={t('copyLink')}
               >
                 {copied ? (
                   <Check className="h-4 w-4 text-green-500" />
@@ -152,7 +154,7 @@ export function ShareButtons({ url, title, description, compact = false }: Share
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm text-muted-foreground">แชร์:</span>
+      <span className="text-sm text-muted-foreground">{t('shareLabel')}</span>
       <Button
         variant="ghost"
         size="icon"
@@ -185,7 +187,7 @@ export function ShareButtons({ url, title, description, compact = false }: Share
         size="icon"
         onClick={handleCopy}
         className="h-9 w-9"
-        title="คัดลอกลิงก์"
+        title={t('copyLink')}
       >
         {copied ? (
           <Check className="h-4 w-4 text-green-500" />
@@ -199,6 +201,7 @@ export function ShareButtons({ url, title, description, compact = false }: Share
 
 // Simple share button for product cards
 export function ShareButton({ url, title }: { url: string; title: string }) {
+  const t = useTranslations('ShareButtons');
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
@@ -228,7 +231,7 @@ export function ShareButton({ url, title }: { url: string; title: string }) {
         handleShare();
       }}
       className="p-2 rounded-full bg-white/80 hover:bg-white shadow-sm transition-colors"
-      title="แชร์"
+      title={t('share')}
     >
       {copied ? (
         <Check className="h-4 w-4 text-green-500" />

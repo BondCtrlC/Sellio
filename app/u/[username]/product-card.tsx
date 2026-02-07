@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FileDown, Calendar, Video, ExternalLink, Package } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { DEFAULT_STORE_DESIGN, type StoreDesign } from '@/types';
+import { useTranslations } from 'next-intl';
 
 interface Product {
   id: string;
@@ -21,35 +22,16 @@ interface ProductCardProps {
   design?: StoreDesign | null;
 }
 
-const typeConfig = {
-  digital: {
-    icon: FileDown,
-    label: 'Digital',
-    buttonText: 'ซื้อเลย',
-    color: 'bg-blue-500',
-  },
-  booking: {
-    icon: Calendar,
-    label: 'Booking',
-    buttonText: 'จองเลย',
-    color: 'bg-green-500',
-  },
-  live: {
-    icon: Video,
-    label: 'Live',
-    buttonText: 'สมัครเลย',
-    color: 'bg-purple-500',
-  },
-  link: {
-    icon: ExternalLink,
-    label: 'Link',
-    buttonText: 'เปิดลิงก์',
-    color: 'bg-orange-500',
-  },
+const typeConfigBase = {
+  digital: { icon: FileDown, label: 'Digital', buttonKey: 'buyNow' as const, color: 'bg-blue-500' },
+  booking: { icon: Calendar, label: 'Booking', buttonKey: 'bookNow' as const, color: 'bg-green-500' },
+  live: { icon: Video, label: 'Live', buttonKey: 'signUp' as const, color: 'bg-purple-500' },
+  link: { icon: ExternalLink, label: 'Link', buttonKey: 'openLink' as const, color: 'bg-orange-500' },
 };
 
 export function ProductCard({ product, creatorUsername, design }: ProductCardProps) {
-  const config = typeConfig[product.type];
+  const t = useTranslations('StoreFront');
+  const config = typeConfigBase[product.type];
   const Icon = config.icon;
   const currentDesign = design || DEFAULT_STORE_DESIGN;
 
@@ -144,10 +126,10 @@ export function ProductCard({ product, creatorUsername, design }: ProductCardPro
           {/* Price & Action */}
           <div className="flex items-center justify-between mt-2">
             <span className="font-bold text-lg">
-              {product.price > 0 ? formatPrice(product.price) : 'ฟรี'}
+              {product.price > 0 ? formatPrice(product.price) : t('free')}
             </span>
             <span className="text-sm font-medium" style={{ color: currentDesign.theme_color }}>
-              {config.buttonText} →
+              {t(config.buttonKey)} →
             </span>
           </div>
         </div>
@@ -174,7 +156,8 @@ export function ProductCard({ product, creatorUsername, design }: ProductCardPro
 
 // Vertical Product Card (Grid Layout)
 export function VerticalProductCard({ product, creatorUsername, design }: ProductCardProps) {
-  const config = typeConfig[product.type];
+  const t = useTranslations('StoreFront');
+  const config = typeConfigBase[product.type];
   const Icon = config.icon;
   const currentDesign = design || DEFAULT_STORE_DESIGN;
 
@@ -222,7 +205,7 @@ export function VerticalProductCard({ product, creatorUsername, design }: Produc
         {/* Price */}
         <div className="flex items-center justify-between mt-2">
           <span className="font-bold">
-            {product.price > 0 ? formatPrice(product.price) : 'ฟรี'}
+            {product.price > 0 ? formatPrice(product.price) : t('free')}
           </span>
         </div>
 
@@ -231,7 +214,7 @@ export function VerticalProductCard({ product, creatorUsername, design }: Produc
           className="w-full mt-3 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90"
           style={{ backgroundColor: currentDesign.theme_color }}
         >
-          {config.buttonText}
+          {t(config.buttonKey)}
         </button>
       </div>
     </div>
@@ -254,7 +237,8 @@ export function VerticalProductCard({ product, creatorUsername, design }: Produc
 
 // Compact Product Card (List Layout)
 export function CompactProductCard({ product, creatorUsername, design }: ProductCardProps) {
-  const config = typeConfig[product.type];
+  const t = useTranslations('StoreFront');
+  const config = typeConfigBase[product.type];
   const Icon = config.icon;
   const currentDesign = design || DEFAULT_STORE_DESIGN;
 
@@ -291,7 +275,7 @@ export function CompactProductCard({ product, creatorUsername, design }: Product
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold text-foreground truncate">{product.title}</h3>
         <span className="text-sm text-muted-foreground">
-          {product.price > 0 ? formatPrice(product.price) : 'ฟรี'}
+          {product.price > 0 ? formatPrice(product.price) : t('free')}
         </span>
       </div>
 

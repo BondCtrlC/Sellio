@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 
 // ============================================
 // Types
@@ -47,10 +48,11 @@ export async function createReview(
   comment?: string
 ) {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   // Validate rating
   if (rating < 1 || rating > 5) {
-    return { success: false, error: 'คะแนนต้องอยู่ระหว่าง 1-5' };
+    return { success: false, error: t('ratingBetween1And5') };
   }
 
   // Get order details
@@ -61,12 +63,12 @@ export async function createReview(
     .single();
 
   if (orderError || !order) {
-    return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+    return { success: false, error: t('orderNotFound') };
   }
 
   // Only allow review for confirmed orders
   if (order.status !== 'confirmed') {
-    return { success: false, error: 'สามารถรีวิวได้เฉพาะคำสั่งซื้อที่สำเร็จแล้วเท่านั้น' };
+    return { success: false, error: t('reviewOnlyCompleted') };
   }
 
   // Check if already reviewed
@@ -77,7 +79,7 @@ export async function createReview(
     .single();
 
   if (existingReview) {
-    return { success: false, error: 'คุณได้รีวิวคำสั่งซื้อนี้แล้ว' };
+    return { success: false, error: t('alreadyReviewed') };
   }
 
   // Create review
@@ -97,7 +99,7 @@ export async function createReview(
 
   if (error) {
     console.error('Create review error:', error);
-    return { success: false, error: 'ไม่สามารถสร้างรีวิวได้' };
+    return { success: false, error: t('cannotCreateReview') };
   }
 
   return { success: true, review };
@@ -145,10 +147,11 @@ export async function getProductReviews(productId: string) {
 // ============================================
 export async function getCreatorReviews() {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ', reviews: [] };
+    return { success: false, error: t('pleaseLogin'), reviews: [] };
   }
 
   const { data: creator } = await supabase
@@ -158,7 +161,7 @@ export async function getCreatorReviews() {
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator', reviews: [] };
+    return { success: false, error: t('creatorNotFound'), reviews: [] };
   }
 
   const { data: reviews, error } = await supabase
@@ -172,7 +175,7 @@ export async function getCreatorReviews() {
 
   if (error) {
     console.error('Get creator reviews error:', error);
-    return { success: false, error: 'ไม่สามารถโหลดรีวิวได้', reviews: [] };
+    return { success: false, error: t('cannotLoadReviews'), reviews: [] };
   }
 
   // Process product relation
@@ -189,10 +192,11 @@ export async function getCreatorReviews() {
 // ============================================
 export async function toggleReviewPublished(reviewId: string) {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const { data: creator } = await supabase
@@ -202,7 +206,7 @@ export async function toggleReviewPublished(reviewId: string) {
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator' };
+    return { success: false, error: t('creatorNotFound') };
   }
 
   // Get current status
@@ -214,7 +218,7 @@ export async function toggleReviewPublished(reviewId: string) {
     .single();
 
   if (!review) {
-    return { success: false, error: 'ไม่พบรีวิว' };
+    return { success: false, error: t('reviewNotFound') };
   }
 
   const { error } = await supabase
@@ -227,7 +231,7 @@ export async function toggleReviewPublished(reviewId: string) {
 
   if (error) {
     console.error('Toggle review error:', error);
-    return { success: false, error: 'ไม่สามารถเปลี่ยนสถานะได้' };
+    return { success: false, error: t('cannotToggleStatus') };
   }
 
   revalidatePath('/dashboard/reviews');
@@ -239,10 +243,11 @@ export async function toggleReviewPublished(reviewId: string) {
 // ============================================
 export async function toggleReviewFeatured(reviewId: string) {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const { data: creator } = await supabase
@@ -252,7 +257,7 @@ export async function toggleReviewFeatured(reviewId: string) {
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator' };
+    return { success: false, error: t('creatorNotFound') };
   }
 
   const { data: review } = await supabase
@@ -263,7 +268,7 @@ export async function toggleReviewFeatured(reviewId: string) {
     .single();
 
   if (!review) {
-    return { success: false, error: 'ไม่พบรีวิว' };
+    return { success: false, error: t('reviewNotFound') };
   }
 
   const { error } = await supabase
@@ -275,7 +280,7 @@ export async function toggleReviewFeatured(reviewId: string) {
     .eq('id', reviewId);
 
   if (error) {
-    return { success: false, error: 'ไม่สามารถเปลี่ยนสถานะได้' };
+    return { success: false, error: t('cannotToggleStatus') };
   }
 
   revalidatePath('/dashboard/reviews');
@@ -287,10 +292,11 @@ export async function toggleReviewFeatured(reviewId: string) {
 // ============================================
 export async function addReviewResponse(reviewId: string, response: string) {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const { data: creator } = await supabase
@@ -300,7 +306,7 @@ export async function addReviewResponse(reviewId: string, response: string) {
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator' };
+    return { success: false, error: t('creatorNotFound') };
   }
 
   const { error } = await supabase
@@ -315,7 +321,7 @@ export async function addReviewResponse(reviewId: string, response: string) {
 
   if (error) {
     console.error('Add response error:', error);
-    return { success: false, error: 'ไม่สามารถบันทึกการตอบกลับได้' };
+    return { success: false, error: t('cannotSaveReply') };
   }
 
   revalidatePath('/dashboard/reviews');
@@ -327,6 +333,7 @@ export async function addReviewResponse(reviewId: string, response: string) {
 // ============================================
 export async function canReviewOrder(orderId: string) {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   // Check order status
   const { data: order } = await supabase
@@ -336,7 +343,7 @@ export async function canReviewOrder(orderId: string) {
     .single();
 
   if (!order || order.status !== 'confirmed') {
-    return { canReview: false, reason: 'คำสั่งซื้อยังไม่สำเร็จ' };
+    return { canReview: false, reason: t('orderNotCompleted') };
   }
 
   // Check if already reviewed
@@ -347,7 +354,7 @@ export async function canReviewOrder(orderId: string) {
     .single();
 
   if (existingReview) {
-    return { canReview: false, reason: 'รีวิวแล้ว' };
+    return { canReview: false, reason: t('alreadyReviewedShort') };
   }
 
   return { canReview: true };

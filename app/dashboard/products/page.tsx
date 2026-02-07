@@ -3,8 +3,12 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { ProductsList } from './products-list';
 import type { PlanType } from '@/types';
+import { getTranslations } from 'next-intl/server';
 
-export const metadata: Metadata = { title: "สินค้า" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Products');
+  return { title: t('title') };
+}
 
 async function getProducts() {
   const supabase = await createClient();

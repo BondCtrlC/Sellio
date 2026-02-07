@@ -5,6 +5,7 @@ import { productSchema, type ProductInput } from '@/lib/validations/product';
 import { canCreateProduct } from '@/lib/plan';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import type { PlanType } from '@/types';
 
 export type ProductResult = {
@@ -45,6 +46,7 @@ async function getCreatorWithPlan() {
 }
 
 export async function createProduct(data: ProductInput): Promise<ProductResult> {
+  const t = await getTranslations('ServerActions');
   const parsed = productSchema.safeParse(data);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
@@ -52,7 +54,7 @@ export async function createProduct(data: ProductInput): Promise<ProductResult> 
 
   const creator = await getCreatorWithPlan();
   if (!creator) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const creatorId = creator.id;
@@ -69,7 +71,7 @@ export async function createProduct(data: ProductInput): Promise<ProductResult> 
   if (!canCreateProduct(plan, currentCount)) {
     return { 
       success: false, 
-      error: `แพลน Free สร้างได้สูงสุด 2 สินค้า อัปเกรดเป็น Pro เพื่อสร้างไม่จำกัด` 
+      error: t('freePlanLimit') 
     };
   }
 
@@ -115,7 +117,7 @@ export async function createProduct(data: ProductInput): Promise<ProductResult> 
 
   if (error) {
     console.error('Create product error:', error);
-    return { success: false, error: 'ไม่สามารถสร้างสินค้าได้' };
+    return { success: false, error: t('cannotCreateProduct') };
   }
 
   revalidatePath('/dashboard/products');
@@ -123,6 +125,7 @@ export async function createProduct(data: ProductInput): Promise<ProductResult> 
 }
 
 export async function updateProduct(productId: string, data: ProductInput): Promise<ProductResult> {
+  const t = await getTranslations('ServerActions');
   const parsed = productSchema.safeParse(data);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
@@ -130,7 +133,7 @@ export async function updateProduct(productId: string, data: ProductInput): Prom
 
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -192,7 +195,7 @@ export async function updateProduct(productId: string, data: ProductInput): Prom
 
   if (error) {
     console.error('Update product error:', error);
-    return { success: false, error: 'ไม่สามารถแก้ไขสินค้าได้' };
+    return { success: false, error: t('cannotEditProduct') };
   }
 
   revalidatePath('/dashboard/products');
@@ -201,9 +204,10 @@ export async function updateProduct(productId: string, data: ProductInput): Prom
 }
 
 export async function deleteProduct(productId: string): Promise<ProductResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -217,7 +221,7 @@ export async function deleteProduct(productId: string): Promise<ProductResult> {
   if (orderCount && orderCount > 0) {
     return { 
       success: false, 
-      error: `สินค้านี้มี ${orderCount} คำสั่งซื้อแล้ว ไม่สามารถลบได้ ลองซ่อนสินค้าแทน` 
+      error: t('productHasOrders', { count: orderCount }) 
     };
   }
 
@@ -241,7 +245,7 @@ export async function deleteProduct(productId: string): Promise<ProductResult> {
 
   if (error) {
     console.error('Delete product error:', error);
-    return { success: false, error: `ไม่สามารถลบสินค้าได้: ${error.message}` };
+    return { success: false, error: t('cannotDeleteProduct', { error: error.message }) };
   }
 
   revalidatePath('/dashboard/products');
@@ -252,9 +256,10 @@ export async function updateProductBookingSettings(
   productId: string,
   settings: { minimum_advance_hours?: number; duration_minutes?: number; buffer_minutes?: number }
 ): Promise<ProductResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -268,7 +273,7 @@ export async function updateProductBookingSettings(
     .single();
 
   if (!currentProduct) {
-    return { success: false, error: 'ไม่พบสินค้า' };
+    return { success: false, error: t('productNotFound') };
   }
 
   const existingConfig = (currentProduct.type_config as Record<string, unknown>) || {};
@@ -289,7 +294,7 @@ export async function updateProductBookingSettings(
 
   if (error) {
     console.error('Update booking settings error:', error);
-    return { success: false, error: 'ไม่สามารถบันทึกการตั้งค่าได้' };
+    return { success: false, error: t('cannotSaveSettings') };
   }
 
   revalidatePath('/dashboard/products');
@@ -298,9 +303,10 @@ export async function updateProductBookingSettings(
 }
 
 export async function toggleProductPublish(productId: string, isPublished: boolean): Promise<ProductResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -313,7 +319,7 @@ export async function toggleProductPublish(productId: string, isPublished: boole
 
   if (error) {
     console.error('Toggle publish error:', error);
-    return { success: false, error: 'ไม่สามารถเปลี่ยนสถานะได้' };
+    return { success: false, error: t('cannotToggleStatus') };
   }
 
   revalidatePath('/dashboard/products');
@@ -321,6 +327,7 @@ export async function toggleProductPublish(productId: string, isPublished: boole
 }
 
 export async function uploadProductImage(productId: string, formData: FormData): Promise<ProductResult> {
+  const t = await getTranslations('ServerActions');
   try {
     const file = formData.get('image') as File;
     
@@ -332,24 +339,24 @@ export async function uploadProductImage(productId: string, formData: FormData):
     });
     
     if (!file || file.size === 0) {
-      return { success: false, error: 'กรุณาเลือกไฟล์' };
+      return { success: false, error: t('pleaseSelectFile') };
     }
 
     if (!file.type.startsWith('image/')) {
-      return { success: false, error: 'กรุณาเลือกไฟล์รูปภาพ' };
+      return { success: false, error: t('pleaseSelectImageFile') };
     }
 
     // Increase limit to 10MB
     if (file.size > 10 * 1024 * 1024) {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      return { success: false, error: `ไฟล์ใหญ่เกินไป (${sizeMB}MB) กรุณาเลือกไฟล์ไม่เกิน 10MB` };
+      return { success: false, error: t('fileTooLarge', { size: sizeMB }) };
     }
 
     const creatorId = await getCreatorId();
     console.log('Creator ID:', creatorId);
     
     if (!creatorId) {
-      return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+      return { success: false, error: t('pleaseLogin') };
     }
 
     const supabase = await createClient();
@@ -365,7 +372,7 @@ export async function uploadProductImage(productId: string, formData: FormData):
     console.log('Product check:', { product, productError });
 
     if (!product) {
-      return { success: false, error: `ไม่พบสินค้า (${productError?.message || 'unknown'})` };
+      return { success: false, error: t('productNotFoundDetail', { error: productError?.message || 'unknown' }) };
     }
 
     // Convert File to ArrayBuffer for upload
@@ -391,12 +398,12 @@ export async function uploadProductImage(productId: string, formData: FormData):
       console.error('Upload error details:', JSON.stringify(uploadError, null, 2));
       // More specific error messages
       if (uploadError.message?.includes('Bucket not found')) {
-        return { success: false, error: 'Storage ยังไม่ถูกตั้งค่า กรุณาสร้าง bucket "products"' };
+        return { success: false, error: t('storageNotSetup') };
       }
       if (uploadError.message?.includes('Policy') || uploadError.message?.includes('policy')) {
-        return { success: false, error: 'ไม่มีสิทธิ์อัปโหลด กรุณาตรวจสอบ Storage Policy' };
+        return { success: false, error: t('noUploadPermission') };
       }
-      return { success: false, error: `อัปโหลดไม่สำเร็จ: ${uploadError.message}` };
+      return { success: false, error: t('uploadFailed', { error: uploadError.message }) };
     }
 
     // Get public URL
@@ -413,7 +420,7 @@ export async function uploadProductImage(productId: string, formData: FormData):
 
     if (updateError) {
       console.error('Update image URL error:', updateError);
-      return { success: false, error: 'ไม่สามารถบันทึกรูปได้' };
+      return { success: false, error: t('cannotSaveImage') };
     }
 
     revalidatePath('/dashboard/products');
@@ -421,7 +428,7 @@ export async function uploadProductImage(productId: string, formData: FormData):
     return { success: true };
   } catch (err) {
     console.error('Unexpected upload error:', err);
-    return { success: false, error: `เกิดข้อผิดพลาด: ${err instanceof Error ? err.message : 'Unknown error'}` };
+    return { success: false, error: t('errorOccurred', { error: err instanceof Error ? err.message : 'Unknown error' }) };
   }
 }
 
@@ -430,9 +437,10 @@ export async function saveDigitalFileInfo(
   productId: string, 
   fileInfo: { url: string; name: string; path: string }
 ): Promise<ProductResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -446,7 +454,7 @@ export async function saveDigitalFileInfo(
     .single();
 
   if (!product) {
-    return { success: false, error: 'ไม่พบสินค้า' };
+    return { success: false, error: t('productNotFound') };
   }
 
   // Update product type_config with file info
@@ -470,7 +478,7 @@ export async function saveDigitalFileInfo(
 
   if (updateError) {
     console.error('Update digital file info error:', updateError);
-    return { success: false, error: 'ไม่สามารถบันทึกข้อมูลไฟล์ได้' };
+    return { success: false, error: t('cannotSaveFileData') };
   }
 
   revalidatePath('/dashboard/products');
@@ -483,9 +491,10 @@ export async function saveDigitalRedirectInfo(
   productId: string, 
   redirectInfo: { redirect_url: string; redirect_name: string | null }
 ): Promise<ProductResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -499,7 +508,7 @@ export async function saveDigitalRedirectInfo(
     .single();
 
   if (!product) {
-    return { success: false, error: 'ไม่พบสินค้า' };
+    return { success: false, error: t('productNotFound') };
   }
 
   // Update product type_config with redirect info
@@ -523,7 +532,7 @@ export async function saveDigitalRedirectInfo(
 
   if (updateError) {
     console.error('Update digital redirect info error:', updateError);
-    return { success: false, error: 'ไม่สามารถบันทึกได้' };
+    return { success: false, error: t('cannotSave') };
   }
 
   revalidatePath('/dashboard/products');
@@ -532,9 +541,10 @@ export async function saveDigitalRedirectInfo(
 }
 
 export async function deleteDigitalFile(productId: string): Promise<ProductResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -548,7 +558,7 @@ export async function deleteDigitalFile(productId: string): Promise<ProductResul
     .single();
 
   if (!product) {
-    return { success: false, error: 'ไม่พบสินค้า' };
+    return { success: false, error: t('productNotFound') };
   }
 
   const config = (product.type_config as Record<string, unknown>) || {};
@@ -572,7 +582,7 @@ export async function deleteDigitalFile(productId: string): Promise<ProductResul
 
   if (updateError) {
     console.error('Delete digital file info error:', updateError);
-    return { success: false, error: 'ไม่สามารถลบไฟล์ได้' };
+    return { success: false, error: t('cannotDeleteFile') };
   }
 
   revalidatePath('/dashboard/products');
@@ -581,9 +591,10 @@ export async function deleteDigitalFile(productId: string): Promise<ProductResul
 }
 
 export async function updateBookingDuration(productId: string, durationMinutes: number): Promise<ProductResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -597,7 +608,7 @@ export async function updateBookingDuration(productId: string, durationMinutes: 
     .single();
 
   if (!product) {
-    return { success: false, error: 'ไม่พบสินค้า' };
+    return { success: false, error: t('productNotFound') };
   }
 
   const currentConfig = (product.type_config as Record<string, unknown>) || {};
@@ -614,7 +625,7 @@ export async function updateBookingDuration(productId: string, durationMinutes: 
 
   if (error) {
     console.error('Update booking duration error:', error);
-    return { success: false, error: 'ไม่สามารถบันทึกได้' };
+    return { success: false, error: t('cannotSave') };
   }
 
   return { success: true };
@@ -628,9 +639,10 @@ export interface LiveSettingsInput {
 }
 
 export async function updateLiveSettings(productId: string, settings: LiveSettingsInput): Promise<ProductResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -644,7 +656,7 @@ export async function updateLiveSettings(productId: string, settings: LiveSettin
     .single();
 
   if (!product) {
-    return { success: false, error: 'ไม่พบสินค้า' };
+    return { success: false, error: t('productNotFound') };
   }
 
   const currentConfig = (product.type_config as Record<string, unknown>) || {};
@@ -664,7 +676,7 @@ export async function updateLiveSettings(productId: string, settings: LiveSettin
 
   if (error) {
     console.error('Update live settings error:', error);
-    return { success: false, error: 'ไม่สามารถบันทึกได้' };
+    return { success: false, error: t('cannotSave') };
   }
 
   return { success: true };

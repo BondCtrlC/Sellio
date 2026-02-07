@@ -1,67 +1,72 @@
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { Check, X, Sparkles, Zap } from 'lucide-react';
-
-const plans = [
-  {
-    name: 'Free',
-    description: 'เริ่มขายได้เลย ไม่มีค่าใช้จ่าย',
-    price: '0',
-    period: 'ตลอดชีพ',
-    highlight: false,
-    features: [
-      { text: 'หน้าร้านค้าส่วนตัว', included: true },
-      { text: 'สินค้าสูงสุด 2 รายการ', included: true },
-      { text: 'ออเดอร์ไม่จำกัด', included: true },
-      { text: 'รับชำระผ่าน PromptPay', included: true },
-      { text: 'ระบบจอง Booking + ปฏิทิน', included: true },
-      { text: 'ข้อความตอบกลับลูกค้า', included: true },
-      { text: 'แชร์ลิงก์ร้านค้า & สินค้า', included: true },
-      { text: 'สถิติพื้นฐาน (ยอดขาย + สินค้าขายดี)', included: true },
-      { text: 'ดูรีวิวจากลูกค้า (จำกัด)', included: true },
-      { text: 'จัดการรีวิว (ปักหมุด / ซ่อน)', included: false },
-      { text: 'ลบ Branding Sellio', included: false },
-      { text: 'Export ข้อมูล', included: false },
-    ],
-    cta: 'เริ่มต้นฟรี',
-    ctaVariant: 'outline' as const,
-    ctaNote: 'ไม่ต้องใส่บัตรเครดิต',
-  },
-  {
-    name: 'Pro',
-    description: 'ขายจริงจัง ควบคุมร้านได้ทุกอย่าง',
-    price: '3.3',
-    period: '/วัน',
-    monthlyPrice: '99 บาท/เดือน',
-    highlight: true,
-    features: [
-      { text: 'ทุกอย่างใน Free', included: true, bold: true },
-      { text: 'สินค้าไม่จำกัด', included: true, bold: true },
-      { text: 'ออเดอร์ไม่จำกัด', included: true },
-      { text: 'จัดการรีวิว (ปักหมุด / ซ่อน)', included: true, bold: true },
-      { text: 'ลบ Branding Sellio', included: true },
-      { text: 'Export ข้อมูล (ออเดอร์ / ลูกค้า / สินค้า)', included: true, bold: true },
-      { text: 'Priority Support', included: true },
-    ],
-    cta: 'อัปเกรดเป็น Pro',
-    ctaVariant: 'default' as const,
-    ctaNote: 'แค่วันละ 3.3 บาท ยกเลิกได้ทุกเมื่อ',
-  },
-];
+import { useTranslations } from 'next-intl';
 
 export function Pricing() {
+  const t = useTranslations('Pricing');
+
+  const plans = [
+    {
+      name: 'Free',
+      description: t('freeDesc'),
+      price: '0',
+      period: t('freePeriod'),
+      highlight: false,
+      features: [
+        { text: t('featureStore'), included: true },
+        { text: t('featureMax2'), included: true },
+        { text: t('featureUnlimitedOrders'), included: true },
+        { text: t('featurePromptPay'), included: true },
+        { text: t('featureBooking'), included: true },
+        { text: t('featureQuickReply'), included: true },
+        { text: t('featureShareLinks'), included: true },
+        { text: t('featureBasicStats'), included: true },
+        { text: t('featureViewReviews'), included: true },
+        { text: t('featureManageReviews'), included: false },
+        { text: t('featureRemoveBranding'), included: false },
+        { text: t('featureExport'), included: false },
+      ],
+      cta: t('ctaFree'),
+      ctaVariant: 'outline' as const,
+      ctaNote: t('ctaNoteFree'),
+    },
+    {
+      name: 'Pro',
+      description: t('proDesc'),
+      price: '3.3',
+      period: t('proPeriod'),
+      monthlyPrice: t('proMonthly'),
+      highlight: true,
+      features: [
+        { text: t('proEverythingFree'), included: true, bold: true },
+        { text: t('featureUnlimitedProducts'), included: true, bold: true },
+        { text: t('featureUnlimitedOrders'), included: true },
+        { text: t('featureManageReviews'), included: true, bold: true },
+        { text: t('featureRemoveBranding'), included: true },
+        { text: t('featureExportFull'), included: true, bold: true },
+        { text: t('featurePriority'), included: true },
+      ],
+      cta: t('ctaPro'),
+      ctaVariant: 'default' as const,
+      ctaNote: t('ctaNotePro'),
+    },
+  ];
+
   return (
     <section id="pricing" className="py-20 lg:py-32 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            เริ่มต้น
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600"> ฟรี </span>
-            อัปเกรดเมื่อพร้อม
+            {t('title1')}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">{t('title2')}</span>
+            {t('title3')}
           </h2>
           <p className="text-lg text-gray-600">
-            ไม่มีค่าใช้จ่ายซ่อนเร้น ไม่มี lock-in — เริ่มขายได้เลยวันนี้
+            {t('subtitle')}
           </p>
         </div>
 
@@ -81,7 +86,7 @@ export function Pricing() {
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                   <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-white text-sm font-medium">
                     <Sparkles className="w-4 h-4" />
-                    แนะนำ
+                    {t('recommended')}
                   </div>
                 </div>
               )}
@@ -115,7 +120,7 @@ export function Pricing() {
                 {plan.highlight && (
                   <p className="text-sm text-purple-300 mt-1 flex items-center gap-1">
                     <Zap className="w-3.5 h-3.5" />
-                    ถูกกว่ากาแฟวันละแก้ว
+                    {t('proCheaper')}
                   </p>
                 )}
               </div>
@@ -167,16 +172,16 @@ export function Pricing() {
         <div className="text-center mt-12 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full text-sm text-gray-600 mb-4">
             <Check className="w-4 h-4 text-green-500" />
-            ไม่ต้องใส่บัตรเครดิต
+            {t('bottomNoCard')}
             <span className="text-gray-300">|</span>
             <Check className="w-4 h-4 text-green-500" />
-            ยกเลิกได้ทุกเมื่อ
+            {t('bottomCancel')}
             <span className="text-gray-300">|</span>
             <Check className="w-4 h-4 text-green-500" />
-            ไม่มีค่าใช้จ่ายซ่อนเร้น
+            {t('bottomNoHidden')}
           </div>
           <p className="text-gray-500">
-            มีคำถาม? ส่งอีเมลมาที่{' '}
+            {t('bottomQuestion')}{' '}
             <a href="mailto:support@sellio.me" className="text-black font-medium hover:underline">
               support@sellio.me
             </a>

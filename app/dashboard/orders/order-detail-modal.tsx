@@ -25,6 +25,7 @@ import { formatPrice, formatDate } from '@/lib/utils';
 import { confirmPayment, rejectPayment, refundOrder } from '@/actions/orders';
 import { FulfillmentEditor } from './fulfillment-editor';
 import { QuickReply } from '@/components/dashboard';
+import { useTranslations } from 'next-intl';
 
 interface Order {
   id: string;
@@ -62,6 +63,7 @@ interface OrderDetailModalProps {
 export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const t = useTranslations('Orders');
   
   const [confirming, setConfirming] = useState(false);
   const [rejecting, setRejecting] = useState(false);
@@ -91,7 +93,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
     const result = await confirmPayment(order.id);
     
     if (!result.success) {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
       setConfirming(false);
       return;
     }
@@ -102,7 +104,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
 
   const handleReject = async () => {
     if (!rejectReason.trim()) {
-      setError('กรุณาระบุเหตุผลในการปฏิเสธ');
+      setError(t('enterRejectReason'));
       return;
     }
 
@@ -112,7 +114,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
     const result = await rejectPayment(order.id, rejectReason);
     
     if (!result.success) {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
       setRejecting(false);
       return;
     }
@@ -128,13 +130,13 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      setError('รองรับเฉพาะไฟล์ภาพ (JPG, PNG, WebP)');
+      setError(t('imageOnly'));
       return;
     }
 
     // Max 5MB
     if (file.size > 5 * 1024 * 1024) {
-      setError('ไฟล์ต้องมีขนาดไม่เกิน 5MB');
+      setError(t('maxSize5MB'));
       return;
     }
 
@@ -145,7 +147,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
 
   const handleRefund = async () => {
     if (!refundSlipFile) {
-      setError('กรุณาอัพโหลดสลิปการคืนเงิน');
+      setError(t('uploadRefundSlipRequired'));
       return;
     }
 
@@ -159,7 +161,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
     const result = await refundOrder(order.id, formData);
     
     if (!result.success) {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
       setRefunding(false);
       return;
     }
@@ -181,7 +183,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <div>
-            <h3 className="font-semibold">รายละเอียดคำสั่งซื้อ</h3>
+            <h3 className="font-semibold">{t('orderDetail')}</h3>
             <p className="text-sm text-muted-foreground">
               #{order.id.slice(0, 8).toUpperCase()}
             </p>
@@ -214,7 +216,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold">{order.product?.title || 'สินค้า'}</p>
+                  <p className="font-semibold">{order.product?.title || t('product')}</p>
                   <p className="text-sm text-muted-foreground capitalize">{order.product?.type}</p>
                   <p className="font-bold text-lg mt-1">{formatPrice(order.total)}</p>
                 </div>
@@ -241,7 +243,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
           {/* Buyer Info */}
           <Card>
             <CardContent className="p-4 space-y-3">
-              <h4 className="font-semibold text-sm">ข้อมูลผู้ซื้อ</h4>
+              <h4 className="font-semibold text-sm">{t('buyerInfo')}</h4>
               
               <div className="flex items-center gap-2 text-sm">
                 <User className="h-4 w-4 text-muted-foreground" />
@@ -276,7 +278,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
                 <div className="flex items-center gap-2 text-sm pt-2 border-t">
                   <CreditCard className="h-4 w-4 text-blue-500" />
                   <span className="text-blue-600 font-medium">
-                    PromptPay (คืนเงิน): {order.refund_promptpay}
+                    {t('promptPayRefund', { number: order.refund_promptpay })}
                   </span>
                 </div>
               )}
@@ -290,7 +292,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
               buyer_name: order.buyer_name,
               buyer_email: order.buyer_email,
               total: order.total,
-              product_title: order.product?.title || 'สินค้า',
+              product_title: order.product?.title || t('product'),
               product_type: order.product?.type || 'digital',
               booking_date: order.booking_date,
               booking_time: order.booking_time,
@@ -303,7 +305,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-sm">สลิปการโอนเงิน</h4>
+                  <h4 className="font-semibold text-sm">{t('paymentSlip')}</h4>
                   {order.payment.slip_uploaded_at && (
                     <span className="text-xs text-muted-foreground">
                       {new Date(order.payment.slip_uploaded_at).toLocaleString('th-TH')}
@@ -332,7 +334,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
           {order.status === 'refunded' && order.payment?.refund_slip_url && (
             <Card className="border-purple-200 bg-purple-50/50">
               <CardContent className="p-4">
-                <h4 className="font-semibold text-sm text-purple-800 mb-3">สลิปการคืนเงิน</h4>
+                <h4 className="font-semibold text-sm text-purple-800 mb-3">{t('refundSlip')}</h4>
                 <img
                   src={order.payment.refund_slip_url}
                   alt="Refund slip"
@@ -364,11 +366,11 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
           {showRejectForm && canConfirm && (
             <Card className="border-red-200 bg-red-50">
               <CardContent className="p-4 space-y-3">
-                <h4 className="font-semibold text-sm text-red-800">เหตุผลในการปฏิเสธ</h4>
+                <h4 className="font-semibold text-sm text-red-800">{t('rejectReasonTitle')}</h4>
                 <textarea
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="ระบุเหตุผล เช่น สลิปไม่ชัด, ยอดไม่ตรง..."
+                  placeholder={t('rejectReasonPlaceholder')}
                   className="w-full px-3 py-2 border border-red-200 rounded-lg resize-none h-20 text-sm"
                 />
                 <div className="flex gap-2">
@@ -380,7 +382,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
                       setRejectReason('');
                     }}
                   >
-                    ยกเลิก
+                    {t('cancel')}
                   </Button>
                   <Button
                     variant="destructive"
@@ -391,10 +393,10 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
                     {rejecting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        กำลังดำเนินการ...
+                        {t('processing')}
                       </>
                     ) : (
-                      'ยืนยันการปฏิเสธ'
+                      t('confirmReject')
                     )}
                   </Button>
                 </div>
@@ -408,12 +410,12 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
               <CardContent className="p-4 space-y-4">
                 <h4 className="font-semibold text-sm text-purple-800 flex items-center gap-2">
                   <RefreshCcw className="h-4 w-4" />
-                  คืนเงินให้ลูกค้า
+                  {t('refundTitle')}
                 </h4>
 
                 {/* Buyer's PromptPay Info */}
                 <div className="bg-white rounded-lg p-3 border border-purple-200">
-                  <p className="text-xs text-gray-500 mb-1">โอนเงินคืนไปที่</p>
+                  <p className="text-xs text-gray-500 mb-1">{t('refundTo')}</p>
                   {order.refund_promptpay ? (
                     <p className="text-lg font-bold text-purple-700 flex items-center gap-2">
                       <CreditCard className="h-5 w-5" />
@@ -421,21 +423,21 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
                     </p>
                   ) : (
                     <p className="text-sm text-gray-500">
-                      ลูกค้าไม่ได้ระบุ PromptPay ไว้ กรุณาติดต่อสอบถามโดยตรง
+                      {t('noPromptPay')}
                     </p>
                   )}
-                  <p className="text-sm text-gray-500 mt-1">ชื่อ: {order.buyer_name}</p>
+                  <p className="text-sm text-gray-500 mt-1">{t('name', { name: order.buyer_name })}</p>
                 </div>
 
                 {/* Amount */}
                 <div className="bg-white rounded-lg p-3 border border-purple-200">
-                  <p className="text-xs text-gray-500">จำนวนเงินที่ต้องคืน</p>
+                  <p className="text-xs text-gray-500">{t('refundAmount')}</p>
                   <p className="text-xl font-bold text-purple-700">{formatPrice(order.total)}</p>
                 </div>
 
                 {/* Upload Refund Slip */}
                 <div className="space-y-2">
-                  <Label className="text-sm text-purple-800">อัพโหลดสลิปการคืนเงิน *</Label>
+                  <Label className="text-sm text-purple-800">{t('uploadRefundSlip')}</Label>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -469,19 +471,19 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
                       className="w-full py-8 border-2 border-dashed border-purple-300 rounded-lg bg-white hover:bg-purple-50 transition-colors flex flex-col items-center gap-2"
                     >
                       <Upload className="h-8 w-8 text-purple-400" />
-                      <span className="text-sm text-purple-600">คลิกเพื่ออัพโหลดสลิป</span>
-                      <span className="text-xs text-gray-400">รองรับ JPG, PNG, WebP (ไม่เกิน 5MB)</span>
+                      <span className="text-sm text-purple-600">{t('clickUploadSlip')}</span>
+                      <span className="text-xs text-gray-400">{t('slipFormats')}</span>
                     </button>
                   )}
                 </div>
 
                 {/* Refund Note */}
                 <div className="space-y-2">
-                  <Label className="text-sm text-purple-800">หมายเหตุ (ถ้ามี)</Label>
+                  <Label className="text-sm text-purple-800">{t('refundNote')}</Label>
                   <textarea
                     value={refundNote}
                     onChange={(e) => setRefundNote(e.target.value)}
-                    placeholder="เช่น ไม่สามารถให้บริการได้ตามนัด..."
+                    placeholder={t('refundNotePlaceholder')}
                     className="w-full px-3 py-2 border border-purple-200 rounded-lg resize-none h-16 text-sm bg-white"
                   />
                 </div>
@@ -498,7 +500,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
                     }}
                     className="flex-1"
                   >
-                    ยกเลิก
+                    {t('cancel')}
                   </Button>
                   <Button
                     size="sm"
@@ -509,19 +511,19 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
                     {refunding ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        กำลังดำเนินการ...
+                        {t('processing')}
                       </>
                     ) : (
                       <>
                         <RefreshCcw className="h-4 w-4 mr-1" />
-                        ยืนยันการคืนเงิน
+                        {t('confirmRefund')}
                       </>
                     )}
                   </Button>
                 </div>
 
                 <p className="text-xs text-purple-600 text-center">
-                  ระบบจะส่งอีเมลพร้อมสลิปให้ลูกค้าอัตโนมัติ
+                  {t('refundEmailNote')}
                 </p>
               </CardContent>
             </Card>
@@ -534,7 +536,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
             {/* Warning if fulfillment info needed */}
             {needsFulfillmentInfo && !fulfillmentValid && (
               <div className="text-amber-600 text-sm text-center mb-2">
-                ⚠️ กรุณากรอกข้อมูลนัดหมายด้านบนก่อนยืนยัน
+                ⚠️ {t('fillFulfillmentWarning')}
               </div>
             )}
             <div className="flex gap-2">
@@ -545,7 +547,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
                 disabled={confirming}
               >
                 <XCircle className="h-4 w-4 mr-2" />
-                ปฏิเสธ
+                {t('reject')}
               </Button>
               <Button
                 className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:text-gray-500"
@@ -555,12 +557,12 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
                 {confirming ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    กำลังดำเนินการ...
+                    {t('processing')}
                   </>
                 ) : (
                   <>
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    ยืนยันการชำระเงิน
+                    {t('confirmPayment')}
                   </>
                 )}
               </Button>
@@ -571,7 +573,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
               onClick={() => setShowRefundForm(true)}
             >
               <RefreshCcw className="h-4 w-4 mr-2" />
-              คืนเงินให้ลูกค้า
+              {t('refundTitle')}
             </Button>
           </div>
         )}
@@ -580,7 +582,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
         {order.status === 'confirmed' && !showRefundForm && (
           <div className="p-4 border-t">
             <div className="text-center text-sm text-green-600 mb-3">
-              ✅ การชำระเงินได้รับการยืนยันแล้ว
+              ✅ {t('paymentConfirmed')}
             </div>
             <Button
               variant="outline"
@@ -588,7 +590,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
               onClick={() => setShowRefundForm(true)}
             >
               <RefreshCcw className="h-4 w-4 mr-2" />
-              คืนเงินให้ลูกค้า
+              {t('refundTitle')}
             </Button>
           </div>
         )}
@@ -597,13 +599,13 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
         {order.status === 'cancelled' && !showRefundForm && (
           <div className="p-4 border-t">
             <div className="text-center text-sm text-red-600 mb-3">
-              ❌ คำสั่งซื้อถูกยกเลิก
+              ❌ {t('orderCancelled')}
             </div>
             
             {/* Cancel reason from customer */}
             {order.cancel_reason && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
-                <p className="text-xs font-medium text-red-800 mb-1">เหตุผลที่ยกเลิก:</p>
+                <p className="text-xs font-medium text-red-800 mb-1">{t('cancelReason')}</p>
                 <p className="text-sm text-red-700">{order.cancel_reason}</p>
               </div>
             )}
@@ -614,10 +616,10 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
               onClick={() => setShowRefundForm(true)}
             >
               <RefreshCcw className="h-4 w-4 mr-2" />
-              คืนเงินให้ลูกค้า
+              {t('refundTitle')}
             </Button>
             <p className="text-xs text-muted-foreground text-center mt-2">
-              หากลูกค้าโอนเงินจริงแต่ถูกยกเลิกโดยผิดพลาด สามารถคืนเงินได้ที่นี่
+              {t('refundIfMistake')}
             </p>
           </div>
         )}
@@ -625,8 +627,8 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
         {/* Status message for non-actionable orders */}
         {!canConfirm && order.status !== 'confirmed' && order.status !== 'cancelled' && (
           <div className="p-4 border-t text-center text-sm text-muted-foreground">
-            {order.status === 'pending_payment' && '⏳ รอผู้ซื้อชำระเงิน'}
-            {order.status === 'refunded' && '💰 คืนเงินแล้ว'}
+            {order.status === 'pending_payment' && `⏳ ${t('waitingPayment')}`}
+            {order.status === 'refunded' && `💰 ${t('alreadyRefunded')}`}
           </div>
         )}
       </div>

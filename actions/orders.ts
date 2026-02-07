@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 import { checkoutSchema, type CheckoutInput } from '@/lib/validations/checkout';
 import { 
   sendOrderConfirmationEmail, 
@@ -74,6 +75,8 @@ export async function createOrder(
   creatorId: string,
   data: CheckoutInput
 ): Promise<CreateOrderResult> {
+  const t = await getTranslations('ServerActions');
+
   // Validate input
   const parsed = checkoutSchema.safeParse(data);
   if (!parsed.success) {
@@ -91,7 +94,7 @@ export async function createOrder(
     .single();
 
   if (productError || !product) {
-    return { success: false, error: 'ไม่พบสินค้า' };
+    return { success: false, error: t('productNotFound') };
   }
 
   // Get booking slot info if provided
@@ -108,19 +111,19 @@ export async function createOrder(
 
     if (slotError || !slot) {
       console.error('Slot query error:', slotError, 'slot_id:', data.slot_id, 'productId:', productId);
-      return { success: false, error: 'ช่วงเวลาที่เลือกไม่พร้อมใช้งาน' };
+      return { success: false, error: t('slotUnavailable') };
     }
 
     // Check if slot is available
     if (!slot.is_available) {
-      return { success: false, error: 'ช่วงเวลานี้ไม่เปิดให้จองแล้ว' };
+      return { success: false, error: t('slotNotOpen') };
     }
 
     // Check if slot is full
     const maxBookings = slot.max_bookings || 1;
     const currentBookings = slot.current_bookings || 0;
     if (currentBookings >= maxBookings) {
-      return { success: false, error: 'ช่วงเวลานี้เต็มแล้ว' };
+      return { success: false, error: t('slotFull') };
     }
 
     // Check minimum advance booking hours
@@ -136,7 +139,7 @@ export async function createOrder(
       if (hoursUntilBooking < minAdvanceHours) {
         return { 
           success: false, 
-          error: `กรุณาจองล่วงหน้าอย่างน้อย ${minAdvanceHours} ชั่วโมง` 
+          error: t('advanceBookingRequired', { hours: minAdvanceHours }) 
         };
       }
     }
@@ -167,7 +170,7 @@ export async function createOrder(
               slotStartMinutes < bookedEndMinutes + bufferMinutes) {
             return { 
               success: false, 
-              error: `ช่วงเวลานี้ติดกับช่วงพักระหว่างนัด กรุณาเลือกช่วงเวลาอื่น` 
+              error: t('slotBufferConflict') 
             };
           }
         }
@@ -177,7 +180,7 @@ export async function createOrder(
     bookingDate = slot.slot_date;
     bookingTime = slot.start_time;
   } else if ((product.type === 'booking' || product.type === 'live') && !data.slot_id) {
-    return { success: false, error: 'กรุณาเลือกวัน/เวลาที่ต้องการจอง' };
+    return { success: false, error: t('pleaseSelectSlot') };
   }
 
   // Calculate final amount with coupon
@@ -212,7 +215,7 @@ export async function createOrder(
 
   if (orderError || !order) {
     console.error('Create order error:', orderError);
-    return { success: false, error: 'ไม่สามารถสร้างคำสั่งซื้อได้' };
+    return { success: false, error: t('cannotCreateOrder') };
   }
 
   // Create payment record
@@ -228,7 +231,7 @@ export async function createOrder(
     console.error('Create payment error:', paymentError);
     // Rollback order
     await supabase.from('orders').delete().eq('id', order.id);
-    return { success: false, error: 'ไม่สามารถสร้างรายการชำระเงินได้' };
+    return { success: false, error: t('cannotCreatePayment') };
   }
 
   // Record coupon usage if applicable
@@ -313,7 +316,7 @@ export async function createOrder(
 
       sendNewOrderNotificationEmail(creatorData.notification_email, {
         buyerName: parsed.data.buyer_name,
-        productTitle: productData?.title || 'สินค้า',
+        productTitle: productData?.title || t('productDefault'),
         amount: finalTotal,
         orderId: order.id,
       }).catch(err => console.error('Order notification email error:', err));
@@ -394,22 +397,23 @@ export async function uploadSlip(
   orderId: string,
   formData: FormData
 ): Promise<UploadSlipResult> {
+  const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   const file = formData.get('slip') as File;
   if (!file || file.size === 0) {
-    return { success: false, error: 'กรุณาอัพโหลดสลิป' };
+    return { success: false, error: t('pleaseUploadSlip') };
   }
 
   // Validate file type
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
   if (!allowedTypes.includes(file.type)) {
-    return { success: false, error: 'รองรับเฉพาะไฟล์ภาพ (JPG, PNG, WebP)' };
+    return { success: false, error: t('imageFilesOnly') };
   }
 
   // Max 5MB
   if (file.size > 5 * 1024 * 1024) {
-    return { success: false, error: 'ไฟล์ต้องมีขนาดไม่เกิน 5MB' };
+    return { success: false, error: t('fileSizeMax5MB') };
   }
 
   // Get order to verify it exists and is pending payment
@@ -420,7 +424,7 @@ export async function uploadSlip(
     .single();
 
   if (orderError || !order) {
-    return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+    return { success: false, error: t('orderNotFound') };
   }
 
   // Check if order has expired
@@ -431,11 +435,11 @@ export async function uploadSlip(
       .update({ status: 'cancelled' })
       .eq('id', orderId)
       .eq('status', 'pending_payment');
-    return { success: false, error: 'คำสั่งซื้อนี้หมดอายุแล้ว กรุณาสั่งซื้อใหม่' };
+    return { success: false, error: t('orderExpired') };
   }
 
   if (order.status !== 'pending_payment') {
-    return { success: false, error: 'คำสั่งซื้อนี้ไม่สามารถอัพโหลดสลิปได้' };
+    return { success: false, error: t('orderCannotUploadSlip') };
   }
 
   // Convert File to ArrayBuffer for upload
@@ -459,9 +463,9 @@ export async function uploadSlip(
     console.error('Upload error:', uploadError);
     // More specific error message
     if (uploadError.message?.includes('bucket')) {
-      return { success: false, error: 'ยังไม่ได้ตั้งค่า Storage กรุณารัน migration 006_payment_storage.sql' };
+      return { success: false, error: t('storageNotConfigured') };
     }
-    return { success: false, error: `ไม่สามารถอัพโหลดสลิปได้: ${uploadError.message}` };
+    return { success: false, error: t('cannotUploadSlip', { error: uploadError.message }) };
   }
 
   // Get public URL
@@ -480,7 +484,7 @@ export async function uploadSlip(
 
   if (updateError) {
     console.error('Update payment error:', updateError);
-    return { success: false, error: 'ไม่สามารถบันทึกสลิปได้' };
+    return { success: false, error: t('cannotSaveSlip') };
   }
 
   // Update order status to pending_confirmation (always require manual confirmation)
@@ -508,7 +512,7 @@ export async function uploadSlip(
       if (creator?.notification_email) {
         sendSlipUploadedNotificationEmail(creator.notification_email, {
           buyerName: orderInfo.buyer_name,
-          productTitle: product?.title || 'สินค้า',
+          productTitle: product?.title || t('productDefault'),
           amount: Number(orderInfo.total),
           orderId: orderInfo.id,
         }).catch(err => console.error('Slip notification email error:', err));
@@ -527,12 +531,13 @@ export async function uploadSlip(
 // GET ORDERS FOR CREATOR (Dashboard)
 // ============================================
 export async function getCreatorOrders(status?: string) {
+  const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ', orders: [] };
+    return { success: false, error: t('pleaseLogin'), orders: [] };
   }
 
   // Get creator
@@ -543,7 +548,7 @@ export async function getCreatorOrders(status?: string) {
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator', orders: [] };
+    return { success: false, error: t('creatorNotFound'), orders: [] };
   }
 
   // Build query
@@ -587,7 +592,7 @@ export async function getCreatorOrders(status?: string) {
 
   if (error) {
     console.error('Get orders error:', error);
-    return { success: false, error: 'ไม่สามารถโหลดคำสั่งซื้อได้', orders: [] };
+    return { success: false, error: t('cannotLoadOrders'), orders: [] };
   }
 
   // Transform data: convert arrays to single objects
@@ -604,12 +609,13 @@ export async function getCreatorOrders(status?: string) {
 // CONFIRM PAYMENT
 // ============================================
 export async function confirmPayment(orderId: string): Promise<{ success: boolean; error?: string }> {
+  const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   // Get creator with contact info
@@ -620,7 +626,7 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator' };
+    return { success: false, error: t('creatorNotFound') };
   }
 
   // Verify order belongs to this creator
@@ -635,11 +641,11 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
     .single();
 
   if (orderError || !order) {
-    return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+    return { success: false, error: t('orderNotFound') };
   }
 
   if (order.status !== 'pending_confirmation') {
-    return { success: false, error: 'คำสั่งซื้อนี้ไม่สามารถยืนยันได้' };
+    return { success: false, error: t('orderCannotConfirm') };
   }
 
   // Update order status
@@ -649,7 +655,7 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
     .eq('id', orderId);
 
   if (updateOrderError) {
-    return { success: false, error: 'ไม่สามารถอัพเดทสถานะได้' };
+    return { success: false, error: t('cannotUpdateStatus') };
   }
 
   // Update payment status
@@ -691,7 +697,7 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
           // Rollback order status
           await supabase.from('orders').update({ status: 'pending_confirmation' }).eq('id', orderId);
           await supabase.from('payments').update({ status: 'pending', confirmed_at: null, confirmed_by: null }).eq('order_id', orderId);
-          return { success: false, error: 'กรุณากรอกข้อมูลนัดหมายก่อนยืนยัน' };
+          return { success: false, error: t('pleaseFillBookingInfo') };
         }
       }
     } else if (product.type === 'digital') {
@@ -730,7 +736,7 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
   }
 
   // Send confirmation email to buyer
-  const productTitle = product?.title || 'สินค้า';
+  const productTitle = product?.title || t('productDefault');
   
   // Prepare email data
   const emailData: Parameters<typeof sendOrderConfirmationEmail>[0] = {
@@ -739,7 +745,7 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
     buyerEmail: order.buyer_email,
     productTitle,
     amount: order.total,
-    creatorName: creator.display_name || 'ผู้ขาย',
+    creatorName: creator.display_name || t('sellerDefault'),
     creatorContact: {
       line: creator.contact_line || undefined,
       ig: creator.contact_ig || undefined,
@@ -788,12 +794,13 @@ export async function rejectPayment(
   orderId: string, 
   reason: string
 ): Promise<{ success: boolean; error?: string }> {
+  const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   // Get creator with contact info
@@ -804,7 +811,7 @@ export async function rejectPayment(
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator' };
+    return { success: false, error: t('creatorNotFound') };
   }
 
   // Verify order belongs to this creator
@@ -816,11 +823,11 @@ export async function rejectPayment(
     .single();
 
   if (orderError || !order) {
-    return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+    return { success: false, error: t('orderNotFound') };
   }
 
   if (order.status !== 'pending_confirmation') {
-    return { success: false, error: 'คำสั่งซื้อนี้ไม่สามารถปฏิเสธได้' };
+    return { success: false, error: t('orderCannotReject') };
   }
 
   // Update order status
@@ -830,7 +837,7 @@ export async function rejectPayment(
     .eq('id', orderId);
 
   if (updateOrderError) {
-    return { success: false, error: 'ไม่สามารถอัพเดทสถานะได้' };
+    return { success: false, error: t('cannotUpdateStatus') };
   }
 
   // Update payment status
@@ -853,9 +860,9 @@ export async function rejectPayment(
     orderId: order.id,
     buyerName: order.buyer_name,
     buyerEmail: order.buyer_email,
-    productTitle: productTitle || 'สินค้า',
+    productTitle: productTitle || t('productDefault'),
     amount: order.total,
-    creatorName: creator.display_name || 'ผู้ขาย',
+    creatorName: creator.display_name || t('sellerDefault'),
     creatorContact: {
       line: creator.contact_line || undefined,
       ig: creator.contact_ig || undefined,
@@ -930,12 +937,13 @@ export async function refundOrder(
   orderId: string, 
   formData: FormData
 ): Promise<{ success: boolean; error?: string }> {
+  const t = await getTranslations('ServerActions');
   const supabase = await createClient();
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   // Get creator with contact info
@@ -946,7 +954,7 @@ export async function refundOrder(
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator' };
+    return { success: false, error: t('creatorNotFound') };
   }
 
   // Verify order belongs to this creator
@@ -958,13 +966,13 @@ export async function refundOrder(
     .single();
 
   if (orderError || !order) {
-    return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+    return { success: false, error: t('orderNotFound') };
   }
 
   // Can refund confirmed, pending_confirmation, or cancelled orders
   // (cancelled orders may need refund if creator rejected by mistake)
   if (!['confirmed', 'pending_confirmation', 'cancelled'].includes(order.status)) {
-    return { success: false, error: 'คำสั่งซื้อนี้ไม่สามารถคืนเงินได้' };
+    return { success: false, error: t('orderCannotRefund') };
   }
 
   // Get refund slip from form
@@ -972,18 +980,18 @@ export async function refundOrder(
   const refundNote = formData.get('refund_note') as string;
 
   if (!refundSlip || refundSlip.size === 0) {
-    return { success: false, error: 'กรุณาอัพโหลดสลิปการคืนเงิน' };
+    return { success: false, error: t('pleaseUploadRefundSlip') };
   }
 
   // Validate file type
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
   if (!allowedTypes.includes(refundSlip.type)) {
-    return { success: false, error: 'รองรับเฉพาะไฟล์ภาพ (JPG, PNG, WebP)' };
+    return { success: false, error: t('imageFilesOnly') };
   }
 
   // Max 5MB
   if (refundSlip.size > 5 * 1024 * 1024) {
-    return { success: false, error: 'ไฟล์ต้องมีขนาดไม่เกิน 5MB' };
+    return { success: false, error: t('fileSizeMax5MB') };
   }
 
   // Convert File to ArrayBuffer for upload
@@ -1005,7 +1013,7 @@ export async function refundOrder(
 
   if (uploadError) {
     console.error('Upload error:', uploadError);
-    return { success: false, error: 'ไม่สามารถอัพโหลดสลิปได้' };
+    return { success: false, error: t('cannotUploadRefundSlip') };
   }
 
   // Get public URL
@@ -1023,7 +1031,7 @@ export async function refundOrder(
     .eq('id', orderId);
 
   if (updateOrderError) {
-    return { success: false, error: 'ไม่สามารถอัพเดทสถานะได้' };
+    return { success: false, error: t('cannotUpdateStatus') };
   }
 
   // Update payment status with refund info
@@ -1049,12 +1057,12 @@ export async function refundOrder(
     orderId: order.id,
     buyerName: order.buyer_name,
     buyerEmail: order.buyer_email,
-    productTitle: productTitle || 'สินค้า',
+    productTitle: productTitle || t('productDefault'),
     amount: order.total,
     refundAmount: order.total,
     refundNote: refundNote || undefined,
     refundSlipUrl: publicUrl,
-    creatorName: creator.display_name || 'ผู้ขาย',
+    creatorName: creator.display_name || t('sellerDefault'),
     creatorContact: {
       line: creator.contact_line || undefined,
       ig: creator.contact_ig || undefined,
@@ -1072,6 +1080,7 @@ export async function cancelBooking(
   orderId: string,
   reason?: string
 ): Promise<{ success: boolean; error?: string }> {
+  const t = await getTranslations('ServerActions');
   // Use admin client to bypass RLS (customer not logged in)
   const supabase = createAdminClient();
 
@@ -1084,7 +1093,7 @@ export async function cancelBooking(
 
   if (orderError || !order) {
     console.error('Cancel booking - order query error:', orderError, 'orderId:', orderId);
-    return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+    return { success: false, error: t('orderNotFound') };
   }
 
   console.log('Cancel booking - order found:', order);
@@ -1092,7 +1101,7 @@ export async function cancelBooking(
   // Check if can cancel (only confirmed or pending_confirmation)
   if (!['confirmed', 'pending_confirmation'].includes(order.status)) {
     console.error('Cancel booking - invalid status:', order.status);
-    return { success: false, error: `ไม่สามารถยกเลิกได้ (สถานะ: ${order.status})` };
+    return { success: false, error: t('cannotCancel', { status: order.status }) };
   }
 
   // Get product info separately
@@ -1105,11 +1114,11 @@ export async function cancelBooking(
   console.log('Cancel booking - product:', product, 'error:', productError);
 
   if (!product) {
-    return { success: false, error: 'ไม่พบข้อมูลสินค้า' };
+    return { success: false, error: t('productNotFound') };
   }
   
   if (!['booking', 'live'].includes(product.type)) {
-    return { success: false, error: `สินค้านี้ไม่ใช่การจอง (type: ${product.type})` };
+    return { success: false, error: t('notBookingProduct', { type: product.type }) };
   }
 
   // Get creator info separately
@@ -1147,7 +1156,7 @@ export async function cancelBooking(
     .from('orders')
     .update({
       status: 'cancelled',
-      cancel_reason: reason || 'ลูกค้ายกเลิก',
+      cancel_reason: reason || t('customerCancelled'),
     })
     .eq('id', orderId);
 
@@ -1155,7 +1164,7 @@ export async function cancelBooking(
 
   if (updateError) {
     console.error('Cancel booking - update error:', updateError);
-    return { success: false, error: `ไม่สามารถยกเลิกได้: ${updateError.message}` };
+    return { success: false, error: t('cancelError', { error: updateError.message }) };
   }
 
   // Send cancellation email to creator
@@ -1170,7 +1179,7 @@ export async function cancelBooking(
         productTitle: product.title,
         bookingDate: order.booking_date || '',
         bookingTime: order.booking_time || '',
-        reason: reason || 'ไม่ระบุ',
+        reason: reason || t('notSpecified'),
       });
       console.log('Cancel booking - email sent successfully');
     } catch (emailError) {
@@ -1191,6 +1200,7 @@ export async function rescheduleBooking(
   orderId: string,
   newSlotId: string
 ): Promise<{ success: boolean; error?: string }> {
+  const t = await getTranslations('ServerActions');
   // Use admin client to bypass RLS (customer not logged in)
   const supabase = createAdminClient();
 
@@ -1205,13 +1215,13 @@ export async function rescheduleBooking(
 
   if (orderError || !order) {
     console.error('Reschedule booking - order query error:', orderError);
-    return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+    return { success: false, error: t('orderNotFound') };
   }
 
   // Check if already rescheduled
   const rescheduleCount = (order as any).reschedule_count || 0;
   if (rescheduleCount >= 1) {
-    return { success: false, error: 'คุณได้เปลี่ยนเวลานัดหมายไปแล้ว 1 ครั้ง ไม่สามารถเปลี่ยนได้อีก' };
+    return { success: false, error: t('rescheduleMaxReached') };
   }
 
   // Get product info separately
@@ -1232,20 +1242,20 @@ export async function rescheduleBooking(
 
   if (!product) {
     console.log('Reschedule - product not found');
-    return { success: false, error: 'ไม่พบข้อมูลสินค้า' };
+    return { success: false, error: t('productNotFound') };
   }
 
   // Check if can reschedule
   console.log('Reschedule - checking status:', order.status);
   if (!['confirmed', 'pending_confirmation'].includes(order.status)) {
     console.log('Reschedule - invalid status:', order.status);
-    return { success: false, error: `ไม่สามารถเปลี่ยนนัดได้ (สถานะ: ${order.status})` };
+    return { success: false, error: t('cannotReschedule', { status: order.status }) };
   }
 
   console.log('Reschedule - checking product type:', product.type);
   if (!['booking', 'live'].includes(product.type)) {
     console.log('Reschedule - invalid product type:', product.type);
-    return { success: false, error: `สินค้านี้ไม่ใช่การจอง (type: ${product.type})` };
+    return { success: false, error: t('notBookingProduct', { type: product.type }) };
   }
 
   // Get new slot
@@ -1260,18 +1270,18 @@ export async function rescheduleBooking(
   console.log('Reschedule - newSlot:', newSlot, 'error:', newSlotError);
 
   if (newSlotError || !newSlot) {
-    return { success: false, error: 'ช่วงเวลาที่เลือกไม่พร้อมใช้งาน' };
+    return { success: false, error: t('slotUnavailable') };
   }
 
   // Check new slot availability
   if (!newSlot.is_available) {
-    return { success: false, error: 'ช่วงเวลานี้ไม่เปิดให้จอง' };
+    return { success: false, error: t('slotNotOpenBooking') };
   }
 
   const newMaxBookings = newSlot.max_bookings || 1;
   const newCurrentBookings = newSlot.current_bookings || 0;
   if (newCurrentBookings >= newMaxBookings) {
-    return { success: false, error: 'ช่วงเวลานี้เต็มแล้ว' };
+    return { success: false, error: t('slotFull') };
   }
 
   // Check minimum advance booking
@@ -1281,7 +1291,7 @@ export async function rescheduleBooking(
     const now = new Date();
     const hoursUntil = (bookingDatetime.getTime() - now.getTime()) / (1000 * 60 * 60);
     if (hoursUntil < minAdvanceHours) {
-      return { success: false, error: `กรุณาเลือกเวลาล่วงหน้าอย่างน้อย ${minAdvanceHours} ชั่วโมง` };
+      return { success: false, error: t('rescheduleAdvanceRequired', { hours: minAdvanceHours }) };
     }
   }
 
@@ -1331,7 +1341,7 @@ export async function rescheduleBooking(
 
   if (updateError) {
     console.error('Reschedule - update failed:', updateError);
-    return { success: false, error: `ไม่สามารถเปลี่ยนนัดได้: ${updateError.message}` };
+    return { success: false, error: t('rescheduleError', { error: updateError.message }) };
   }
 
   console.log('Reschedule - success!');
@@ -1375,6 +1385,7 @@ export async function getAvailableSlotsForReschedule(
   end_time: string;
   remaining: number;
 }>; error?: string }> {
+  const t = await getTranslations('ServerActions');
   // Use admin client to bypass RLS (customer not logged in)
   const supabase = createAdminClient();
 
@@ -1386,7 +1397,7 @@ export async function getAvailableSlotsForReschedule(
     .single();
 
   if (orderError || !order) {
-    return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+    return { success: false, error: t('orderNotFound') };
   }
 
   // Get product settings for minimum_advance_hours and buffer_minutes
@@ -1413,7 +1424,7 @@ export async function getAvailableSlotsForReschedule(
     .order('start_time', { ascending: true });
 
   if (slotsError) {
-    return { success: false, error: 'ไม่สามารถโหลดเวลาว่างได้' };
+    return { success: false, error: t('cannotLoadSlots') };
   }
 
   // Get all booked slots for buffer time calculation

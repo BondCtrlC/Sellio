@@ -15,6 +15,7 @@ import {
 import { updateBookingDuration } from '@/actions/products';
 import { Plus, Trash2, Calendar, Clock, Eye, EyeOff, Repeat, CalendarPlus, Pencil, Check, X, CheckSquare, Square } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 interface BookingSlot {
   id: string;
@@ -38,6 +39,7 @@ export function BookingSlotsManager({
   durationMinutes: initialDuration,
   initialSlots 
 }: BookingSlotsManagerProps) {
+  const t = useTranslations('BookingSlots');
   const [slots, setSlots] = useState<BookingSlot[]>(initialSlots);
   const [isAdding, setIsAdding] = useState(false);
   const [slotMode, setSlotMode] = useState<'single' | 'batch' | 'recurring'>('single');
@@ -80,6 +82,16 @@ export function BookingSlotsManager({
   const hoursOptions = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
   const minutesOptions = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
+  const dayNames = [
+    { value: 0, label: t('daySun'), fullLabel: t('daySunFull') },
+    { value: 1, label: t('dayMon'), fullLabel: t('dayMonFull') },
+    { value: 2, label: t('dayTue'), fullLabel: t('dayTueFull') },
+    { value: 3, label: t('dayWed'), fullLabel: t('dayWedFull') },
+    { value: 4, label: t('dayThu'), fullLabel: t('dayThuFull') },
+    { value: 5, label: t('dayFri'), fullLabel: t('dayFriFull') },
+    { value: 6, label: t('daySat'), fullLabel: t('daySatFull') },
+  ];
+
   // ===================== Duration =====================
   const handleDurationInput = (value: string) => {
     const num = parseInt(value) || 0;
@@ -99,7 +111,7 @@ export function BookingSlotsManager({
   // ===================== Add Slots =====================
   const handleAddSingleSlot = async () => {
     if (!slotDate || !startTime) {
-      setError('กรุณากรอกวันที่และเวลา');
+      setError(t('fillDateAndTime'));
       return;
     }
 
@@ -122,7 +134,7 @@ export function BookingSlotsManager({
     });
 
     if (!result.success) {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
     } else {
       setSlots([...slots, {
         id: result.slotId!,
@@ -145,7 +157,7 @@ export function BookingSlotsManager({
 
   const handleAddBatchSlots = async () => {
     if (!slotDate || !startTime || !endTime) {
-      setError('กรุณากรอกข้อมูลให้ครบ');
+      setError(t('fillAllFields'));
       return;
     }
 
@@ -163,7 +175,7 @@ export function BookingSlotsManager({
     });
 
     if (!result.success) {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
     } else {
       window.location.reload();
     }
@@ -173,7 +185,7 @@ export function BookingSlotsManager({
 
   const handleAddRecurringSlots = async () => {
     if (selectedDays.length === 0) {
-      setError('กรุณาเลือกวันอย่างน้อย 1 วัน');
+      setError(t('selectAtLeastOneDay'));
       return;
     }
 
@@ -192,9 +204,9 @@ export function BookingSlotsManager({
     });
 
     if (!result.success) {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
     } else {
-      setSuccessMessage(`สร้าง ${result.slotsCreated} slots สำเร็จ สำหรับ ${numberOfWeeks} สัปดาห์ข้างหน้า`);
+      setSuccessMessage(t('recurringSuccess', { count: result.slotsCreated ?? 0, weeks: numberOfWeeks }));
       window.location.reload();
     }
 
@@ -207,19 +219,9 @@ export function BookingSlotsManager({
     );
   };
 
-  const dayNames = [
-    { value: 0, label: 'อา', fullLabel: 'อาทิตย์' },
-    { value: 1, label: 'จ', fullLabel: 'จันทร์' },
-    { value: 2, label: 'อ', fullLabel: 'อังคาร' },
-    { value: 3, label: 'พ', fullLabel: 'พุธ' },
-    { value: 4, label: 'พฤ', fullLabel: 'พฤหัสบดี' },
-    { value: 5, label: 'ศ', fullLabel: 'ศุกร์' },
-    { value: 6, label: 'ส', fullLabel: 'เสาร์' },
-  ];
-
   // ===================== Single Actions =====================
   const handleDeleteSlot = async (slotId: string) => {
-    if (!confirm('ต้องการลบ slot นี้?')) return;
+    if (!confirm(t('confirmDeleteSlot'))) return;
 
     const result = await deleteBookingSlot(slotId);
     if (result.success) {
@@ -227,7 +229,7 @@ export function BookingSlotsManager({
       selectedSlotIds.delete(slotId);
       setSelectedSlotIds(new Set(selectedSlotIds));
     } else {
-      setError(result.error || 'ไม่สามารถลบได้');
+      setError(result.error || t('cannotDelete'));
     }
   };
 
@@ -279,7 +281,7 @@ export function BookingSlotsManager({
   const handleBulkDelete = async () => {
     const ids = Array.from(selectedSlotIds);
     if (ids.length === 0) return;
-    if (!confirm(`ต้องการลบ ${ids.length} slot ที่เลือก?`)) return;
+    if (!confirm(t('confirmBulkDelete', { count: ids.length }))) return;
 
     setIsBulkProcessing(true);
     setError(null);
@@ -287,17 +289,15 @@ export function BookingSlotsManager({
     const result = await bulkDeleteSlots(ids);
     if (result.success) {
       const deletedSet = new Set(ids);
-      // Keep only slots with bookings that couldn't be deleted
       setSlots(slots.filter(s => !deletedSet.has(s.id) || s.current_bookings > 0));
       setSelectedSlotIds(new Set());
       if (result.error) {
-        // Partial success message
         setSuccessMessage(result.error);
       } else {
-        setSuccessMessage(`ลบ ${result.deletedCount} slot สำเร็จ`);
+        setSuccessMessage(t('bulkDeleteSuccess', { count: result.deletedCount ?? 0 }));
       }
     } else {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
     }
 
     setIsBulkProcessing(false);
@@ -313,10 +313,10 @@ export function BookingSlotsManager({
     const result = await bulkToggleSlots(ids, false);
     if (result.success) {
       setSlots(slots.map(s => ids.includes(s.id) ? { ...s, is_available: false } : s));
-      setSuccessMessage(`ซ่อน ${result.updatedCount} slot สำเร็จ`);
+      setSuccessMessage(t('bulkHideSuccess', { count: result.updatedCount ?? 0 }));
       setSelectedSlotIds(new Set());
     } else {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
     }
 
     setIsBulkProcessing(false);
@@ -332,10 +332,10 @@ export function BookingSlotsManager({
     const result = await bulkToggleSlots(ids, true);
     if (result.success) {
       setSlots(slots.map(s => ids.includes(s.id) ? { ...s, is_available: true } : s));
-      setSuccessMessage(`เปิด ${result.updatedCount} slot สำเร็จ`);
+      setSuccessMessage(t('bulkShowSuccess', { count: result.updatedCount ?? 0 }));
       setSelectedSlotIds(new Set());
     } else {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
     }
 
     setIsBulkProcessing(false);
@@ -383,7 +383,7 @@ export function BookingSlotsManager({
       }));
       setEditingSlotId(null);
     } else {
-      setError(result.error || 'ไม่สามารถอัปเดตได้');
+      setError(result.error || t('cannotUpdate'));
     }
 
     setIsSavingEdit(false);
@@ -401,19 +401,17 @@ export function BookingSlotsManager({
   // Get today's date for min date
   const today = new Date().toISOString().split('T')[0];
 
-  const selectableCount = slots.filter(s => s.current_bookings === 0).length;
-
   return (
     <div className="space-y-6">
       {/* Duration Setting */}
       <div className="p-4 border rounded-lg space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-medium">ระยะเวลาต่อ Slot</h4>
-            <p className="text-sm text-muted-foreground">กำหนดความยาวของแต่ละ slot</p>
+            <h4 className="font-medium">{t('durationTitle')}</h4>
+            <p className="text-sm text-muted-foreground">{t('durationDesc')}</p>
           </div>
           {isSavingDuration && (
-            <span className="text-xs text-muted-foreground">กำลังบันทึก...</span>
+            <span className="text-xs text-muted-foreground">{t('saving')}</span>
           )}
         </div>
         <div className="flex items-center gap-3">
@@ -428,7 +426,7 @@ export function BookingSlotsManager({
             onKeyDown={(e) => e.key === 'Enter' && handleDurationSave()}
             className="w-24"
           />
-          <span className="text-sm text-muted-foreground">นาที</span>
+          <span className="text-sm text-muted-foreground">{t('minutes')}</span>
           <div className="flex gap-2 ml-auto">
             {[30, 60, 90, 120].map((mins) => (
               <button
@@ -446,7 +444,7 @@ export function BookingSlotsManager({
                     : 'hover:border-primary'
                 }`}
               >
-                {mins >= 60 ? `${mins / 60} ชม.` : `${mins} น.`}
+                {mins >= 60 ? `${mins / 60} ${t('hours')}` : `${mins} ${t('mins')}`}
               </button>
             ))}
           </div>
@@ -467,7 +465,7 @@ export function BookingSlotsManager({
             }`}
           >
             <CalendarPlus className="h-3.5 w-3.5" />
-            เพิ่มทีละ Slot
+            {t('singleMode')}
           </button>
           <button
             type="button"
@@ -479,7 +477,7 @@ export function BookingSlotsManager({
             }`}
           >
             <Plus className="h-3.5 w-3.5" />
-            หลาย Slot / วัน
+            {t('batchMode')}
           </button>
           <button
             type="button"
@@ -491,7 +489,7 @@ export function BookingSlotsManager({
             }`}
           >
             <Repeat className="h-3.5 w-3.5" />
-            ซ้ำทุกสัปดาห์
+            {t('recurringMode')}
           </button>
         </div>
 
@@ -499,7 +497,7 @@ export function BookingSlotsManager({
         {slotMode === 'single' && (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="slot-date">วันที่</Label>
+              <Label htmlFor="slot-date">{t('date')}</Label>
               <Input
                 id="slot-date"
                 type="date"
@@ -509,7 +507,7 @@ export function BookingSlotsManager({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="max-bookings">จำนวนที่นั่ง</Label>
+              <Label htmlFor="max-bookings">{t('seats')}</Label>
               <Input
                 id="max-bookings"
                 type="number"
@@ -519,10 +517,10 @@ export function BookingSlotsManager({
                 onChange={(e) => setMaxBookings(Math.max(1, parseInt(e.target.value) || 1))}
                 className="w-24"
               />
-              <p className="text-xs text-muted-foreground">จำนวนคนที่สามารถจองได้ต่อ slot</p>
+              <p className="text-xs text-muted-foreground">{t('seatsPerSlot')}</p>
             </div>
             <div className="space-y-2">
-              <Label>เวลาเริ่ม</Label>
+              <Label>{t('startTime')}</Label>
               <div className="flex items-center gap-1">
                 <select
                   value={startHour}
@@ -545,7 +543,7 @@ export function BookingSlotsManager({
                 </select>
               </div>
               <p className="text-xs text-muted-foreground">
-                Slot จะยาว {durationMinutes} นาที
+                {t('slotDuration', { duration: durationMinutes })}
               </p>
             </div>
           </div>
@@ -555,7 +553,7 @@ export function BookingSlotsManager({
         {slotMode === 'batch' && (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="slot-date-batch">วันที่</Label>
+              <Label htmlFor="slot-date-batch">{t('date')}</Label>
               <Input
                 id="slot-date-batch"
                 type="date"
@@ -565,7 +563,7 @@ export function BookingSlotsManager({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="max-bookings-batch">จำนวนที่นั่ง</Label>
+              <Label htmlFor="max-bookings-batch">{t('seats')}</Label>
               <Input
                 id="max-bookings-batch"
                 type="number"
@@ -575,10 +573,10 @@ export function BookingSlotsManager({
                 onChange={(e) => setMaxBookings(Math.max(1, parseInt(e.target.value) || 1))}
                 className="w-24"
               />
-              <p className="text-xs text-muted-foreground">จำนวนคนที่สามารถจองได้ต่อ slot</p>
+              <p className="text-xs text-muted-foreground">{t('seatsPerSlot')}</p>
             </div>
             <div className="space-y-2">
-              <Label>เวลาเริ่มต้น</Label>
+              <Label>{t('startTimeLabel')}</Label>
               <div className="flex items-center gap-1">
                 <select
                   value={startHour}
@@ -602,7 +600,7 @@ export function BookingSlotsManager({
               </div>
             </div>
             <div className="space-y-2">
-              <Label>เวลาสิ้นสุด</Label>
+              <Label>{t('endTime')}</Label>
               <div className="flex items-center gap-1">
                 <select
                   value={endHour}
@@ -627,7 +625,7 @@ export function BookingSlotsManager({
             </div>
             <div className="sm:col-span-2">
               <p className="text-sm text-muted-foreground">
-                ระบบจะสร้าง slot ทุก {durationMinutes} นาที ตั้งแต่ {startTime} ถึง {endTime}
+                {t('batchDesc', { duration: durationMinutes, start: startTime, end: endTime })}
               </p>
             </div>
           </div>
@@ -637,7 +635,7 @@ export function BookingSlotsManager({
         {slotMode === 'recurring' && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>เลือกวันที่เปิดให้จอง</Label>
+              <Label>{t('selectDays')}</Label>
               <div className="flex gap-2">
                 {dayNames.map((day) => (
                   <button
@@ -656,15 +654,15 @@ export function BookingSlotsManager({
                 ))}
               </div>
               <div className="flex gap-2 mt-1">
-                <button type="button" onClick={() => setSelectedDays([1, 2, 3, 4, 5])} className="text-xs text-primary hover:underline">จ-ศ</button>
-                <button type="button" onClick={() => setSelectedDays([0, 1, 2, 3, 4, 5, 6])} className="text-xs text-primary hover:underline">ทุกวัน</button>
-                <button type="button" onClick={() => setSelectedDays([0, 6])} className="text-xs text-primary hover:underline">เสาร์-อาทิตย์</button>
+                <button type="button" onClick={() => setSelectedDays([1, 2, 3, 4, 5])} className="text-xs text-primary hover:underline">{t('monFri')}</button>
+                <button type="button" onClick={() => setSelectedDays([0, 1, 2, 3, 4, 5, 6])} className="text-xs text-primary hover:underline">{t('everyday')}</button>
+                <button type="button" onClick={() => setSelectedDays([0, 6])} className="text-xs text-primary hover:underline">{t('satSun')}</button>
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>เวลาเริ่มต้น</Label>
+                <Label>{t('startTimeLabel')}</Label>
                 <div className="flex items-center gap-1">
                   <select value={startHour} onChange={(e) => setStartHour(e.target.value)} className="flex h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                     {hoursOptions.map((h) => (<option key={h} value={h}>{h}</option>))}
@@ -676,7 +674,7 @@ export function BookingSlotsManager({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>เวลาสิ้นสุด</Label>
+                <Label>{t('endTime')}</Label>
                 <div className="flex items-center gap-1">
                   <select value={endHour} onChange={(e) => setEndHour(e.target.value)} className="flex h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                     {hoursOptions.map((h) => (<option key={h} value={h}>{h}</option>))}
@@ -688,29 +686,29 @@ export function BookingSlotsManager({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="num-weeks">จำนวนสัปดาห์ล่วงหน้า</Label>
+                <Label htmlFor="num-weeks">{t('weeksAhead')}</Label>
                 <div className="flex items-center gap-2">
                   <Input id="num-weeks" type="number" min="1" max="12" value={numberOfWeeks} onChange={(e) => setNumberOfWeeks(Math.max(1, Math.min(12, parseInt(e.target.value) || 1)))} className="w-20" />
-                  <span className="text-sm text-muted-foreground">สัปดาห์</span>
+                  <span className="text-sm text-muted-foreground">{t('weeks')}</span>
                 </div>
                 <div className="flex gap-2">
                   {[2, 4, 8, 12].map((w) => (
                     <button key={w} type="button" onClick={() => setNumberOfWeeks(w)} className={`px-3 py-1 text-xs rounded-full border transition-colors ${numberOfWeeks === w ? 'bg-primary text-white border-primary' : 'hover:border-primary'}`}>
-                      {w} สัปดาห์
+                      {w} {t('weeks')}
                     </button>
                   ))}
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="max-bookings-recurring">จำนวนที่นั่ง</Label>
+                <Label htmlFor="max-bookings-recurring">{t('seats')}</Label>
                 <Input id="max-bookings-recurring" type="number" min="1" max="100" value={maxBookings} onChange={(e) => setMaxBookings(Math.max(1, parseInt(e.target.value) || 1))} className="w-24" />
-                <p className="text-xs text-muted-foreground">จำนวนคนที่สามารถจองได้ต่อ slot</p>
+                <p className="text-xs text-muted-foreground">{t('seatsPerSlot')}</p>
               </div>
             </div>
 
             <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-              <p>ระบบจะสร้าง slot ทุก {durationMinutes} นาที ตั้งแต่ {startTime} ถึง {endTime}</p>
-              <p>ทุกวัน{selectedDays.map((d) => dayNames[d].fullLabel).join(', ')} เป็นเวลา {numberOfWeeks} สัปดาห์ข้างหน้า</p>
+              <p>{t('batchDesc', { duration: durationMinutes, start: startTime, end: endTime })}</p>
+              <p>{t('recurringDesc', { days: selectedDays.map((d) => dayNames[d].fullLabel).join(', '), weeks: numberOfWeeks })}</p>
             </div>
           </div>
         )}
@@ -740,10 +738,10 @@ export function BookingSlotsManager({
             <Plus className="h-4 w-4 mr-2" />
           )}
           {slotMode === 'recurring'
-            ? 'สร้าง Slot ซ้ำทุกสัปดาห์'
+            ? t('addRecurring')
             : slotMode === 'batch'
-            ? 'สร้างหลาย Slot'
-            : 'เพิ่ม Slot'}
+            ? t('addBatch')
+            : t('addSlot')}
         </Button>
       </div>
 
@@ -751,28 +749,28 @@ export function BookingSlotsManager({
       {slots.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-          <p>ยังไม่มี slot</p>
-          <p className="text-sm">เพิ่ม slot วัน/เวลาที่คุณว่างด้านบน</p>
+          <p>{t('noSlots')}</p>
+          <p className="text-sm">{t('noSlotsHint')}</p>
         </div>
       ) : (
         <div className="space-y-4">
           {/* Toolbar: Select Mode Toggle + Bulk Actions */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">{slots.length} slot ทั้งหมด</span>
+              <span className="text-sm text-muted-foreground">{t('totalSlots', { count: slots.length })}</span>
             </div>
             <div className="flex items-center gap-2">
               {isSelectMode ? (
                 <>
                   <span className="text-sm font-medium">
-                    เลือก {selectedSlotIds.size} รายการ
+                    {t('selectedItems', { count: selectedSlotIds.size })}
                   </span>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={toggleSelectAll}
                   >
-                    {selectedSlotIds.size === slots.length ? 'ยกเลิกทั้งหมด' : 'เลือกทั้งหมด'}
+                    {selectedSlotIds.size === slots.length ? t('deselectAll') : t('selectAll')}
                   </Button>
                   <Button
                     variant="outline"
@@ -781,7 +779,7 @@ export function BookingSlotsManager({
                     disabled={selectedSlotIds.size === 0 || isBulkProcessing}
                   >
                     <Eye className="h-3.5 w-3.5 mr-1" />
-                    เปิด
+                    {t('show')}
                   </Button>
                   <Button
                     variant="outline"
@@ -790,7 +788,7 @@ export function BookingSlotsManager({
                     disabled={selectedSlotIds.size === 0 || isBulkProcessing}
                   >
                     <EyeOff className="h-3.5 w-3.5 mr-1" />
-                    ซ่อน
+                    {t('hide')}
                   </Button>
                   <Button
                     variant="destructive"
@@ -800,7 +798,7 @@ export function BookingSlotsManager({
                     isLoading={isBulkProcessing}
                   >
                     <Trash2 className="h-3.5 w-3.5 mr-1" />
-                    ลบ ({selectedSlotIds.size})
+                    {t('delete')} ({selectedSlotIds.size})
                   </Button>
                   <Button
                     variant="ghost"
@@ -817,7 +815,7 @@ export function BookingSlotsManager({
                   onClick={() => setIsSelectMode(true)}
                 >
                   <CheckSquare className="h-3.5 w-3.5 mr-1" />
-                  เลือกหลายรายการ
+                  {t('selectMultiple')}
                 </Button>
               )}
             </div>
@@ -863,11 +861,11 @@ export function BookingSlotsManager({
                       <div key={slot.id} className="px-4 py-3 bg-primary/5 space-y-3">
                         <div className="flex items-center gap-2 text-sm font-medium text-primary">
                           <Pencil className="h-3.5 w-3.5" />
-                          แก้ไข Slot
+                          {t('editSlot')}
                         </div>
                         <div className="flex flex-wrap items-end gap-3">
                           <div className="space-y-1">
-                            <Label className="text-xs">เวลาเริ่ม</Label>
+                            <Label className="text-xs">{t('startTime')}</Label>
                             <div className="flex items-center gap-1">
                               <select value={editStartHour} onChange={(e) => setEditStartHour(e.target.value)} className="flex h-9 w-16 rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                                 {hoursOptions.map((h) => (<option key={h} value={h}>{h}</option>))}
@@ -880,7 +878,7 @@ export function BookingSlotsManager({
                           </div>
                           <span className="text-muted-foreground pb-1">-</span>
                           <div className="space-y-1">
-                            <Label className="text-xs">เวลาสิ้นสุด</Label>
+                            <Label className="text-xs">{t('endTime')}</Label>
                             <div className="flex items-center gap-1">
                               <select value={editEndHour} onChange={(e) => setEditEndHour(e.target.value)} className="flex h-9 w-16 rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                                 {hoursOptions.map((h) => (<option key={h} value={h}>{h}</option>))}
@@ -892,7 +890,7 @@ export function BookingSlotsManager({
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs">ที่นั่ง</Label>
+                            <Label className="text-xs">{t('seatCount')}</Label>
                             <Input
                               type="number"
                               min={Math.max(1, slot.current_bookings)}
@@ -911,7 +909,7 @@ export function BookingSlotsManager({
                               className="h-9"
                             >
                               <Check className="h-3.5 w-3.5 mr-1" />
-                              บันทึก
+                              {t('save')}
                             </Button>
                             <Button
                               variant="ghost"
@@ -957,16 +955,16 @@ export function BookingSlotsManager({
                           {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
                         </span>
                         <span className="text-sm text-muted-foreground">
-                          ({slot.current_bookings}/{slot.max_bookings} ที่นั่ง)
+                          ({slot.current_bookings}/{slot.max_bookings} {t('seatCount')})
                         </span>
                         {!slot.is_available ? (
-                          <Badge variant="outline">ปิด</Badge>
+                          <Badge variant="outline">{t('statusClosed')}</Badge>
                         ) : isFull ? (
-                          <Badge variant="secondary">เต็ม</Badge>
+                          <Badge variant="secondary">{t('statusFull')}</Badge>
                         ) : slot.current_bookings > 0 ? (
-                          <Badge variant="warning">มีจอง</Badge>
+                          <Badge variant="warning">{t('statusBooked')}</Badge>
                         ) : (
-                          <Badge variant="success">ว่าง</Badge>
+                          <Badge variant="success">{t('statusAvailable')}</Badge>
                         )}
                       </div>
                       {!isSelectMode && (
@@ -975,7 +973,7 @@ export function BookingSlotsManager({
                             variant="ghost"
                             size="sm"
                             onClick={() => startEditing(slot)}
-                            title="แก้ไข slot"
+                            title={t('editSlotTitle')}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -985,7 +983,7 @@ export function BookingSlotsManager({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleToggleAvailability(slot.id, slot.is_available)}
-                                title={slot.is_available ? 'ปิด slot' : 'เปิด slot'}
+                                title={slot.is_available ? t('closeSlot') : t('openSlot')}
                               >
                                 {slot.is_available ? (
                                   <EyeOff className="h-4 w-4" />

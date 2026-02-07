@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { Star, Send, CheckCircle } from 'lucide-react';
 import { createReview } from '@/actions/reviews';
+import { useTranslations } from 'next-intl';
 
 interface ReviewFormProps {
   orderId: string;
@@ -12,6 +13,7 @@ interface ReviewFormProps {
 }
 
 export function ReviewForm({ orderId, productTitle, onSuccess }: ReviewFormProps) {
+  const t = useTranslations('ReviewSection');
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -23,7 +25,7 @@ export function ReviewForm({ orderId, productTitle, onSuccess }: ReviewFormProps
     e.preventDefault();
     
     if (rating === 0) {
-      setError('กรุณาให้คะแนน');
+      setError(t('pleaseRate'));
       return;
     }
 
@@ -33,7 +35,7 @@ export function ReviewForm({ orderId, productTitle, onSuccess }: ReviewFormProps
     const result = await createReview(orderId, rating, comment);
     
     if (!result.success) {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
       setLoading(false);
       return;
     }
@@ -47,9 +49,9 @@ export function ReviewForm({ orderId, productTitle, onSuccess }: ReviewFormProps
       <Card>
         <CardContent className="py-8 text-center">
           <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-          <h3 className="font-semibold text-lg mb-2">ขอบคุณสำหรับรีวิว!</h3>
+          <h3 className="font-semibold text-lg mb-2">{t('thankYou')}</h3>
           <p className="text-muted-foreground">
-            รีวิวของคุณจะช่วยให้ผู้ซื้อคนอื่นตัดสินใจได้ดีขึ้น
+            {t('thankYouDesc')}
           </p>
         </CardContent>
       </Card>
@@ -59,7 +61,7 @@ export function ReviewForm({ orderId, productTitle, onSuccess }: ReviewFormProps
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">รีวิวสินค้า</CardTitle>
+        <CardTitle className="text-lg">{t('reviewProduct')}</CardTitle>
         <p className="text-sm text-muted-foreground">{productTitle}</p>
       </CardHeader>
       <CardContent>
@@ -72,7 +74,7 @@ export function ReviewForm({ orderId, productTitle, onSuccess }: ReviewFormProps
 
           {/* Star Rating */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">ให้คะแนน *</label>
+            <label className="text-sm font-medium">{t('rateLabel')}</label>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -95,22 +97,22 @@ export function ReviewForm({ orderId, productTitle, onSuccess }: ReviewFormProps
             </div>
             {rating > 0 && (
               <p className="text-sm text-muted-foreground">
-                {rating === 5 && 'ยอดเยี่ยม!'}
-                {rating === 4 && 'ดีมาก'}
-                {rating === 3 && 'พอใช้'}
-                {rating === 2 && 'ต้องปรับปรุง'}
-                {rating === 1 && 'ไม่พอใจ'}
+                {rating === 5 && t('excellent')}
+                {rating === 4 && t('veryGood')}
+                {rating === 3 && t('average')}
+                {rating === 2 && t('needsImprovement')}
+                {rating === 1 && t('unsatisfied')}
               </p>
             )}
           </div>
 
           {/* Comment */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">ความคิดเห็น (ไม่บังคับ)</label>
+            <label className="text-sm font-medium">{t('commentLabel')}</label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="แชร์ประสบการณ์ของคุณกับสินค้านี้..."
+              placeholder={t('commentFormPlaceholder')}
               className="w-full p-3 border rounded-lg resize-none h-24 text-sm"
               disabled={loading}
             />
@@ -119,11 +121,11 @@ export function ReviewForm({ orderId, productTitle, onSuccess }: ReviewFormProps
           {/* Submit */}
           <Button type="submit" disabled={loading || rating === 0} className="w-full">
             {loading ? (
-              'กำลังส่ง...'
+              t('submitting')
             ) : (
               <>
                 <Send className="h-4 w-4 mr-2" />
-                ส่งรีวิว
+                {t('submitReview')}
               </>
             )}
           </Button>

@@ -24,69 +24,20 @@ import { Button } from '@/components/ui';
 import { logout } from '@/actions/auth';
 import { getSidebarCounts, type SidebarCounts } from '@/actions/sidebar-counts';
 import { createClient } from '@/lib/supabase/client';
+import { useTranslations } from 'next-intl';
 
-const navItems = [
-  {
-    title: 'ภาพรวม',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-    countKey: null,
-  },
-  {
-    title: 'สถิติ',
-    href: '/dashboard/analytics',
-    icon: BarChart3,
-    countKey: null,
-  },
-  {
-    title: 'ร้านค้าของฉัน',
-    href: '/dashboard/my-store',
-    icon: Store,
-    countKey: null,
-  },
-  {
-    title: 'สินค้า',
-    href: '/dashboard/products',
-    icon: Package,
-    countKey: null,
-  },
-  {
-    title: 'คำสั่งซื้อ',
-    href: '/dashboard/orders',
-    icon: ShoppingCart,
-    countKey: 'orders' as keyof SidebarCounts,
-  },
-  {
-    title: 'ปฏิทิน',
-    href: '/dashboard/calendar',
-    icon: CalendarDays,
-    countKey: 'calendar' as keyof SidebarCounts,
-  },
-  {
-    title: 'คูปอง',
-    href: '/dashboard/coupons',
-    icon: Ticket,
-    countKey: null,
-  },
-  {
-    title: 'ลูกค้า',
-    href: '/dashboard/customers',
-    icon: Users,
-    countKey: null,
-  },
-  {
-    title: 'รีวิว',
-    href: '/dashboard/reviews',
-    icon: Star,
-    countKey: 'reviews' as keyof SidebarCounts,
-  },
-  {
-    title: 'ตั้งค่า',
-    href: '/dashboard/settings',
-    icon: Settings,
-    countKey: null,
-  },
-];
+const navItemDefs = [
+  { key: 'overview', href: '/dashboard', icon: LayoutDashboard, countKey: null },
+  { key: 'analytics', href: '/dashboard/analytics', icon: BarChart3, countKey: null },
+  { key: 'myStore', href: '/dashboard/my-store', icon: Store, countKey: null },
+  { key: 'products', href: '/dashboard/products', icon: Package, countKey: null },
+  { key: 'orders', href: '/dashboard/orders', icon: ShoppingCart, countKey: 'orders' as keyof SidebarCounts },
+  { key: 'calendar', href: '/dashboard/calendar', icon: CalendarDays, countKey: 'calendar' as keyof SidebarCounts },
+  { key: 'coupons', href: '/dashboard/coupons', icon: Ticket, countKey: null },
+  { key: 'customers', href: '/dashboard/customers', icon: Users, countKey: null },
+  { key: 'reviews', href: '/dashboard/reviews', icon: Star, countKey: 'reviews' as keyof SidebarCounts },
+  { key: 'settings', href: '/dashboard/settings', icon: Settings, countKey: null },
+] as const;
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -104,6 +55,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const [counts, setCounts] = useState<SidebarCounts>({ orders: 0, reviews: 0, calendar: 0 });
   const [creator, setCreator] = useState<CreatorInfo | null>(null);
+  const t = useTranslations('Sidebar');
 
   // Fetch creator info
   useEffect(() => {
@@ -186,7 +138,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          {navItemDefs.map((item) => {
             const isActive = pathname === item.href || 
               (item.href !== '/dashboard' && pathname.startsWith(item.href));
             const count = item.countKey ? counts[item.countKey] : 0;
@@ -204,7 +156,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="flex-1">{item.title}</span>
+                <span className="flex-1">{t(item.key)}</span>
                 {count > 0 && (
                   <span 
                     className={cn(
@@ -232,7 +184,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-hover hover:text-sidebar-foreground transition-colors mb-2"
             >
               <Crown className="h-5 w-5 text-amber-500" />
-              <span className="flex-1">จัดการ Subscription</span>
+              <span className="flex-1">{t('manageSubscription')}</span>
             </Link>
           ) : (
             <Link
@@ -241,7 +193,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-gradient-to-r from-amber-50 to-orange-50 text-amber-800 hover:from-amber-100 hover:to-orange-100 transition-colors mb-2"
             >
               <Crown className="h-5 w-5 text-amber-600" />
-              <span className="flex-1">อัปเกรด Pro</span>
+              <span className="flex-1">{t('upgradePro')}</span>
               <span className="text-xs bg-amber-200 px-1.5 py-0.5 rounded-full font-bold">99฿</span>
             </Link>
           )}
@@ -253,7 +205,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-hover hover:text-sidebar-foreground transition-colors"
             >
               <Store className="h-5 w-5" />
-              ดูหน้าร้าน
+              {t('viewStore')}
             </Link>
           )}
           <form action={logout}>
@@ -262,7 +214,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-hover hover:text-sidebar-foreground transition-colors w-full"
             >
               <LogOut className="h-5 w-5" />
-              ออกจากระบบ
+              {t('logout')}
             </button>
           </form>
 

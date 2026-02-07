@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button, Input, Label } from '@/components/ui';
 import { updateProductBookingSettings } from '@/actions/products';
 import { Clock, Save, Loader2, Timer } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface BookingSettingsProps {
   productId: string;
@@ -20,6 +21,7 @@ export function BookingSettings({
   const [bufferMinutes, setBufferMinutes] = useState(initialBufferMinutes);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const t = useTranslations('BookingSettings');
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -32,12 +34,12 @@ export function BookingSettings({
       });
       
       if (result.success) {
-        setMessage({ type: 'success', text: 'บันทึกเรียบร้อยแล้ว' });
+        setMessage({ type: 'success', text: t('savedSuccess') });
       } else {
-        setMessage({ type: 'error', text: result.error || 'เกิดข้อผิดพลาด' });
+        setMessage({ type: 'error', text: result.error || t('error') });
       }
     } catch {
-      setMessage({ type: 'error', text: 'เกิดข้อผิดพลาด' });
+      setMessage({ type: 'error', text: t('error') });
     } finally {
       setIsSaving(false);
     }
@@ -47,7 +49,7 @@ export function BookingSettings({
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="minimum_advance_hours">จองล่วงหน้าอย่างน้อย (ชั่วโมง)</Label>
+          <Label htmlFor="minimum_advance_hours">{t('minAdvanceHours')}</Label>
           <Input
             id="minimum_advance_hours"
             type="number"
@@ -57,12 +59,12 @@ export function BookingSettings({
             onChange={(e) => setMinimumAdvanceHours(parseInt(e.target.value) || 0)}
           />
           <p className="text-xs text-muted-foreground">
-            ตั้ง 0 = ไม่จำกัด (เช่น ตั้ง 24 = ต้องจองก่อน 24 ชม.)
+            {t('minAdvanceHint')}
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="buffer_minutes">เว้นช่วงระหว่างนัด (นาที)</Label>
+          <Label htmlFor="buffer_minutes">{t('bufferMinutes')}</Label>
           <Input
             id="buffer_minutes"
             type="number"
@@ -73,7 +75,7 @@ export function BookingSettings({
             onChange={(e) => setBufferMinutes(parseInt(e.target.value) || 0)}
           />
           <p className="text-xs text-muted-foreground">
-            ตั้ง 0 = ไม่เว้น (เช่น ตั้ง 15 = เว้น 15 นาที)
+            {t('bufferHint')}
           </p>
         </div>
       </div>
@@ -83,13 +85,13 @@ export function BookingSettings({
           {minimumAdvanceHours > 0 && (
             <div className="flex items-center gap-2 text-sm">
               <Clock className="h-4 w-4" />
-              <span>ลูกค้าต้องจองล่วงหน้าอย่างน้อย {minimumAdvanceHours} ชั่วโมง</span>
+              <span>{t('advanceInfo', { hours: minimumAdvanceHours })}</span>
             </div>
           )}
           {bufferMinutes > 0 && (
             <div className="flex items-center gap-2 text-sm">
               <Timer className="h-4 w-4" />
-              <span>Slot ที่ติดกับนัดที่มีคนจองแล้วจะถูกบล็อก {bufferMinutes} นาที</span>
+              <span>{t('bufferInfo', { minutes: bufferMinutes })}</span>
             </div>
           )}
         </div>
@@ -100,12 +102,12 @@ export function BookingSettings({
           {isSaving ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              กำลังบันทึก...
+              {t('saving')}
             </>
           ) : (
             <>
               <Save className="h-4 w-4 mr-2" />
-              บันทึกการตั้งค่า
+              {t('saveSettings')}
             </>
           )}
         </Button>

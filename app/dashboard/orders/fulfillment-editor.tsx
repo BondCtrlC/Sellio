@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button, Card, CardContent, Label, Input } from '@/components/ui';
 import { Video, MapPin, Loader2, Check, Link as LinkIcon } from 'lucide-react';
 import { updateFulfillment, getFulfillmentByOrderId, type Fulfillment } from '@/actions/fulfillments';
+import { useTranslations } from 'next-intl';
 
 interface FulfillmentEditorProps {
   orderId: string;
@@ -14,6 +15,7 @@ interface FulfillmentEditorProps {
 }
 
 export function FulfillmentEditor({ orderId, productType, onSuccess, isPendingConfirmation, onValidationChange }: FulfillmentEditorProps) {
+  const t = useTranslations('Fulfillment');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -95,7 +97,7 @@ export function FulfillmentEditor({ orderId, productType, onSuccess, isPendingCo
     const result = await updateFulfillment(orderId, content);
 
     if (!result.success) {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
       setSaving(false);
       return;
     }
@@ -129,19 +131,19 @@ export function FulfillmentEditor({ orderId, productType, onSuccess, isPendingCo
         <CardContent className="p-4 space-y-4">
           <h4 className={`font-semibold text-sm flex items-center gap-2 ${isPendingConfirmation && needsInput ? 'text-amber-700' : 'text-indigo-800'}`}>
             <Video className="h-4 w-4" />
-            รายละเอียดการนัดหมาย
+            {t('bookingDetails')}
           </h4>
 
           {/* Warning if pending and no info */}
           {isPendingConfirmation && needsInput && (
             <div className="bg-amber-100 border border-amber-300 rounded-lg p-3 text-sm text-amber-800">
-              ⚠️ กรุณากรอก{meetingType === 'online' ? 'ลิงก์ประชุม' : 'สถานที่'}ก่อนยืนยันการชำระเงิน
+              ⚠️ {meetingType === 'online' ? t('fillMeetingLink') : t('fillLocation')}
             </div>
           )}
 
           {/* Meeting Type */}
           <div className="space-y-2">
-            <Label className="text-sm">รูปแบบการนัดหมาย</Label>
+            <Label className="text-sm">{t('meetingType')}</Label>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -153,7 +155,7 @@ export function FulfillmentEditor({ orderId, productType, onSuccess, isPendingCo
                 }`}
               >
                 <Video className="h-4 w-4 inline mr-1" />
-                ออนไลน์
+                {t('online')}
               </button>
               <button
                 type="button"
@@ -165,7 +167,7 @@ export function FulfillmentEditor({ orderId, productType, onSuccess, isPendingCo
                 }`}
               >
                 <MapPin className="h-4 w-4 inline mr-1" />
-                พบตัว
+                {t('offline')}
               </button>
             </div>
           </div>
@@ -174,18 +176,18 @@ export function FulfillmentEditor({ orderId, productType, onSuccess, isPendingCo
             <>
               {/* Platform */}
               <div className="space-y-2">
-                <Label className="text-sm">แพลตฟอร์ม</Label>
+                <Label className="text-sm">{t('platform')}</Label>
                 <Input
                   value={meetingPlatform}
                   onChange={(e) => setMeetingPlatform(e.target.value)}
-                  placeholder="เช่น Zoom, Google Meet, Line Call"
+                  placeholder={t('platformPlaceholder')}
                   className="bg-white"
                 />
               </div>
 
               {/* Meeting URL */}
               <div className="space-y-2">
-                <Label className="text-sm">ลิงก์ประชุม</Label>
+                <Label className="text-sm">{t('meetingLink')}</Label>
                 <Input
                   value={meetingUrl}
                   onChange={(e) => setMeetingUrl(e.target.value)}
@@ -198,11 +200,11 @@ export function FulfillmentEditor({ orderId, productType, onSuccess, isPendingCo
             <>
               {/* Location */}
               <div className="space-y-2">
-                <Label className="text-sm">สถานที่</Label>
+                <Label className="text-sm">{t('location')}</Label>
                 <textarea
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="ระบุสถานที่นัดพบ..."
+                  placeholder={t('locationPlaceholder')}
                   className="w-full px-3 py-2 border rounded-lg resize-none h-20 text-sm bg-white"
                 />
               </div>
@@ -211,11 +213,11 @@ export function FulfillmentEditor({ orderId, productType, onSuccess, isPendingCo
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label className="text-sm">หมายเหตุเพิ่มเติม</Label>
+            <Label className="text-sm">{t('additionalNotes')}</Label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="ข้อมูลเพิ่มเติมสำหรับลูกค้า..."
+              placeholder={t('notesPlaceholder')}
               className="w-full px-3 py-2 border rounded-lg resize-none h-16 text-sm bg-white"
             />
           </div>
@@ -232,20 +234,20 @@ export function FulfillmentEditor({ orderId, productType, onSuccess, isPendingCo
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                กำลังบันทึก...
+                {t('saving')}
               </>
             ) : saved ? (
               <>
                 <Check className="h-4 w-4 mr-2" />
-                บันทึกแล้ว
+                {t('saved')}
               </>
             ) : (
-              'บันทึกข้อมูล'
+              t('saveData')
             )}
           </Button>
 
           <p className="text-xs text-indigo-600 text-center">
-            ลูกค้าจะเห็นข้อมูลนี้ในหน้ารายละเอียดคำสั่งซื้อ
+            {t('customerVisibleNote')}
           </p>
         </CardContent>
       </Card>
@@ -261,30 +263,30 @@ export function FulfillmentEditor({ orderId, productType, onSuccess, isPendingCo
         <CardContent className="p-4 space-y-4">
           <h4 className={`font-semibold text-sm flex items-center gap-2 ${isPendingConfirmation && needsInput ? 'text-amber-700' : 'text-pink-800'}`}>
             <Video className="h-4 w-4" />
-            ข้อมูล Live
+            {t('liveInfo')}
           </h4>
 
           {/* Warning if pending and no info */}
           {isPendingConfirmation && needsInput && (
             <div className="bg-amber-100 border border-amber-300 rounded-lg p-3 text-sm text-amber-800">
-              ⚠️ กรุณากรอกลิงก์เข้าชมก่อนยืนยันการชำระเงิน
+              ⚠️ {t('fillAccessLink')}
             </div>
           )}
 
           {/* Platform */}
           <div className="space-y-2">
-            <Label className="text-sm">แพลตฟอร์ม</Label>
+            <Label className="text-sm">{t('platform')}</Label>
             <Input
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
-              placeholder="เช่น YouTube Live, Facebook Live, Zoom"
+              placeholder={t('livePlatformPlaceholder')}
               className="bg-white"
             />
           </div>
 
           {/* Access URL */}
           <div className="space-y-2">
-            <Label className="text-sm">ลิงก์เข้าชม</Label>
+            <Label className="text-sm">{t('accessLink')}</Label>
             <Input
               value={accessUrl}
               onChange={(e) => setAccessUrl(e.target.value)}
@@ -295,22 +297,22 @@ export function FulfillmentEditor({ orderId, productType, onSuccess, isPendingCo
 
           {/* Access Code */}
           <div className="space-y-2">
-            <Label className="text-sm">รหัสเข้าชม (ถ้ามี)</Label>
+            <Label className="text-sm">{t('accessCode')}</Label>
             <Input
               value={accessCode}
               onChange={(e) => setAccessCode(e.target.value)}
-              placeholder="รหัสผ่าน หรือ รหัสเข้าร่วม"
+              placeholder={t('accessCodePlaceholder')}
               className="bg-white"
             />
           </div>
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label className="text-sm">หมายเหตุเพิ่มเติม</Label>
+            <Label className="text-sm">{t('additionalNotes')}</Label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="ข้อมูลเพิ่มเติมสำหรับผู้ชม..."
+              placeholder={t('viewerNotesPlaceholder')}
               className="w-full px-3 py-2 border rounded-lg resize-none h-16 text-sm bg-white"
             />
           </div>
@@ -327,20 +329,20 @@ export function FulfillmentEditor({ orderId, productType, onSuccess, isPendingCo
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                กำลังบันทึก...
+                {t('saving')}
               </>
             ) : saved ? (
               <>
                 <Check className="h-4 w-4 mr-2" />
-                บันทึกแล้ว
+                {t('saved')}
               </>
             ) : (
-              'บันทึกข้อมูล'
+              t('saveData')
             )}
           </Button>
 
           <p className="text-xs text-pink-600 text-center">
-            ลูกค้าจะเห็นข้อมูลนี้ในหน้ารายละเอียดคำสั่งซื้อ
+            {t('customerVisibleNote')}
           </p>
         </CardContent>
       </Card>

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { getTranslations } from 'next-intl/server';
 
 // ============================================
 // Types
@@ -32,11 +33,12 @@ export async function getCalendarBookings(
   endDate?: string
 ): Promise<{ success: boolean; bookings: CalendarBooking[]; error?: string }> {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, bookings: [], error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, bookings: [], error: t('pleaseLogin') };
   }
 
   // Get creator
@@ -47,7 +49,7 @@ export async function getCalendarBookings(
     .single();
 
   if (!creator) {
-    return { success: false, bookings: [], error: 'ไม่พบข้อมูล Creator' };
+    return { success: false, bookings: [], error: t('creatorNotFound') };
   }
 
   // Build query for orders with booking info
@@ -82,7 +84,7 @@ export async function getCalendarBookings(
 
   if (error) {
     console.error('Get calendar bookings error:', error);
-    return { success: false, bookings: [], error: 'ไม่สามารถดึงข้อมูลได้' };
+    return { success: false, bookings: [], error: t('cannotFetchData') };
   }
 
   // Transform data
@@ -98,7 +100,7 @@ export async function getCalendarBookings(
       buyer_name: order.buyer_name,
       buyer_email: order.buyer_email,
       buyer_phone: order.buyer_phone,
-      product: product || { id: '', title: 'สินค้า', type: 'booking', type_config: null },
+      product: product || { id: '', title: t('productDefault'), type: 'booking', type_config: null },
       fulfillment: fulfillment || null,
     };
   });

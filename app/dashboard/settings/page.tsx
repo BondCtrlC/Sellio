@@ -1,14 +1,18 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
-
-export const metadata: Metadata = { title: "ตั้งค่า" };
 import { redirect } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui';
 import { SettingsForm } from './settings-form';
 import { getCreatorInvoices } from '@/actions/plan';
 import { stripe } from '@/lib/stripe';
+import { getTranslations } from 'next-intl/server';
 import type { PlanType } from '@/types';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Settings');
+  return { title: t('metaTitle') };
+}
 
 async function getCreator() {
   const supabase = await createClient();
@@ -51,19 +55,20 @@ async function getBillingInfo(creator: any) {
 }
 
 export default async function SettingsPage() {
+  const t = await getTranslations('Settings');
   const creator = await getCreator();
   const billingInfo = await getBillingInfo(creator);
 
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h2 className="text-2xl font-bold">ตั้งค่า</h2>
-        <p className="text-muted-foreground">จัดการโปรไฟล์และการตั้งค่าร้านค้าของคุณ</p>
+        <h2 className="text-2xl font-bold">{t('title')}</h2>
+        <p className="text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       <Card>
         <CardContent className="p-6">
-          <Suspense fallback={<div>กำลังโหลด...</div>}>
+          <Suspense fallback={<div>{t('loading')}</div>}>
             <SettingsForm creator={creator} billingInfo={billingInfo} />
           </Suspense>
         </CardContent>

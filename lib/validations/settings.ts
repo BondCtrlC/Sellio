@@ -83,6 +83,9 @@ export const settingsSchema = z.object({
     .email('รูปแบบอีเมลไม่ถูกต้อง')
     .optional()
     .or(z.literal('')),
+  // Language
+  store_language: z
+    .enum(['th', 'en']),
 });
 
 export type SettingsInput = z.infer<typeof settingsSchema>;

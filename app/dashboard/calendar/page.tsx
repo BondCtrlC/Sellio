@@ -15,20 +15,18 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { getCalendarBookings, type CalendarBooking } from '@/actions/calendar';
-
-// Thai month names
-const THAI_MONTHS = [
-  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
-];
-
-const THAI_DAYS = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+import { useTranslations } from 'next-intl';
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [bookings, setBookings] = useState<CalendarBooking[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const t = useTranslations('CalendarPage');
+
+  const monthNames: string[] = t.raw('monthNames');
+  const dayNames: string[] = t.raw('dayNames');
+  const yearOffset: number = t.raw('yearOffset');
 
   // Get current month's start and end dates
   const year = currentDate.getFullYear();
@@ -109,11 +107,11 @@ export default function CalendarPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">ปฏิทิน</h1>
-          <p className="text-muted-foreground">ดูตารางนัดหมายกับลูกค้า</p>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
         <Button variant="outline" onClick={goToToday}>
-          วันนี้
+          {t('today')}
         </Button>
       </div>
 
@@ -127,7 +125,7 @@ export default function CalendarPage() {
                 <ChevronLeft className="h-5 w-5" />
               </Button>
               <h2 className="text-xl font-semibold">
-                {THAI_MONTHS[month]} {year + 543}
+                {monthNames[month]} {year + yearOffset}
               </h2>
               <Button variant="ghost" size="icon" onClick={goToNextMonth}>
                 <ChevronRight className="h-5 w-5" />
@@ -136,7 +134,7 @@ export default function CalendarPage() {
 
             {/* Day Headers */}
             <div className="grid grid-cols-7 gap-1 mb-2">
-              {THAI_DAYS.map((day, i) => (
+              {dayNames.map((day, i) => (
                 <div 
                   key={day} 
                   className={`text-center text-sm font-medium py-2 ${
@@ -210,18 +208,18 @@ export default function CalendarPage() {
                   })}
                 </>
               ) : (
-                'เลือกวันที่'
+                t('selectDate')
               )}
             </h3>
 
             {loading ? (
               <p className="text-muted-foreground text-sm py-4 text-center">
-                กำลังโหลด...
+                {t('loading')}
               </p>
             ) : selectedDate ? (
               selectedBookings.length === 0 ? (
                 <p className="text-muted-foreground text-sm py-4 text-center">
-                  ไม่มีนัดหมายในวันนี้
+                  {t('noBookingsToday')}
                 </p>
               ) : (
                 <div className="space-y-4">
@@ -251,7 +249,7 @@ export default function CalendarPage() {
                               ? 'bg-green-200 text-green-800'
                               : 'bg-yellow-200 text-yellow-800'
                           }`}>
-                            {booking.status === 'confirmed' ? 'ยืนยันแล้ว' : 'รอยืนยัน'}
+                            {booking.status === 'confirmed' ? t('confirmed') : t('pendingConfirm')}
                           </span>
                         </div>
 
@@ -293,7 +291,7 @@ export default function CalendarPage() {
                                 className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
                               >
                                 <Video className="h-4 w-4" />
-                                เข้าร่วมประชุม
+                                {t('joinMeeting')}
                                 <ExternalLink className="h-3 w-3" />
                               </a>
                             ) : meetingType === 'offline' && location ? (
@@ -311,7 +309,7 @@ export default function CalendarPage() {
               )
             ) : (
               <p className="text-muted-foreground text-sm py-4 text-center">
-                คลิกที่วันที่เพื่อดูนัดหมาย
+                {t('clickToView')}
               </p>
             )}
           </CardContent>
@@ -321,10 +319,10 @@ export default function CalendarPage() {
       {/* Upcoming Bookings */}
       <Card>
         <CardContent className="p-6">
-          <h3 className="font-semibold mb-4">นัดหมายที่กำลังจะมาถึง</h3>
+          <h3 className="font-semibold mb-4">{t('upcomingBookings')}</h3>
           
           {loading ? (
-            <p className="text-muted-foreground text-sm">กำลังโหลด...</p>
+            <p className="text-muted-foreground text-sm">{t('loading')}</p>
           ) : (
             <div className="space-y-3">
               {bookings
@@ -342,7 +340,7 @@ export default function CalendarPage() {
                           {new Date(booking.booking_date).getDate()}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {THAI_MONTHS[new Date(booking.booking_date).getMonth()].slice(0, 3)}
+                          {monthNames[new Date(booking.booking_date).getMonth()].slice(0, 3)}
                         </p>
                       </div>
                       <div>
@@ -357,14 +355,14 @@ export default function CalendarPage() {
                         ? 'bg-green-100 text-green-700'
                         : 'bg-yellow-100 text-yellow-700'
                     }`}>
-                      {booking.status === 'confirmed' ? 'ยืนยันแล้ว' : 'รอยืนยัน'}
+                      {booking.status === 'confirmed' ? t('confirmed') : t('pendingConfirm')}
                     </span>
                   </div>
                 ))}
 
               {bookings.filter(b => b.booking_date >= todayKey).length === 0 && (
                 <p className="text-muted-foreground text-sm text-center py-4">
-                  ไม่มีนัดหมายที่กำลังจะมาถึง
+                  {t('noUpcoming')}
                 </p>
               )}
             </div>

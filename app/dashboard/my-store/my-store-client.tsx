@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { DEFAULT_STORE_DESIGN } from '@/types';
 import type { Creator, StoreSectionWithItems, StoreItemWithProduct, StoreDesign } from '@/types';
+import { useTranslations } from 'next-intl';
 
 interface MyStoreClientProps {
   creator: Creator;
@@ -23,6 +24,7 @@ export function MyStoreClient({ creator, sections, unsectionedItems }: MyStoreCl
   const [currentDesign, setCurrentDesign] = useState<StoreDesign>(
     creator.store_design || DEFAULT_STORE_DESIGN
   );
+  const t = useTranslations('MyStore');
 
   // Update creator with current design for preview
   const creatorWithDesign = {
@@ -39,13 +41,13 @@ export function MyStoreClient({ creator, sections, unsectionedItems }: MyStoreCl
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-2xl font-bold">ร้านค้าของฉัน</h2>
-          <p className="text-muted-foreground">จัดการหน้าร้านค้าและการแสดงผล</p>
+          <h2 className="text-2xl font-bold">{t('title')}</h2>
+          <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
         <Link href={`/u/${creator.username}`} target="_blank">
           <Button variant="outline">
             <ExternalLink className="h-4 w-4 mr-2" />
-            ดูหน้าร้าน
+            {t('viewStore')}
           </Button>
         </Link>
       </div>
@@ -61,7 +63,7 @@ export function MyStoreClient({ creator, sections, unsectionedItems }: MyStoreCl
           }`}
         >
           <LayoutGrid className="h-4 w-4" />
-          จัดการร้านค้า
+          {t('manageStore')}
         </button>
         <button
           onClick={() => setActiveTab('design')}
@@ -72,7 +74,7 @@ export function MyStoreClient({ creator, sections, unsectionedItems }: MyStoreCl
           }`}
         >
           <Palette className="h-4 w-4" />
-          ปรับแต่ง Design
+          {t('customizeDesign')}
         </button>
       </div>
 

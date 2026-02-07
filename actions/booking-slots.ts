@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 
 export type SlotResult = {
   success: boolean;
@@ -33,14 +34,15 @@ export interface CreateSlotInput {
 }
 
 export async function createBookingSlot(input: CreateSlotInput): Promise<SlotResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   // Validate time
   if (input.endTime <= input.startTime) {
-    return { success: false, error: 'เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น' };
+    return { success: false, error: t('endTimeAfterStart') };
   }
 
   const supabase = await createClient();
@@ -54,11 +56,11 @@ export async function createBookingSlot(input: CreateSlotInput): Promise<SlotRes
     .single();
 
   if (!product) {
-    return { success: false, error: 'ไม่พบสินค้า' };
+    return { success: false, error: t('productNotFound') };
   }
 
   if (product.type !== 'booking' && product.type !== 'live') {
-    return { success: false, error: 'สินค้านี้ไม่รองรับการจอง Slot' };
+    return { success: false, error: t('productNotSupportBooking') };
   }
 
   // Create slot
@@ -79,9 +81,9 @@ export async function createBookingSlot(input: CreateSlotInput): Promise<SlotRes
   if (error) {
     console.error('Create slot error:', error);
     if (error.code === '23505') {
-      return { success: false, error: 'มี slot นี้อยู่แล้ว' };
+      return { success: false, error: t('slotAlreadyExists') };
     }
-    return { success: false, error: 'ไม่สามารถสร้าง slot ได้' };
+    return { success: false, error: t('cannotCreateSlot') };
   }
 
   revalidatePath(`/dashboard/products/${input.productId}/edit`);
@@ -96,9 +98,10 @@ export async function createMultipleSlots(input: {
   slotDuration: number; // minutes
   maxBookings?: number; // จำนวนที่นั่งสูงสุด (default: 1)
 }): Promise<SlotResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -112,7 +115,7 @@ export async function createMultipleSlots(input: {
     .single();
 
   if (!product || (product.type !== 'booking' && product.type !== 'live')) {
-    return { success: false, error: 'ไม่พบสินค้าหรือไม่รองรับการจอง Slot' };
+    return { success: false, error: t('productNotSupportSlot') };
   }
 
   // Generate slots
@@ -145,7 +148,7 @@ export async function createMultipleSlots(input: {
   }
 
   if (slots.length === 0) {
-    return { success: false, error: 'ไม่สามารถสร้าง slot ได้' };
+    return { success: false, error: t('cannotCreateSlot') };
   }
 
   // Insert all slots (ignore duplicates)
@@ -158,7 +161,7 @@ export async function createMultipleSlots(input: {
 
   if (error) {
     console.error('Create multiple slots error:', error);
-    return { success: false, error: 'ไม่สามารถสร้าง slot ได้' };
+    return { success: false, error: t('cannotCreateSlot') };
   }
 
   revalidatePath(`/dashboard/products/${input.productId}/edit`);
@@ -166,9 +169,10 @@ export async function createMultipleSlots(input: {
 }
 
 export async function deleteBookingSlot(slotId: string): Promise<SlotResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -182,11 +186,11 @@ export async function deleteBookingSlot(slotId: string): Promise<SlotResult> {
     .single();
 
   if (!slot) {
-    return { success: false, error: 'ไม่พบ slot' };
+    return { success: false, error: t('slotNotFound') };
   }
 
   if (slot.is_booked) {
-    return { success: false, error: 'ไม่สามารถลบ slot ที่มีการจองแล้ว' };
+    return { success: false, error: t('cannotDeleteBookedSlot') };
   }
 
   const { error } = await supabase
@@ -197,7 +201,7 @@ export async function deleteBookingSlot(slotId: string): Promise<SlotResult> {
 
   if (error) {
     console.error('Delete slot error:', error);
-    return { success: false, error: 'ไม่สามารถลบ slot ได้' };
+    return { success: false, error: t('cannotDeleteSlot') };
   }
 
   revalidatePath(`/dashboard/products/${slot.product_id}/edit`);
@@ -208,9 +212,10 @@ export async function updateBookingSlot(
   slotId: string,
   updates: { startTime?: string; endTime?: string; maxBookings?: number }
 ): Promise<SlotResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -224,7 +229,7 @@ export async function updateBookingSlot(
     .single();
 
   if (!slot) {
-    return { success: false, error: 'ไม่พบ slot' };
+    return { success: false, error: t('slotNotFound') };
   }
 
   // Build update object
@@ -234,7 +239,7 @@ export async function updateBookingSlot(
   if (updates.maxBookings !== undefined) {
     // Can't set max_bookings below current_bookings
     if (updates.maxBookings < slot.current_bookings) {
-      return { success: false, error: `ไม่สามารถตั้งที่นั่งต่ำกว่าจำนวนที่จองแล้ว (${slot.current_bookings})` };
+      return { success: false, error: t('cannotSetSeatsBelow', { count: slot.current_bookings }) };
     }
     updateData.max_bookings = updates.maxBookings;
   }
@@ -243,11 +248,11 @@ export async function updateBookingSlot(
   const newStart = updates.startTime;
   const newEnd = updates.endTime;
   if (newStart && newEnd && newEnd <= newStart) {
-    return { success: false, error: 'เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น' };
+    return { success: false, error: t('endTimeAfterStart') };
   }
 
   if (Object.keys(updateData).length === 0) {
-    return { success: false, error: 'ไม่มีข้อมูลที่ต้องอัปเดต' };
+    return { success: false, error: t('noUpdateData') };
   }
 
   const { error } = await supabase
@@ -259,9 +264,9 @@ export async function updateBookingSlot(
   if (error) {
     console.error('Update slot error:', error);
     if (error.code === '23505') {
-      return { success: false, error: 'เวลานี้ซ้ำกับ slot อื่น' };
+      return { success: false, error: t('slotTimeDuplicate') };
     }
-    return { success: false, error: 'ไม่สามารถอัปเดต slot ได้' };
+    return { success: false, error: t('cannotUpdateSlot') };
   }
 
   revalidatePath(`/dashboard/products/${slot.product_id}/edit`);
@@ -269,13 +274,14 @@ export async function updateBookingSlot(
 }
 
 export async function bulkDeleteSlots(slotIds: string[]): Promise<SlotResult & { deletedCount?: number }> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   if (slotIds.length === 0) {
-    return { success: false, error: 'กรุณาเลือก slot' };
+    return { success: false, error: t('pleaseSelectSlots') };
   }
 
   const supabase = await createClient();
@@ -288,7 +294,7 @@ export async function bulkDeleteSlots(slotIds: string[]): Promise<SlotResult & {
     .eq('creator_id', creatorId);
 
   if (!slotsData || slotsData.length === 0) {
-    return { success: false, error: 'ไม่พบ slot ที่เลือก' };
+    return { success: false, error: t('slotNotFound') };
   }
 
   // Filter out booked slots
@@ -296,7 +302,7 @@ export async function bulkDeleteSlots(slotIds: string[]): Promise<SlotResult & {
   const deletableIds = slotsData.filter(s => s.current_bookings === 0).map(s => s.id);
 
   if (deletableIds.length === 0) {
-    return { success: false, error: 'ไม่สามารถลบ slot ที่มีการจองแล้วได้' };
+    return { success: false, error: t('cannotDeleteBookedSlots') };
   }
 
   const { error } = await supabase
@@ -307,7 +313,7 @@ export async function bulkDeleteSlots(slotIds: string[]): Promise<SlotResult & {
 
   if (error) {
     console.error('Bulk delete error:', error);
-    return { success: false, error: 'เกิดข้อผิดพลาดในการลบ' };
+    return { success: false, error: t('deleteError') };
   }
 
   const productId = slotsData[0].product_id;
@@ -317,18 +323,19 @@ export async function bulkDeleteSlots(slotIds: string[]): Promise<SlotResult & {
   return {
     success: true,
     deletedCount: deletableIds.length,
-    error: skipped > 0 ? `ลบสำเร็จ ${deletableIds.length} slot (ข้าม ${skipped} slot ที่มีจองแล้ว)` : undefined,
+    error: skipped > 0 ? t('deletePartialSuccess', { deleted: deletableIds.length, skipped }) : undefined,
   };
 }
 
 export async function bulkToggleSlots(slotIds: string[], isAvailable: boolean): Promise<SlotResult & { updatedCount?: number }> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   if (slotIds.length === 0) {
-    return { success: false, error: 'กรุณาเลือก slot' };
+    return { success: false, error: t('pleaseSelectSlots') };
   }
 
   const supabase = await createClient();
@@ -341,7 +348,7 @@ export async function bulkToggleSlots(slotIds: string[], isAvailable: boolean): 
     .eq('creator_id', creatorId);
 
   if (!slotsData || slotsData.length === 0) {
-    return { success: false, error: 'ไม่พบ slot ที่เลือก' };
+    return { success: false, error: t('slotNotFound') };
   }
 
   const validIds = slotsData.map(s => s.id);
@@ -354,7 +361,7 @@ export async function bulkToggleSlots(slotIds: string[], isAvailable: boolean): 
 
   if (error) {
     console.error('Bulk toggle error:', error);
-    return { success: false, error: 'เกิดข้อผิดพลาด' };
+    return { success: false, error: t('generalError') };
   }
 
   const productId = slotsData[0].product_id;
@@ -363,9 +370,10 @@ export async function bulkToggleSlots(slotIds: string[], isAvailable: boolean): 
 }
 
 export async function toggleSlotAvailability(slotId: string, isAvailable: boolean): Promise<SlotResult> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const supabase = await createClient();
@@ -378,7 +386,7 @@ export async function toggleSlotAvailability(slotId: string, isAvailable: boolea
     .single();
 
   if (!slot) {
-    return { success: false, error: 'ไม่พบ slot' };
+    return { success: false, error: t('slotNotFound') };
   }
 
   const { error } = await supabase
@@ -389,7 +397,7 @@ export async function toggleSlotAvailability(slotId: string, isAvailable: boolea
 
   if (error) {
     console.error('Toggle slot error:', error);
-    return { success: false, error: 'ไม่สามารถเปลี่ยนสถานะได้' };
+    return { success: false, error: t('cannotToggleStatus') };
   }
 
   revalidatePath(`/dashboard/products/${slot.product_id}/edit`);
@@ -407,21 +415,22 @@ export interface RecurringSlotInput {
 }
 
 export async function createRecurringSlots(input: RecurringSlotInput): Promise<SlotResult & { slotsCreated?: number }> {
+  const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
   if (!creatorId) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   if (input.selectedDays.length === 0) {
-    return { success: false, error: 'กรุณาเลือกวันอย่างน้อย 1 วัน' };
+    return { success: false, error: t('pleaseSelectDays') };
   }
 
   if (input.numberOfWeeks < 1 || input.numberOfWeeks > 12) {
-    return { success: false, error: 'จำนวนสัปดาห์ต้องอยู่ระหว่าง 1-12' };
+    return { success: false, error: t('weeksBetween1And12') };
   }
 
   if (input.endTime <= input.startTime) {
-    return { success: false, error: 'เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น' };
+    return { success: false, error: t('endTimeAfterStart') };
   }
 
   const supabase = await createClient();
@@ -435,7 +444,7 @@ export async function createRecurringSlots(input: RecurringSlotInput): Promise<S
     .single();
 
   if (!product || (product.type !== 'booking' && product.type !== 'live')) {
-    return { success: false, error: 'ไม่พบสินค้าหรือไม่รองรับการจอง Slot' };
+    return { success: false, error: t('productNotSupportSlot') };
   }
 
   // Generate all dates for selected days of the week
@@ -496,7 +505,7 @@ export async function createRecurringSlots(input: RecurringSlotInput): Promise<S
   }
 
   if (allSlots.length === 0) {
-    return { success: false, error: 'ไม่สามารถสร้าง slot ได้ ตรวจสอบวันและเวลาอีกครั้ง' };
+    return { success: false, error: t('cannotCreateCheckSlots') };
   }
 
   // Insert in batches of 500 to avoid payload limits
@@ -514,7 +523,7 @@ export async function createRecurringSlots(input: RecurringSlotInput): Promise<S
 
     if (error) {
       console.error('Create recurring slots error:', error);
-      return { success: false, error: `สร้าง slot ได้บางส่วน (${totalCreated} slots) เกิดข้อผิดพลาด` };
+      return { success: false, error: t('partialSlotCreation', { count: totalCreated }) };
     }
     totalCreated += batch.length;
   }

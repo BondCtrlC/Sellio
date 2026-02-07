@@ -3,10 +3,14 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCreatorReviews } from '@/actions/reviews';
 import { ReviewsList } from './reviews-list';
-
-export const metadata: Metadata = { title: "รีวิว" };
+import { getTranslations } from 'next-intl/server';
 import { ProGate } from '@/components/shared/pro-gate';
 import type { PlanType } from '@/types';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Reviews');
+  return { title: t('metaTitle') };
+}
 
 async function getCreatorPlan() {
   const supabase = await createClient();
@@ -23,6 +27,7 @@ async function getCreatorPlan() {
 }
 
 export default async function ReviewsPage() {
+  const t = await getTranslations('Reviews');
   const [result, plan] = await Promise.all([
     getCreatorReviews(),
     getCreatorPlan(),
@@ -33,7 +38,7 @@ export default async function ReviewsPage() {
   }
 
   return (
-    <ProGate plan={plan} feature="review_management" message="อัปเกรดเป็น Pro เพื่อจัดการรีวิว ตอบกลับ และเลือก Featured reviews">
+    <ProGate plan={plan} feature="review_management" message={t('proGateMessage')}>
       <ReviewsList initialReviews={result.reviews} />
     </ProGate>
   );

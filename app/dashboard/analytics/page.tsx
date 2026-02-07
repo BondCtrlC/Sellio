@@ -1,8 +1,13 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getAnalyticsData } from '@/actions/analytics';
+import { getTranslations } from 'next-intl/server';
 
-export const metadata: Metadata = { title: "สถิติ" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Analytics');
+  return { title: t('title') };
+}
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { 
   DollarSign, 
@@ -38,6 +43,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const daysParam = params.days || '30';
   const customStart = params.start;
   const customEnd = params.end;
+  const t = await getTranslations('Analytics');
 
   // Determine filter type
   let days: number | 'all' = 30;
@@ -64,34 +70,34 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       const end = new Date(customEnd);
       return `${start.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })} - ${end.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}`;
     }
-    if (daysParam === 'all') return 'ข้อมูลทั้งหมด';
-    return `ข้อมูลย้อนหลัง ${days} วัน`;
+    if (daysParam === 'all') return t('allData');
+    return t('lastDays', { days });
   };
 
   const summaryCards = [
     {
-      title: 'รายได้รวม',
+      title: t('totalRevenue'),
       value: formatPrice(data.totalRevenue),
       icon: DollarSign,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },
     {
-      title: 'คำสั่งซื้อทั้งหมด',
+      title: t('totalOrders'),
       value: data.totalOrders.toString(),
       icon: ShoppingCart,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
     },
     {
-      title: 'มูลค่าเฉลี่ย/ออเดอร์',
+      title: t('avgOrderValue'),
       value: formatPrice(data.averageOrderValue),
       icon: TrendingUp,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100',
     },
     {
-      title: 'อัตราความสำเร็จ',
+      title: t('successRate'),
       value: `${data.conversionRate.toFixed(1)}%`,
       icon: Percent,
       color: 'text-orange-600',
@@ -101,19 +107,19 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
   const periodCards = [
     {
-      title: 'วันนี้',
+      title: t('today'),
       orders: data.ordersToday,
       revenue: data.revenueToday,
       icon: Calendar,
     },
     {
-      title: 'สัปดาห์นี้',
+      title: t('thisWeek'),
       orders: data.ordersThisWeek,
       revenue: data.revenueThisWeek,
       icon: CalendarDays,
     },
     {
-      title: 'เดือนนี้',
+      title: t('thisMonth'),
       orders: data.ordersThisMonth,
       revenue: data.revenueThisMonth,
       icon: CalendarRange,
@@ -124,7 +130,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h2 className="text-2xl font-bold">สถิติและรายงาน</h2>
+        <h2 className="text-2xl font-bold">{t('title')}</h2>
         <p className="text-muted-foreground">{getFilterDescription()}</p>
       </div>
 
@@ -167,11 +173,11 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
             <CardContent>
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-sm text-muted-foreground">คำสั่งซื้อ</p>
+                  <p className="text-sm text-muted-foreground">{t('orders')}</p>
                   <p className="text-2xl font-bold">{card.orders}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-muted-foreground">รายได้</p>
+                  <p className="text-sm text-muted-foreground">{t('revenue')}</p>
                   <p className="text-2xl font-bold text-green-600">
                     {formatPrice(card.revenue)}
                   </p>
@@ -201,7 +207,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           {/* Pro Header */}
           <div className="flex items-center gap-2 pt-4">
             <Crown className="h-5 w-5 text-yellow-500" />
-            <h3 className="text-lg font-bold">สถิติขั้นสูง</h3>
+            <h3 className="text-lg font-bold">{t('advancedStats')}</h3>
             <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-full font-medium">
               PRO
             </span>
@@ -232,9 +238,9 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
               <Lock className="h-6 w-6 text-yellow-600" />
             </div>
             <div>
-              <h3 className="text-lg font-bold">สถิติขั้นสูง</h3>
+              <h3 className="text-lg font-bold">{t('advancedStats')}</h3>
               <p className="text-muted-foreground text-sm mt-1 max-w-md mx-auto">
-                อัปเกรดเป็น Pro เพื่อดูข้อมูลเชิงลึก: การเติบโต, ช่วงเวลาขายดี, วันที่ขายดี, อัตราซื้อซ้ำ
+                {t('advancedDesc')}
               </p>
             </div>
             <Link
@@ -242,7 +248,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
               className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
             >
               <Crown className="h-4 w-4" />
-              อัปเกรดเป็น Pro
+              {t('upgradePro')}
             </Link>
           </div>
         </div>

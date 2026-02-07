@@ -5,6 +5,7 @@ import { Bell, ShoppingCart, CreditCard, Ticket, X, CalendarCheck, CalendarX, Ca
 import { Button } from '@/components/ui';
 import Link from 'next/link';
 import { getNotifications, type Notification } from '@/actions/notifications';
+import { useTranslations } from 'next-intl';
 
 interface NotificationBellProps {
   initialCount?: number;
@@ -16,6 +17,7 @@ export function NotificationBell({ initialCount = 0 }: NotificationBellProps) {
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations('Notifications');
 
   // Close on outside click
   useEffect(() => {
@@ -107,10 +109,10 @@ export function NotificationBell({ initialCount = 0 }: NotificationBellProps) {
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 1) return 'เมื่อกี้';
-    if (diffMins < 60) return `${diffMins} นาทีที่แล้ว`;
-    if (diffHours < 24) return `${diffHours} ชั่วโมงที่แล้ว`;
-    if (diffDays < 7) return `${diffDays} วันที่แล้ว`;
+    if (diffMins < 1) return t('justNow');
+    if (diffMins < 60) return t('minutesAgo', { count: diffMins });
+    if (diffHours < 24) return t('hoursAgo', { count: diffHours });
+    if (diffDays < 7) return t('daysAgo', { count: diffDays });
     return date.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' });
   };
 
@@ -136,7 +138,7 @@ export function NotificationBell({ initialCount = 0 }: NotificationBellProps) {
         <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-xl shadow-lg z-50 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b">
-            <h3 className="font-semibold">การแจ้งเตือน</h3>
+            <h3 className="font-semibold">{t('title')}</h3>
             <Button
               variant="ghost"
               size="icon"
@@ -151,12 +153,12 @@ export function NotificationBell({ initialCount = 0 }: NotificationBellProps) {
           <div className="max-h-96 overflow-y-auto">
             {loading ? (
               <div className="p-8 text-center text-muted-foreground">
-                กำลังโหลด...
+                {t('loading')}
               </div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
                 <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>ไม่มีการแจ้งเตือน</p>
+                <p>{t('empty')}</p>
               </div>
             ) : (
               <div className="divide-y">
@@ -193,7 +195,7 @@ export function NotificationBell({ initialCount = 0 }: NotificationBellProps) {
                 onClick={() => setIsOpen(false)}
                 className="block text-center text-sm text-primary hover:underline py-1"
               >
-                ดูคำสั่งซื้อทั้งหมด
+                {t('viewAllOrders')}
               </Link>
             </div>
           )}

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
 import { Calendar, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface DateFilterProps {
   currentFilter: string;
@@ -11,21 +12,22 @@ interface DateFilterProps {
   customEnd?: string;
 }
 
-const FILTER_OPTIONS = [
-  { value: '7', label: '7 วัน' },
-  { value: '14', label: '14 วัน' },
-  { value: '30', label: '30 วัน' },
-  { value: '90', label: '90 วัน' },
-  { value: 'all', label: 'ทั้งหมด' },
-  { value: 'custom', label: 'กำหนดเอง' },
-];
-
 export function DateFilter({ currentFilter, customStart, customEnd }: DateFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showCustom, setShowCustom] = useState(currentFilter === 'custom');
   const [startDate, setStartDate] = useState(customStart || '');
   const [endDate, setEndDate] = useState(customEnd || '');
+  const t = useTranslations('DateFilter');
+
+  const FILTER_OPTIONS = [
+    { value: '7', label: t('7days') },
+    { value: '14', label: t('14days') },
+    { value: '30', label: t('30days') },
+    { value: '90', label: t('90days') },
+    { value: 'all', label: t('all') },
+    { value: 'custom', label: t('custom') },
+  ];
 
   const handleFilterChange = (value: string) => {
     if (value === 'custom') {
@@ -86,7 +88,7 @@ export function DateFilter({ currentFilter, customStart, customEnd }: DateFilter
       {showCustom && (
         <div className="flex items-end gap-3 p-4 bg-muted rounded-lg">
           <div className="space-y-1">
-            <label className="text-sm font-medium">จากวันที่</label>
+            <label className="text-sm font-medium">{t('from')}</label>
             <Input
               type="date"
               value={startDate}
@@ -95,7 +97,7 @@ export function DateFilter({ currentFilter, customStart, customEnd }: DateFilter
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium">ถึงวันที่</label>
+            <label className="text-sm font-medium">{t('to')}</label>
             <Input
               type="date"
               value={endDate}
@@ -104,7 +106,7 @@ export function DateFilter({ currentFilter, customStart, customEnd }: DateFilter
             />
           </div>
           <Button onClick={handleCustomApply} disabled={!startDate || !endDate}>
-            ใช้งาน
+            {t('apply')}
           </Button>
           <Button variant="ghost" size="icon" onClick={() => setShowCustom(false)}>
             <X className="h-4 w-4" />

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { getTranslations } from 'next-intl/server';
 
 // ============================================
 // Types
@@ -20,6 +21,8 @@ export interface Notification {
 // ============================================
 export async function getNotifications(): Promise<{ success: boolean; notifications: Notification[] }> {
   const supabase = await createClient();
+  const t = await getTranslations('Notifications');
+  const tSA = await getTranslations('ServerActions');
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -53,8 +56,8 @@ export async function getNotifications(): Promise<{ success: boolean; notificati
     notifications.push({
       id: `pending_${order.id}`,
       type: 'payment_pending',
-      title: 'รอยืนยันการชำระเงิน',
-      message: `${order.buyer_name} อัพโหลดสลิปแล้ว - ฿${Number(order.total).toLocaleString()}`,
+      title: t('paymentPendingTitle'),
+      message: t('paymentPendingMessage', { name: order.buyer_name, amount: Number(order.total).toLocaleString() }),
       link: '/dashboard/orders',
       created_at: order.created_at,
       is_read: false,
@@ -75,8 +78,8 @@ export async function getNotifications(): Promise<{ success: boolean; notificati
     notifications.push({
       id: `new_${order.id}`,
       type: 'new_order',
-      title: 'คำสั่งซื้อใหม่',
-      message: `${order.buyer_name} สั่งซื้อ - รอชำระเงิน ฿${Number(order.total).toLocaleString()}`,
+      title: t('newOrderTitle'),
+      message: t('newOrderMessage', { name: order.buyer_name, amount: Number(order.total).toLocaleString() }),
       link: '/dashboard/orders',
       created_at: order.created_at,
       is_read: false,
@@ -103,8 +106,8 @@ export async function getNotifications(): Promise<{ success: boolean; notificati
     notifications.push({
       id: `booking_${booking.id}`,
       type: 'new_booking',
-      title: 'นัดหมายใหม่',
-      message: `${booking.buyer_name} จองคิว ${product?.title || 'สินค้า'} - ${bookingDate} ${bookingTime}`,
+      title: t('newBookingTitle'),
+      message: t('newBookingMessage', { name: booking.buyer_name, product: product?.title || tSA('productDefault'), date: bookingDate, time: bookingTime }),
       link: '/dashboard/calendar',
       created_at: booking.updated_at,
       is_read: false,
@@ -131,8 +134,8 @@ export async function getNotifications(): Promise<{ success: boolean; notificati
     notifications.push({
       id: `cancelled_${booking.id}`,
       type: 'booking_cancelled',
-      title: 'ยกเลิกนัดหมาย',
-      message: `${booking.buyer_name} ยกเลิก ${product?.title || 'นัดหมาย'} - ${bookingDate} ${bookingTime}`,
+      title: t('bookingCancelledTitle'),
+      message: t('bookingCancelledMessage', { name: booking.buyer_name, product: product?.title || tSA('bookingDefault'), date: bookingDate, time: bookingTime }),
       link: '/dashboard/orders',
       created_at: booking.updated_at,
       is_read: false,
@@ -159,8 +162,8 @@ export async function getNotifications(): Promise<{ success: boolean; notificati
     notifications.push({
       id: `rescheduled_${booking.id}`,
       type: 'booking_rescheduled',
-      title: 'เปลี่ยนเวลานัดหมาย',
-      message: `${booking.buyer_name} เปลี่ยนเวลา ${product?.title || 'นัดหมาย'} เป็น ${bookingDate} ${bookingTime}`,
+      title: t('bookingRescheduleTitle'),
+      message: t('bookingRescheduleMessage', { name: booking.buyer_name, product: product?.title || tSA('bookingDefault'), date: bookingDate, time: bookingTime }),
       link: '/dashboard/orders',
       created_at: booking.updated_at,
       is_read: false,
@@ -183,8 +186,8 @@ export async function getNotifications(): Promise<{ success: boolean; notificati
     notifications.push({
       id: `review_${review.id}`,
       type: 'new_review',
-      title: 'รีวิวใหม่',
-      message: `${review.buyer_name} ให้ ${stars} ${product?.title || 'สินค้า'}${review.comment ? ` - "${review.comment.slice(0, 30)}${review.comment.length > 30 ? '...' : ''}"` : ''}`,
+      title: t('newReviewTitle'),
+      message: t('newReviewMessage', { name: review.buyer_name, stars, product: product?.title || tSA('productDefault'), comment: review.comment ? ` - "${review.comment.slice(0, 30)}${review.comment.length > 30 ? '...' : ''}"` : '' }),
       link: '/dashboard/reviews',
       created_at: review.created_at,
       is_read: false,
@@ -207,8 +210,8 @@ export async function getNotifications(): Promise<{ success: boolean; notificati
     notifications.push({
       id: `coupon_${coupon.id}`,
       type: 'coupon_expiring',
-      title: 'คูปองใกล้หมดอายุ',
-      message: `คูปอง ${coupon.code} จะหมดอายุใน ${daysLeft} วัน`,
+      title: t('couponExpiryTitle'),
+      message: t('couponExpiryMessage', { code: coupon.code, days: daysLeft }),
       link: '/dashboard/coupons',
       created_at: coupon.expires_at!,
       is_read: false,

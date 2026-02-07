@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { generateBookingICS } from './ics';
+import { getTranslations } from 'next-intl/server';
 
 // Initialize Resend with API key from environment
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -35,6 +36,7 @@ interface OrderEmailData {
 // ============================================
 export async function sendOrderConfirmationEmail(data: OrderEmailData) {
   try {
+    const t = await getTranslations('Emails');
     const isBooking = !!data.booking;
     
     // Format booking date/time for display
@@ -76,21 +78,21 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
       const startDate = new Date(Date.UTC(year, month, day, hours - 7, minutes, 0));
       const endDate = new Date(startDate.getTime() + (data.booking.durationMinutes || 60) * 60 * 1000);
       const formatForGoogle = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-      googleCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(data.productTitle)}&dates=${formatForGoogle(startDate)}/${formatForGoogle(endDate)}&details=${encodeURIComponent(`นัดหมายกับ ${data.creatorName}`)}`;
+      googleCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(data.productTitle)}&dates=${formatForGoogle(startDate)}/${formatForGoogle(endDate)}&details=${encodeURIComponent(t('appointmentWith', { name: data.creatorName }))}`;
       
       // Meeting info
       const meetingInfo = data.booking.meetingType === 'online' && data.booking.meetingUrl
         ? `
           <div style="background: #f0f9ff; border-radius: 8px; padding: 15px; margin-top: 15px;">
-            <p style="margin: 0 0 5px; color: #0369a1; font-weight: bold;">🎥 ประชุมออนไลน์</p>
-            ${data.booking.meetingPlatform ? `<p style="margin: 0 0 5px; color: #374151;">แพลตฟอร์ม: ${data.booking.meetingPlatform}</p>` : ''}
-            <a href="${data.booking.meetingUrl}" style="display: inline-block; background: #0ea5e9; color: white; text-decoration: none; padding: 8px 16px; border-radius: 6px; margin-top: 10px; font-size: 14px;">🔗 เข้าร่วมประชุม</a>
+            <p style="margin: 0 0 5px; color: #0369a1; font-weight: bold;">${t('onlineMeeting')}</p>
+            ${data.booking.meetingPlatform ? `<p style="margin: 0 0 5px; color: #374151;">${t('platformLabel', { platform: data.booking.meetingPlatform })}</p>` : ''}
+            <a href="${data.booking.meetingUrl}" style="display: inline-block; background: #0ea5e9; color: white; text-decoration: none; padding: 8px 16px; border-radius: 6px; margin-top: 10px; font-size: 14px;">${t('joinMeeting')}</a>
           </div>
         `
         : data.booking.location
         ? `
           <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin-top: 15px;">
-            <p style="margin: 0 0 5px; color: #92400e; font-weight: bold;">📍 สถานที่นัดพบ</p>
+            <p style="margin: 0 0 5px; color: #92400e; font-weight: bold;">${t('locationLabel')}</p>
             <p style="margin: 0; color: #374151;">${data.booking.location}</p>
           </div>
         `
@@ -99,7 +101,7 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
       bookingSection = `
         <!-- Booking Details -->
         <div style="background: linear-gradient(135deg, #faf5ff, #f3e8ff); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e9d5ff;">
-          <p style="margin: 0 0 15px; color: #7c3aed; font-weight: bold;">📅 รายละเอียดการนัดหมาย</p>
+          <p style="margin: 0 0 15px; color: #7c3aed; font-weight: bold;">${t('bookingDetails')}</p>
           
           <div style="display: flex; margin-bottom: 10px;">
             <span style="font-size: 24px; margin-right: 12px;">📆</span>
@@ -112,7 +114,7 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
             <span style="font-size: 24px; margin-right: 12px;">⏰</span>
             <div>
               <p style="margin: 0; font-weight: bold; color: #111827; font-size: 16px;">${formattedTime} น.</p>
-              <p style="margin: 0; color: #6b7280; font-size: 14px;">(${data.booking.durationMinutes || 60} นาที)</p>
+              <p style="margin: 0; color: #6b7280; font-size: 14px;">(${data.booking.durationMinutes || 60} ${t('minutes')})</p>
             </div>
           </div>
           
@@ -121,9 +123,9 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
         
         <!-- Add to Calendar -->
         <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-          <p style="margin: 0 0 10px; color: #374151; font-weight: bold;">📱 เพิ่มลงปฏิทิน</p>
+          <p style="margin: 0 0 10px; color: #374151; font-weight: bold;">${t('addToCalendar')}</p>
           <a href="${googleCalUrl}" target="_blank" style="display: inline-block; background: #4285f4; color: white; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-size: 14px;">Google Calendar</a>
-          <p style="margin: 10px 0 0; color: #6b7280; font-size: 12px;">หรือเปิดไฟล์ .ics ที่แนบมาเพื่อเพิ่มลง Calendar อื่นๆ (Apple, Outlook)</p>
+          <p style="margin: 10px 0 0; color: #6b7280; font-size: 12px;">${t('addToCalendarICS')}</p>
         </div>
       `;
     }
@@ -139,8 +141,8 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
       from: FROM_EMAIL,
       to: data.buyerEmail,
       subject: isBooking 
-        ? `📅 ยืนยันการนัดหมาย - ${data.productTitle}`
-        : `✅ ยืนยันการชำระเงิน - ${data.productTitle}`,
+        ? t('bookingConfirmSubject', { product: data.productTitle })
+        : t('orderConfirmSubject', { product: data.productTitle }),
       html: `
         <!DOCTYPE html>
         <html>
@@ -153,22 +155,22 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
             <!-- Header -->
             <div style="background: linear-gradient(135deg, ${isBooking ? '#8b5cf6, #7c3aed' : '#22c55e, #16a34a'}); padding: 30px; text-align: center;">
               <div style="font-size: 48px; margin-bottom: 10px;">${isBooking ? '📅' : '✅'}</div>
-              <h1 style="color: white; margin: 0; font-size: 24px;">${isBooking ? 'การนัดหมายยืนยันแล้ว!' : 'การชำระเงินสำเร็จ!'}</h1>
+              <h1 style="color: white; margin: 0; font-size: 24px;">${isBooking ? t('bookingConfirmedTitle') : t('paymentConfirmedTitle')}</h1>
             </div>
             
             <!-- Content -->
             <div style="padding: 30px;">
-              <p style="color: #374151; margin: 0 0 20px;">สวัสดีคุณ ${data.buyerName},</p>
+              <p style="color: #374151; margin: 0 0 20px;">${t('hello', { name: data.buyerName })}</p>
               
               <p style="color: #374151; margin: 0 0 20px;">
-                ${isBooking ? 'การนัดหมายของคุณได้รับการยืนยันเรียบร้อยแล้ว' : 'การชำระเงินของคุณได้รับการยืนยันเรียบร้อยแล้ว'}
+                ${isBooking ? t('bookingConfirmedBody') : t('paymentConfirmedBody')}
               </p>
               
               <!-- Order Details -->
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">รายละเอียดคำสั่งซื้อ</p>
+                <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">${t('orderDetails')}</p>
                 <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${data.productTitle}</p>
-                <p style="margin: 0; color: #6b7280;">หมายเลข: #${data.orderId.slice(0, 8).toUpperCase()}</p>
+                <p style="margin: 0; color: #6b7280;">${t('orderNumber', { id: data.orderId.slice(0, 8).toUpperCase() })}</p>
                 <p style="margin: 10px 0 0; font-size: 24px; font-weight: bold; color: ${isBooking ? '#7c3aed' : '#22c55e'};">฿${data.amount.toLocaleString()}</p>
               </div>
               
@@ -176,28 +178,28 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
               
               ${!isBooking ? `
               <p style="color: #374151; margin: 0 0 20px;">
-                ผู้ขายจะติดต่อคุณเพื่อส่งมอบสินค้า/บริการตามที่สั่งซื้อ
+                ${t('sellerWillDeliver')}
               </p>
               ` : ''}
               
               <!-- View Order Button -->
               <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/checkout/${data.orderId}/success" 
                  style="display: block; background: linear-gradient(135deg, ${isBooking ? '#8b5cf6, #7c3aed' : '#22c55e, #16a34a'}); color: white; text-decoration: none; padding: 15px 30px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: ${isBooking ? '10px' : '20px'};">
-                ${isBooking ? '📅 ดูรายละเอียดนัดหมาย' : '🎁 คลิกเพื่อรับสินค้า/บริการ'}
+                ${isBooking ? t('viewBookingDetails') : t('getProduct')}
               </a>
               
               ${isBooking ? `
               <!-- Reschedule/Cancel Button -->
               <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/checkout/${data.orderId}/success" 
                  style="display: block; background: #f3f4f6; color: #374151; text-decoration: none; padding: 12px 30px; border-radius: 10px; text-align: center; font-weight: 600; margin-bottom: 20px; border: 1px solid #e5e7eb;">
-                🔄 เปลี่ยนเวลานัด / ยกเลิกนัด
+                ${t('rescheduleCancel')}
               </a>
               ` : ''}
               
               <!-- Creator Contact -->
               ${data.creatorContact && (data.creatorContact.line || data.creatorContact.ig) ? `
               <div style="background: #f0f9ff; border-radius: 12px; padding: 20px;">
-                <p style="margin: 0 0 10px; color: #0369a1; font-weight: bold;">ติดต่อผู้ขาย (${data.creatorName})</p>
+                <p style="margin: 0 0 10px; color: #0369a1; font-weight: bold;">${t('contactSeller', { name: data.creatorName })}</p>
                 ${data.creatorContact.line ? `<p style="margin: 0 0 5px; color: #374151;">Line: ${data.creatorContact.line}</p>` : ''}
                 ${data.creatorContact.ig ? `<p style="margin: 0; color: #374151;">Instagram: ${data.creatorContact.ig}</p>` : ''}
               </div>
@@ -207,7 +209,7 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
             <!-- Footer -->
             <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                ขอบคุณที่ใช้บริการ Sellio
+                ${t('thankYouSellio')}
               </p>
             </div>
           </div>
@@ -248,10 +250,11 @@ export async function sendPaymentRejectionEmail(
   data: OrderEmailData & { reason: string }
 ) {
   try {
+    const t = await getTranslations('Emails');
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: data.buyerEmail,
-      subject: `❌ การชำระเงินไม่สำเร็จ - ${data.productTitle}`,
+      subject: t('rejectionSubject', { product: data.productTitle }),
       html: `
         <!DOCTYPE html>
         <html>
@@ -264,37 +267,37 @@ export async function sendPaymentRejectionEmail(
             <!-- Header -->
             <div style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 30px; text-align: center;">
               <div style="font-size: 48px; margin-bottom: 10px;">❌</div>
-              <h1 style="color: white; margin: 0; font-size: 24px;">การชำระเงินไม่สำเร็จ</h1>
+              <h1 style="color: white; margin: 0; font-size: 24px;">${t('rejectionTitle')}</h1>
             </div>
             
             <!-- Content -->
             <div style="padding: 30px;">
-              <p style="color: #374151; margin: 0 0 20px;">สวัสดีคุณ ${data.buyerName},</p>
+              <p style="color: #374151; margin: 0 0 20px;">${t('hello', { name: data.buyerName })}</p>
               
               <p style="color: #374151; margin: 0 0 20px;">
-                ขออภัย การชำระเงินของคุณไม่สามารถยืนยันได้
+                ${t('rejectionBody')}
               </p>
               
               <!-- Order Details -->
               <div style="background: #fef2f2; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <p style="margin: 0 0 10px; color: #991b1b; font-weight: bold;">เหตุผล:</p>
+                <p style="margin: 0 0 10px; color: #991b1b; font-weight: bold;">${t('rejectionReason')}</p>
                 <p style="margin: 0; color: #374151;">${data.reason}</p>
               </div>
               
               <!-- Order Info -->
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                 <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${data.productTitle}</p>
-                <p style="margin: 0; color: #6b7280;">หมายเลข: #${data.orderId.slice(0, 8).toUpperCase()}</p>
+                <p style="margin: 0; color: #6b7280;">${t('orderNumber', { id: data.orderId.slice(0, 8).toUpperCase() })}</p>
               </div>
               
               <p style="color: #374151; margin: 0 0 20px;">
-                กรุณาติดต่อผู้ขายหากต้องการความช่วยเหลือ
+                ${t('contactSellerHelp')}
               </p>
               
               <!-- Creator Contact -->
               ${data.creatorContact && (data.creatorContact.line || data.creatorContact.ig) ? `
               <div style="background: #f0f9ff; border-radius: 12px; padding: 20px;">
-                <p style="margin: 0 0 10px; color: #0369a1; font-weight: bold;">ติดต่อผู้ขาย (${data.creatorName})</p>
+                <p style="margin: 0 0 10px; color: #0369a1; font-weight: bold;">${t('contactSeller', { name: data.creatorName })}</p>
                 ${data.creatorContact.line ? `<p style="margin: 0 0 5px; color: #374151;">Line: ${data.creatorContact.line}</p>` : ''}
                 ${data.creatorContact.ig ? `<p style="margin: 0; color: #374151;">Instagram: ${data.creatorContact.ig}</p>` : ''}
               </div>
@@ -336,10 +339,11 @@ export async function sendRefundNotificationEmail(
   }
 ) {
   try {
+    const t = await getTranslations('Emails');
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: data.buyerEmail,
-      subject: `💰 แจ้งคืนเงิน - ${data.productTitle}`,
+      subject: t('refundSubject', { product: data.productTitle }),
       html: `
         <!DOCTYPE html>
         <html>
@@ -352,28 +356,28 @@ export async function sendRefundNotificationEmail(
             <!-- Header -->
             <div style="background: linear-gradient(135deg, #3b82f6, #2563eb); padding: 30px; text-align: center;">
               <div style="font-size: 48px; margin-bottom: 10px;">💰</div>
-              <h1 style="color: white; margin: 0; font-size: 24px;">แจ้งคืนเงิน</h1>
+              <h1 style="color: white; margin: 0; font-size: 24px;">${t('refundTitle')}</h1>
             </div>
             
             <!-- Content -->
             <div style="padding: 30px;">
-              <p style="color: #374151; margin: 0 0 20px;">สวัสดีคุณ ${data.buyerName},</p>
+              <p style="color: #374151; margin: 0 0 20px;">${t('hello', { name: data.buyerName })}</p>
               
               <p style="color: #374151; margin: 0 0 20px;">
-                ผู้ขายได้ทำการคืนเงินให้คุณแล้ว
+                ${t('refundBody')}
               </p>
               
               <!-- Refund Details -->
               <div style="background: #eff6ff; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #bfdbfe;">
-                <p style="margin: 0 0 10px; color: #1e40af; font-weight: bold;">💰 รายละเอียดการคืนเงิน</p>
-                <p style="margin: 0 0 5px; color: #374151;"><strong>สินค้า:</strong> ${data.productTitle}</p>
-                <p style="margin: 0 0 5px; color: #374151;"><strong>หมายเลขคำสั่งซื้อ:</strong> #${data.orderId.slice(0, 8).toUpperCase()}</p>
+                <p style="margin: 0 0 10px; color: #1e40af; font-weight: bold;">${t('refundDetails')}</p>
+                <p style="margin: 0 0 5px; color: #374151;"><strong>${t('refundProduct')}</strong> ${data.productTitle}</p>
+                <p style="margin: 0 0 5px; color: #374151;"><strong>${t('refundOrderNumber')}</strong> #${data.orderId.slice(0, 8).toUpperCase()}</p>
                 <p style="margin: 10px 0 0; font-size: 24px; font-weight: bold; color: #2563eb;">฿${data.refundAmount.toLocaleString()}</p>
               </div>
               
               ${data.refundNote ? `
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">หมายเหตุจากผู้ขาย:</p>
+                <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">${t('refundSellerNote')}</p>
                 <p style="margin: 0; color: #374151;">${data.refundNote}</p>
               </div>
               ` : ''}
@@ -381,19 +385,19 @@ export async function sendRefundNotificationEmail(
               ${data.refundSlipUrl ? `
               <!-- Refund Slip -->
               <div style="margin-bottom: 20px;">
-                <p style="margin: 0 0 10px; color: #1e40af; font-weight: bold;">🧾 สลิปการคืนเงิน</p>
+                <p style="margin: 0 0 10px; color: #1e40af; font-weight: bold;">${t('refundSlip')}</p>
                 <img src="${data.refundSlipUrl}" alt="Refund Slip" style="width: 100%; border-radius: 12px; border: 1px solid #e5e7eb;" />
               </div>
               ` : ''}
               
               <p style="color: #374151; margin: 0 0 20px;">
-                กรุณาตรวจสอบยอดเงินในบัญชีของคุณ หากมีข้อสงสัยกรุณาติดต่อผู้ขาย
+                ${t('refundCheckAccount')}
               </p>
               
               <!-- Creator Contact -->
               ${data.creatorContact && (data.creatorContact.line || data.creatorContact.ig) ? `
               <div style="background: #f0f9ff; border-radius: 12px; padding: 20px;">
-                <p style="margin: 0 0 10px; color: #0369a1; font-weight: bold;">ติดต่อผู้ขาย (${data.creatorName})</p>
+                <p style="margin: 0 0 10px; color: #0369a1; font-weight: bold;">${t('contactSeller', { name: data.creatorName })}</p>
                 ${data.creatorContact.line ? `<p style="margin: 0 0 5px; color: #374151;">Line: ${data.creatorContact.line}</p>` : ''}
                 ${data.creatorContact.ig ? `<p style="margin: 0; color: #374151;">Instagram: ${data.creatorContact.ig}</p>` : ''}
               </div>
@@ -437,10 +441,11 @@ export async function sendNewOrderNotificationEmail(
   }
 ) {
   try {
+    const t = await getTranslations('Emails');
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: creatorEmail,
-      subject: `🛒 มีคำสั่งซื้อใหม่ - ${data.productTitle}`,
+      subject: t('newOrderSubject', { product: data.productTitle }),
       html: `
         <!DOCTYPE html>
         <html>
@@ -453,24 +458,24 @@ export async function sendNewOrderNotificationEmail(
             <!-- Header -->
             <div style="background: linear-gradient(135deg, #6366f1, #4f46e5); padding: 30px; text-align: center;">
               <div style="font-size: 48px; margin-bottom: 10px;">🛒</div>
-              <h1 style="color: white; margin: 0; font-size: 24px;">มีคำสั่งซื้อใหม่!</h1>
+              <h1 style="color: white; margin: 0; font-size: 24px;">${t('newOrderTitle')}</h1>
             </div>
             
             <!-- Content -->
             <div style="padding: 30px;">
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                 <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${data.productTitle}</p>
-                <p style="margin: 0 0 10px; color: #6b7280;">ผู้ซื้อ: ${data.buyerName}</p>
+                <p style="margin: 0 0 10px; color: #6b7280;">${t('buyer', { name: data.buyerName })}</p>
                 <p style="margin: 0; font-size: 24px; font-weight: bold; color: #6366f1;">฿${data.amount.toLocaleString()}</p>
               </div>
               
               <p style="color: #374151; margin: 0 0 20px;">
-                เมื่อผู้ซื้อชำระเงินและอัพโหลดสลิป กรุณาตรวจสอบและยืนยันการชำระเงินที่ Dashboard
+                ${t('newOrderBody')}
               </p>
               
               <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/orders" 
                  style="display: block; background: #6366f1; color: white; text-decoration: none; padding: 15px 30px; border-radius: 10px; text-align: center; font-weight: bold;">
-                ไปที่ Dashboard
+                ${t('goToDashboard')}
               </a>
             </div>
             
@@ -511,10 +516,11 @@ export async function sendSlipUploadedNotificationEmail(
   }
 ) {
   try {
+    const t = await getTranslations('Emails');
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: creatorEmail,
-      subject: `💳 ลูกค้าอัพโหลดสลิปแล้ว - ${data.productTitle}`,
+      subject: t('slipUploadedSubject', { product: data.productTitle }),
       html: `
         <!DOCTYPE html>
         <html>
@@ -527,24 +533,24 @@ export async function sendSlipUploadedNotificationEmail(
             <!-- Header -->
             <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
               <div style="font-size: 48px; margin-bottom: 10px;">💳</div>
-              <h1 style="color: white; margin: 0; font-size: 24px;">ลูกค้าอัพโหลดสลิปแล้ว!</h1>
+              <h1 style="color: white; margin: 0; font-size: 24px;">${t('slipUploadedTitle')}</h1>
             </div>
             
             <!-- Content -->
             <div style="padding: 30px;">
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                 <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${data.productTitle}</p>
-                <p style="margin: 0 0 10px; color: #6b7280;">ผู้ซื้อ: ${data.buyerName}</p>
+                <p style="margin: 0 0 10px; color: #6b7280;">${t('buyer', { name: data.buyerName })}</p>
                 <p style="margin: 0; font-size: 24px; font-weight: bold; color: #f59e0b;">฿${data.amount.toLocaleString()}</p>
               </div>
               
               <p style="color: #374151; margin: 0 0 20px;">
-                ⏳ รอคุณตรวจสอบสลิปและยืนยันการชำระเงิน
+                ${t('slipUploadedBody')}
               </p>
               
               <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/orders" 
                  style="display: block; background: #f59e0b; color: white; text-decoration: none; padding: 15px 30px; border-radius: 10px; text-align: center; font-weight: bold;">
-                ตรวจสอบสลิป
+                ${t('checkSlip')}
               </a>
             </div>
             
@@ -589,6 +595,8 @@ export async function sendBookingReminderEmail(data: {
   location?: string;
 }) {
   try {
+    const t = await getTranslations('Emails');
+
     // Format date for display
     const dateObj = new Date(data.bookingDate + 'T00:00:00');
     const formattedDate = dateObj.toLocaleDateString('th-TH', {
@@ -610,21 +618,21 @@ export async function sendBookingReminderEmail(data: {
     const startDate = new Date(Date.UTC(year, month, day, hours - 7, minutes, 0));
     const endDate = new Date(startDate.getTime() + (data.durationMinutes || 60) * 60 * 1000);
     const formatForGoogle = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-    const googleCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(data.productTitle)}&dates=${formatForGoogle(startDate)}/${formatForGoogle(endDate)}&details=${encodeURIComponent(`นัดหมายกับ ${data.creatorName}`)}`;
+    const googleCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(data.productTitle)}&dates=${formatForGoogle(startDate)}/${formatForGoogle(endDate)}&details=${encodeURIComponent(t('appointmentWith', { name: data.creatorName }))}`;
 
     // Meeting info section
     const meetingInfo = data.meetingUrl
       ? `
         <div style="background: #f0f9ff; border-radius: 8px; padding: 15px; margin-top: 15px;">
-          <p style="margin: 0 0 5px; color: #0369a1; font-weight: bold;">🎥 ประชุมออนไลน์</p>
-          ${data.meetingPlatform ? `<p style="margin: 0 0 5px; color: #374151;">แพลตฟอร์ม: ${data.meetingPlatform}</p>` : ''}
-          <a href="${data.meetingUrl}" style="display: inline-block; background: #0ea5e9; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; margin-top: 10px; font-size: 14px; font-weight: bold;">🔗 เข้าร่วมประชุม</a>
+          <p style="margin: 0 0 5px; color: #0369a1; font-weight: bold;">${t('onlineMeeting')}</p>
+          ${data.meetingPlatform ? `<p style="margin: 0 0 5px; color: #374151;">${t('platformLabel', { platform: data.meetingPlatform })}</p>` : ''}
+          <a href="${data.meetingUrl}" style="display: inline-block; background: #0ea5e9; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; margin-top: 10px; font-size: 14px; font-weight: bold;">${t('joinMeeting')}</a>
         </div>
       `
       : data.location
       ? `
         <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin-top: 15px;">
-          <p style="margin: 0 0 5px; color: #92400e; font-weight: bold;">📍 สถานที่นัดพบ</p>
+          <p style="margin: 0 0 5px; color: #92400e; font-weight: bold;">${t('locationLabel')}</p>
           <p style="margin: 0; color: #374151;">${data.location}</p>
         </div>
       `
@@ -633,7 +641,7 @@ export async function sendBookingReminderEmail(data: {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: data.buyerEmail,
-      subject: `⏰ เตือนนัดหมายพรุ่งนี้ - ${data.productTitle}`,
+      subject: t('reminderSubject', { product: data.productTitle }),
       html: `
         <!DOCTYPE html>
         <html>
@@ -646,21 +654,21 @@ export async function sendBookingReminderEmail(data: {
             <!-- Header -->
             <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
               <div style="font-size: 48px; margin-bottom: 10px;">⏰</div>
-              <h1 style="color: white; margin: 0; font-size: 24px;">อย่าลืมนัดหมายพรุ่งนี้!</h1>
+              <h1 style="color: white; margin: 0; font-size: 24px;">${t('reminderTitle')}</h1>
             </div>
             
             <!-- Content -->
             <div style="padding: 30px;">
-              <p style="color: #374151; margin: 0 0 20px;">สวัสดีคุณ ${data.buyerName},</p>
+              <p style="color: #374151; margin: 0 0 20px;">${t('hello', { name: data.buyerName })}</p>
               
               <p style="color: #374151; margin: 0 0 20px;">
-                นี่คือการเตือนว่าคุณมีนัดหมาย<strong>พรุ่งนี้</strong> กรุณาเตรียมตัวให้พร้อม
+                ${t('reminderBody')}
               </p>
               
               <!-- Booking Details -->
               <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #fcd34d;">
                 <p style="margin: 0 0 15px; color: #92400e; font-weight: bold; font-size: 16px;">📅 ${data.productTitle}</p>
-                <p style="margin: 0 0 5px; color: #78350f;">กับ ${data.creatorName}</p>
+                <p style="margin: 0 0 5px; color: #78350f;">${t('reminderWith', { name: data.creatorName })}</p>
                 
                 <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #fcd34d;">
                   <div style="display: flex; align-items: center; margin-bottom: 10px;">
@@ -669,7 +677,7 @@ export async function sendBookingReminderEmail(data: {
                   </div>
                   <div style="display: flex; align-items: center;">
                     <span style="font-size: 20px; margin-right: 10px;">⏰</span>
-                    <span style="font-weight: bold; color: #111827;">${formattedTime} น. (${data.durationMinutes || 60} นาที)</span>
+                    <span style="font-weight: bold; color: #111827;">${formattedTime} น. (${data.durationMinutes || 60} ${t('minutes')})</span>
                   </div>
                 </div>
                 
@@ -678,27 +686,27 @@ export async function sendBookingReminderEmail(data: {
               
               <!-- Add to Calendar -->
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center;">
-                <p style="margin: 0 0 10px; color: #374151; font-weight: bold;">📱 เพิ่มลงปฏิทิน</p>
+                <p style="margin: 0 0 10px; color: #374151; font-weight: bold;">${t('addToCalendar')}</p>
                 <a href="${googleCalUrl}" target="_blank" style="display: inline-block; background: #4285f4; color: white; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-size: 14px;">Google Calendar</a>
               </div>
               
               <!-- View Order Button -->
               <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/checkout/${data.orderId}/success" 
                  style="display: block; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; text-decoration: none; padding: 15px 30px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 10px;">
-                📋 ดูรายละเอียดนัดหมาย
+                ${t('reminderViewDetails')}
               </a>
               
               <!-- Reschedule/Cancel Button -->
               <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/checkout/${data.orderId}/success" 
                  style="display: block; background: #f3f4f6; color: #374151; text-decoration: none; padding: 12px 30px; border-radius: 10px; text-align: center; font-weight: 600; border: 1px solid #e5e7eb;">
-                🔄 เปลี่ยนเวลานัด / ยกเลิกนัด
+                ${t('rescheduleCancel')}
               </a>
             </div>
             
             <!-- Footer -->
             <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                Sellio - อีเมลนี้ส่งอัตโนมัติ 24 ชั่วโมงก่อนนัดหมาย
+                ${t('reminderFooter')}
               </p>
             </div>
           </div>
@@ -733,6 +741,8 @@ export async function sendBookingCancellationEmail(data: {
   reason: string;
 }) {
   try {
+    const t = await getTranslations('Emails');
+
     const formattedDate = data.bookingDate ? new Date(data.bookingDate).toLocaleDateString('th-TH', {
       weekday: 'long',
       year: 'numeric',
@@ -744,7 +754,7 @@ export async function sendBookingCancellationEmail(data: {
     const { error } = await resend.emails.send({
       from: 'Sellio <noreply@sellio.app>',
       to: data.creatorEmail,
-      subject: `❌ ยกเลิกนัดหมาย - ${data.productTitle}`,
+      subject: t('cancellationSubject', { product: data.productTitle }),
       html: `
         <!DOCTYPE html>
         <html>
@@ -753,14 +763,14 @@ export async function sendBookingCancellationEmail(data: {
           <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <!-- Header -->
             <div style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: white; font-size: 24px;">❌ ยกเลิกนัดหมาย</h1>
+              <h1 style="margin: 0; color: white; font-size: 24px;">${t('cancellationTitle')}</h1>
             </div>
             
             <!-- Content -->
             <div style="padding: 30px;">
               <p style="color: #374151; font-size: 16px; margin: 0 0 20px;">
-                สวัสดี ${data.creatorName},<br><br>
-                ลูกค้าได้ยกเลิกการจองแล้ว
+                ${t('hello', { name: data.creatorName })}<br><br>
+                ${t('cancellationBody')}
               </p>
               
               <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
@@ -770,19 +780,19 @@ export async function sendBookingCancellationEmail(data: {
               </div>
               
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <p style="margin: 0 0 10px; font-weight: bold; color: #374151;">👤 ข้อมูลลูกค้า</p>
-                <p style="margin: 0 0 5px; color: #6b7280;">ชื่อ: ${data.buyerName}</p>
-                <p style="margin: 0 0 5px; color: #6b7280;">อีเมล: ${data.buyerEmail}</p>
-                <p style="margin: 0; color: #6b7280;">เหตุผล: ${data.reason}</p>
+                <p style="margin: 0 0 10px; font-weight: bold; color: #374151;">${t('customerInfo')}</p>
+                <p style="margin: 0 0 5px; color: #6b7280;">${t('nameLabel', { name: data.buyerName })}</p>
+                <p style="margin: 0 0 5px; color: #6b7280;">${t('emailLabel', { email: data.buyerEmail })}</p>
+                <p style="margin: 0; color: #6b7280;">${t('reasonLabel', { reason: data.reason })}</p>
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin: 0;">
-                Slot นี้กลับมาเปิดให้จองใหม่แล้วอัตโนมัติ
+                ${t('slotReopened')}
               </p>
             </div>
             
             <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0; color: #9ca3af; font-size: 12px;">Sellio - แจ้งเตือนอัตโนมัติ</p>
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">${t('autoNotification')}</p>
             </div>
           </div>
         </body>
@@ -813,6 +823,8 @@ export async function sendBookingRescheduleEmail(data: {
   newTime: string;
 }) {
   try {
+    const t = await getTranslations('Emails');
+
     const formatDate = (dateStr: string) => dateStr ? new Date(dateStr).toLocaleDateString('th-TH', {
       weekday: 'long',
       year: 'numeric',
@@ -828,7 +840,7 @@ export async function sendBookingRescheduleEmail(data: {
     const { error } = await resend.emails.send({
       from: 'Sellio <noreply@sellio.app>',
       to: data.creatorEmail,
-      subject: `🔄 เปลี่ยนนัดหมาย - ${data.productTitle}`,
+      subject: t('rescheduleSubject', { product: data.productTitle }),
       html: `
         <!DOCTYPE html>
         <html>
@@ -837,39 +849,39 @@ export async function sendBookingRescheduleEmail(data: {
           <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <!-- Header -->
             <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: white; font-size: 24px;">🔄 เปลี่ยนนัดหมาย</h1>
+              <h1 style="margin: 0; color: white; font-size: 24px;">${t('rescheduleTitle')}</h1>
             </div>
             
             <!-- Content -->
             <div style="padding: 30px;">
               <p style="color: #374151; font-size: 16px; margin: 0 0 20px;">
-                สวัสดี ${data.creatorName},<br><br>
-                ลูกค้าได้เปลี่ยนเวลานัดหมายใหม่
+                ${t('hello', { name: data.creatorName })}<br><br>
+                ${t('rescheduleBody')}
               </p>
               
               <p style="font-weight: bold; color: #374151; margin: 0 0 10px;">📦 ${data.productTitle}</p>
               
               <!-- Old Time -->
               <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
-                <p style="margin: 0 0 5px; font-weight: bold; color: #991b1b;">❌ เวลาเดิม (ยกเลิก)</p>
-                <p style="margin: 0; color: #7f1d1d; text-decoration: line-through;">${oldFormattedDate} เวลา ${oldFormattedTime} น.</p>
+                <p style="margin: 0 0 5px; font-weight: bold; color: #991b1b;">${t('oldTime')}</p>
+                <p style="margin: 0; color: #7f1d1d; text-decoration: line-through;">${t('dateTime', { date: oldFormattedDate, time: oldFormattedTime })}</p>
               </div>
               
               <!-- New Time -->
               <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-                <p style="margin: 0 0 5px; font-weight: bold; color: #166534;">✅ เวลาใหม่</p>
-                <p style="margin: 0; color: #15803d; font-weight: bold;">${newFormattedDate} เวลา ${newFormattedTime} น.</p>
+                <p style="margin: 0 0 5px; font-weight: bold; color: #166534;">${t('newTime')}</p>
+                <p style="margin: 0; color: #15803d; font-weight: bold;">${t('dateTime', { date: newFormattedDate, time: newFormattedTime })}</p>
               </div>
               
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px;">
-                <p style="margin: 0 0 10px; font-weight: bold; color: #374151;">👤 ข้อมูลลูกค้า</p>
-                <p style="margin: 0 0 5px; color: #6b7280;">ชื่อ: ${data.buyerName}</p>
-                <p style="margin: 0; color: #6b7280;">อีเมล: ${data.buyerEmail}</p>
+                <p style="margin: 0 0 10px; font-weight: bold; color: #374151;">${t('customerInfo')}</p>
+                <p style="margin: 0 0 5px; color: #6b7280;">${t('nameLabel', { name: data.buyerName })}</p>
+                <p style="margin: 0; color: #6b7280;">${t('emailLabel', { email: data.buyerEmail })}</p>
               </div>
             </div>
             
             <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0; color: #9ca3af; font-size: 12px;">Sellio - แจ้งเตือนอัตโนมัติ</p>
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">${t('autoNotification')}</p>
             </div>
           </div>
         </body>
@@ -884,4 +896,3 @@ export async function sendBookingRescheduleEmail(data: {
     console.error('Reschedule email error:', err);
   }
 }
-

@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, Button } from '@/components/ui';
 import { Star, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
 import { getProductReviews, type Review, type ReviewStats } from '@/actions/reviews';
+import { useTranslations } from 'next-intl';
 
 interface ProductReviewsProps {
   productId: string;
 }
 
 export function ProductReviews({ productId }: ProductReviewsProps) {
+  const t = useTranslations('ProductReviews');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [stats, setStats] = useState<ReviewStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,7 +59,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
   if (loading) {
     return (
       <div className="py-8 text-center text-muted-foreground">
-        กำลังโหลดรีวิว...
+        {t('loadingReviews')}
       </div>
     );
   }
@@ -72,7 +74,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
     <div className="space-y-4">
       <h3 className="text-lg font-semibold flex items-center gap-2">
         <MessageSquare className="h-5 w-5" />
-        รีวิวจากผู้ซื้อ ({stats.totalReviews})
+        {t('buyerReviews', { count: stats.totalReviews })}
       </h3>
 
       {/* Summary */}
@@ -84,7 +86,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
               <div className="text-3xl font-bold">{stats.averageRating.toFixed(1)}</div>
               {renderStars(Math.round(stats.averageRating), 'md')}
               <p className="text-sm text-muted-foreground mt-1">
-                {stats.totalReviews} รีวิว
+                {t('reviewCount', { count: stats.totalReviews })}
               </p>
             </div>
 
@@ -139,7 +141,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
                 </div>
                 {review.is_featured && (
                   <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
-                    แนะนำ
+                    {t('featured')}
                   </span>
                 )}
               </div>
@@ -152,7 +154,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
               {/* Creator Response */}
               {review.response && (
                 <div className="mt-3 pl-4 border-l-2 border-primary/30">
-                  <p className="text-xs font-medium text-primary mb-1">ตอบกลับจากผู้ขาย:</p>
+                  <p className="text-xs font-medium text-primary mb-1">{t('sellerResponse')}</p>
                   <p className="text-sm text-muted-foreground">{review.response}</p>
                 </div>
               )}
@@ -171,12 +173,12 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
           {showAll ? (
             <>
               <ChevronUp className="h-4 w-4 mr-2" />
-              แสดงน้อยลง
+              {t('showLess')}
             </>
           ) : (
             <>
               <ChevronDown className="h-4 w-4 mr-2" />
-              ดูรีวิวทั้งหมด ({reviews.length})
+              {t('showAll', { count: reviews.length })}
             </>
           )}
         </Button>

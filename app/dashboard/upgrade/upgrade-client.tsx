@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import type { PlanType } from '@/types';
+import { useTranslations } from 'next-intl';
 
 interface UpgradeClientProps {
   plan: PlanType;
@@ -26,23 +27,6 @@ interface UpgradeClientProps {
   cancelAtPeriodEnd: boolean;
 }
 
-const PRO_FEATURES = [
-  { icon: Package, label: 'สินค้าไม่จำกัด', description: 'สร้างสินค้าและบริการได้ไม่จำกัดจำนวน' },
-  { icon: Download, label: 'Export ข้อมูลลูกค้า', description: 'ส่งออกรายชื่อลูกค้าเป็น CSV' },
-  { icon: Star, label: 'จัดการรีวิว', description: 'ตอบกลับ, เลือก Featured, เผยแพร่/ซ่อนรีวิว' },
-  { icon: Palette, label: 'ลบ Branding', description: 'ลบข้อความ "Powered by Sellio" ออกจากหน้าร้าน' },
-  { icon: BarChart3, label: 'Analytics ขั้นสูง', description: 'ดูสถิติเชิงลึกเพื่อขยายธุรกิจ' },
-  { icon: Shield, label: 'Priority Support', description: 'ได้รับการช่วยเหลือก่อนใคร' },
-];
-
-const FREE_FEATURES = [
-  'สินค้าสูงสุด 2 ชิ้น',
-  'หน้าร้านค้าออนไลน์',
-  'PromptPay QR + โอนธนาคาร',
-  'คูปอง',
-  'ปฏิทินนัดหมาย',
-];
-
 export function UpgradeClient({ plan, productCount, hasSubscription, planExpiresAt, cancelAtPeriodEnd }: UpgradeClientProps) {
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -50,8 +34,26 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
   const searchParams = useSearchParams();
   const success = searchParams.get('success');
   const cancelled = searchParams.get('cancelled');
+  const t = useTranslations('Upgrade');
 
   const isPro = plan === 'pro';
+
+  const PRO_FEATURES = [
+    { icon: Package, label: t('proUnlimitedProducts'), description: t('proUnlimitedProductsDesc') },
+    { icon: Download, label: t('proExportCSV'), description: t('proExportCSVDesc') },
+    { icon: Star, label: t('proReviewMgmt'), description: t('proReviewMgmtDesc') },
+    { icon: Palette, label: t('proNoBranding'), description: t('proNoBrandingDesc') },
+    { icon: BarChart3, label: t('proAdvancedAnalytics'), description: t('proAdvancedAnalyticsDesc') },
+    { icon: Shield, label: t('proPrioritySupport'), description: t('proPrioritySupportDesc') },
+  ];
+
+  const FREE_FEATURES = [
+    t('freeMax2Products'),
+    t('freeOnlineStore'),
+    t('freePromptPay'),
+    t('freeCoupons'),
+    t('freeCalendar'),
+  ];
 
   const handleUpgrade = async () => {
     setLoading(true);
@@ -64,19 +66,17 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(data.error || 'เกิดข้อผิดพลาด');
+        alert(data.error || t('error'));
       }
     } catch {
-      alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      alert(t('errorRetry'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = async (immediate: boolean) => {
-    const msg = immediate
-      ? 'คุณแน่ใจหรือไม่ที่จะยกเลิก Pro ทันที?\n\nแพลน Pro จะถูกยกเลิกทันทีและเปลี่ยนเป็น Free'
-      : 'คุณแน่ใจหรือไม่ที่จะยกเลิก Pro?\n\nคุณจะยังใช้ Pro ได้จนถึงสิ้นสุดรอบบิลปัจจุบัน';
+    const msg = immediate ? t('confirmCancelImmediate') : t('confirmCancelEnd');
     
     if (!confirm(msg)) return;
     
@@ -96,10 +96,10 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
           setIsScheduledCancel(true);
         }
       } else {
-        alert(data.error || 'เกิดข้อผิดพลาด');
+        alert(data.error || t('error'));
       }
     } catch {
-      alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      alert(t('errorRetry'));
     } finally {
       setCancelling(false);
     }
@@ -110,21 +110,21 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
       {/* Back Button */}
       <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="h-4 w-4" />
-        กลับหน้า Dashboard
+        {t('backToDashboard')}
       </Link>
 
       {/* Success/Cancel Messages */}
       {success && (
         <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-6">
-          <p className="font-medium text-green-800">อัปเกรดสำเร็จ! ยินดีต้อนรับสู่ Sellio Pro</p>
-          <p className="text-sm text-green-700 mt-1">คุณสามารถใช้งานฟีเจอร์ทั้งหมดได้แล้ว</p>
+          <p className="font-medium text-green-800">{t('upgradeSuccess')}</p>
+          <p className="text-sm text-green-700 mt-1">{t('upgradeSuccessDesc')}</p>
         </div>
       )}
       
       {cancelled && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-6">
-          <p className="font-medium text-amber-800">การชำระเงินถูกยกเลิก</p>
-          <p className="text-sm text-amber-700 mt-1">คุณสามารถลองอัปเกรดใหม่ได้ทุกเมื่อ</p>
+          <p className="font-medium text-amber-800">{t('paymentCancelled')}</p>
+          <p className="text-sm text-amber-700 mt-1">{t('paymentCancelledDesc')}</p>
         </div>
       )}
 
@@ -134,12 +134,10 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
           <Crown className="h-8 w-8 text-amber-600" />
         </div>
         <h1 className="text-3xl font-bold mb-2">
-          {isPro ? 'คุณเป็นสมาชิก Pro แล้ว!' : 'อัปเกรดเป็น Pro'}
+          {isPro ? t('youArePro') : t('upgradeToPro')}
         </h1>
         <p className="text-muted-foreground text-lg">
-          {isPro 
-            ? 'ใช้งานฟีเจอร์ทั้งหมดได้ไม่จำกัด' 
-            : 'ปลดล็อกทุกฟีเจอร์เพียง 99 บาท/เดือน'}
+          {isPro ? t('unlimitedFeatures') : t('unlockAll')}
         </p>
       </div>
 
@@ -153,24 +151,24 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
                   <Crown className="h-5 w-5 text-amber-600" />
                   <span className="font-semibold text-lg">Sellio Pro</span>
                 </div>
-                <p className="text-sm text-muted-foreground">99 บาท/เดือน</p>
+                <p className="text-sm text-muted-foreground">{t('pricePerMonth')}</p>
                 {planExpiresAt && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    ต่ออายุถัดไป: {new Date(planExpiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    {t('nextRenewal', { date: new Date(planExpiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) })}
                   </p>
                 )}
               </div>
               <div className="flex flex-col gap-2 items-end">
                 {isScheduledCancel ? (
                   <>
-                    <span className="text-sm text-amber-600 font-medium">ตั้งเวลายกเลิกแล้ว</span>
+                    <span className="text-sm text-amber-600 font-medium">{t('scheduledCancel')}</span>
                     <button
                       type="button"
                       onClick={() => handleCancel(true)}
                       disabled={cancelling}
                       className="text-xs text-muted-foreground hover:text-red-600 hover:underline transition-colors"
                     >
-                      {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิกทันที'}
+                      {cancelling ? t('cancelling') : t('cancelImmediately')}
                     </button>
                   </>
                 ) : (
@@ -182,7 +180,7 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
                       disabled={cancelling}
                       className="text-red-600 border-red-200 hover:bg-red-50"
                     >
-                      {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิกเมื่อหมดรอบบิล'}
+                      {cancelling ? t('cancelling') : t('cancelAtPeriodEnd')}
                     </Button>
                     <button
                       type="button"
@@ -190,7 +188,7 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
                       disabled={cancelling}
                       className="text-xs text-muted-foreground hover:text-red-600 hover:underline transition-colors"
                     >
-                      ยกเลิกทันที
+                      {t('cancelImmediately')}
                     </button>
                   </>
                 )}
@@ -198,7 +196,7 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
                   href="/dashboard/settings?tab=billing"
                   className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
                 >
-                  ดูประวัติการชำระเงิน →
+                  {t('viewBillingHistory')}
                 </Link>
               </div>
             </div>
@@ -213,7 +211,7 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
           {!isPro && (
             <div className="absolute -top-3 left-4">
               <span className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1 rounded-full">
-                แพลนปัจจุบัน
+                {t('currentPlan')}
               </span>
             </div>
           )}
@@ -221,7 +219,7 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
             <h3 className="text-xl font-bold mb-1">Free</h3>
             <div className="mb-4">
               <span className="text-3xl font-bold">0</span>
-              <span className="text-muted-foreground ml-1">บาท/เดือน</span>
+              <span className="text-muted-foreground ml-1">{t('perMonth')}</span>
             </div>
             <ul className="space-y-3">
               {FREE_FEATURES.map((feature, i) => (
@@ -239,13 +237,13 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
           {isPro && (
             <div className="absolute -top-3 left-4">
               <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-medium px-3 py-1 rounded-full">
-                แพลนปัจจุบัน
+                {t('currentPlan')}
               </span>
             </div>
           )}
           <div className="absolute -top-3 right-4">
             <span className="bg-red-500 text-white text-xs font-medium px-3 py-1 rounded-full">
-              แนะนำ
+              {t('recommended')}
             </span>
           </div>
           <CardContent className="pt-8">
@@ -255,9 +253,9 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
             </h3>
             <div className="mb-1">
               <span className="text-3xl font-bold">99</span>
-              <span className="text-muted-foreground ml-1">บาท/เดือน</span>
+              <span className="text-muted-foreground ml-1">{t('perMonth')}</span>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">เท่ากับวันละ 3.3 บาท</p>
+            <p className="text-sm text-muted-foreground mb-4">{t('perDay')}</p>
             
             <ul className="space-y-3 mb-6">
               {PRO_FEATURES.map((feature, i) => {
@@ -282,11 +280,11 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
                 disabled={loading}
               >
                 {loading ? (
-                  'กำลังเปิดหน้าชำระเงิน...'
+                  t('openingPayment')
                 ) : (
                   <>
                     <Zap className="h-4 w-4 mr-2" />
-                    อัปเกรดเป็น Pro เลย
+                    {t('upgradeNow')}
                   </>
                 )}
               </Button>
@@ -297,25 +295,19 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
 
       {/* FAQ */}
       <div className="space-y-4">
-        <h2 className="text-xl font-bold text-center">คำถามที่พบบ่อย</h2>
+        <h2 className="text-xl font-bold text-center">{t('faq')}</h2>
         <div className="space-y-3">
           <details className="p-4 border rounded-lg group">
-            <summary className="font-medium cursor-pointer">เปลี่ยนแพลนได้ตลอดไหม?</summary>
-            <p className="text-sm text-muted-foreground mt-2">
-              ได้ครับ คุณสามารถอัปเกรดหรือยกเลิกได้ตลอดเวลา หากยกเลิก จะยังใช้ Pro ได้จนถึงวันหมดอายุ
-            </p>
+            <summary className="font-medium cursor-pointer">{t('faqChangePlan')}</summary>
+            <p className="text-sm text-muted-foreground mt-2">{t('faqChangePlanAnswer')}</p>
           </details>
           <details className="p-4 border rounded-lg">
-            <summary className="font-medium cursor-pointer">ถ้ายกเลิก Pro สินค้าจะหายไหม?</summary>
-            <p className="text-sm text-muted-foreground mt-2">
-              ไม่หายครับ สินค้าทั้งหมดยังอยู่ แต่ถ้ามีเกิน 2 ชิ้น จะไม่สามารถสร้างใหม่ได้จนกว่าจะอัปเกรดหรือลบสินค้าลง
-            </p>
+            <summary className="font-medium cursor-pointer">{t('faqCancelProducts')}</summary>
+            <p className="text-sm text-muted-foreground mt-2">{t('faqCancelProductsAnswer')}</p>
           </details>
           <details className="p-4 border rounded-lg">
-            <summary className="font-medium cursor-pointer">ชำระเงินอย่างไร?</summary>
-            <p className="text-sm text-muted-foreground mt-2">
-              ชำระผ่านบัตรเครดิต/เดบิต ผ่าน Stripe ซึ่งเป็นระบบชำระเงินที่ปลอดภัยระดับโลก ตัดบัตรอัตโนมัติทุกเดือน
-            </p>
+            <summary className="font-medium cursor-pointer">{t('faqPayment')}</summary>
+            <p className="text-sm text-muted-foreground mt-2">{t('faqPaymentAnswer')}</p>
           </details>
         </div>
       </div>

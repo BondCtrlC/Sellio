@@ -5,10 +5,12 @@ import { Button } from '@/components/ui';
 import { Copy, Check, ExternalLink, Store } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 export function StoreLink() {
   const [username, setUsername] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const t = useTranslations('StoreLink');
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -61,7 +63,7 @@ export function StoreLink() {
           size="icon"
           className="h-6 w-6"
           onClick={handleCopy}
-          title="คัดลอกลิงก์"
+          title={t('copyLink')}
         >
           {copied ? (
             <Check className="h-3.5 w-3.5 text-green-600" />
@@ -76,7 +78,7 @@ export function StoreLink() {
             variant="ghost"
             size="icon"
             className="h-6 w-6"
-            title="เปิดร้านค้า"
+            title={t('openStore')}
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </Button>
@@ -89,7 +91,7 @@ export function StoreLink() {
           variant="ghost"
           size="icon"
           onClick={handleCopy}
-          title="คัดลอกลิงก์ร้านค้า"
+          title={t('copyStoreLinkMobile')}
         >
           {copied ? (
             <Check className="h-4 w-4 text-green-600" />

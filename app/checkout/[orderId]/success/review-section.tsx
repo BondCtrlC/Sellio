@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/ui';
 import { Star, Send, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { createReview, canReviewOrder } from '@/actions/reviews';
@@ -11,6 +12,7 @@ interface ReviewSectionProps {
 }
 
 export function ReviewSection({ orderId, productTitle }: ReviewSectionProps) {
+  const t = useTranslations('ReviewSection');
   const [canReview, setCanReview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [rating, setRating] = useState(0);
@@ -32,7 +34,7 @@ export function ReviewSection({ orderId, productTitle }: ReviewSectionProps) {
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      setError('กรุณาให้คะแนน');
+      setError(t('pleaseRate'));
       return;
     }
 
@@ -42,7 +44,7 @@ export function ReviewSection({ orderId, productTitle }: ReviewSectionProps) {
     const result = await createReview(orderId, rating, comment);
     
     if (!result.success) {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
       setSubmitting(false);
       return;
     }
@@ -63,9 +65,9 @@ export function ReviewSection({ orderId, productTitle }: ReviewSectionProps) {
       <Card className="mb-6 border-yellow-200 bg-yellow-50">
         <CardContent className="py-6 text-center">
           <CheckCircle className="h-10 w-10 text-yellow-600 mx-auto mb-3" />
-          <h4 className="font-semibold text-yellow-800 mb-1">ขอบคุณสำหรับรีวิว!</h4>
+          <h4 className="font-semibold text-yellow-800 mb-1">{t('thankYou')}</h4>
           <p className="text-sm text-yellow-700">
-            รีวิวของคุณจะช่วยให้ผู้ซื้อคนอื่นตัดสินใจได้ดีขึ้น
+            {t('thankYouDesc')}
           </p>
         </CardContent>
       </Card>
@@ -81,7 +83,7 @@ export function ReviewSection({ orderId, productTitle }: ReviewSectionProps) {
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <Star className="h-5 w-5 text-yellow-500" />
-            รีวิวสินค้านี้
+            {t('reviewThis')}
           </CardTitle>
           {isExpanded ? (
             <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -125,11 +127,11 @@ export function ReviewSection({ orderId, productTitle }: ReviewSectionProps) {
             </div>
             {rating > 0 && (
               <p className="text-xs text-muted-foreground mt-1">
-                {rating === 5 && 'ยอดเยี่ยม!'}
-                {rating === 4 && 'ดีมาก'}
-                {rating === 3 && 'พอใช้'}
-                {rating === 2 && 'ต้องปรับปรุง'}
-                {rating === 1 && 'ไม่พอใจ'}
+                {rating === 5 && t('excellent')}
+                {rating === 4 && t('veryGood')}
+                {rating === 3 && t('average')}
+                {rating === 2 && t('needsImprovement')}
+                {rating === 1 && t('dissatisfied')}
               </p>
             )}
           </div>
@@ -139,7 +141,7 @@ export function ReviewSection({ orderId, productTitle }: ReviewSectionProps) {
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="แชร์ประสบการณ์ของคุณ... (ไม่บังคับ)"
+              placeholder={t('commentPlaceholder')}
               className="w-full p-3 border rounded-lg resize-none h-20 text-sm"
               disabled={submitting}
             />
@@ -153,11 +155,11 @@ export function ReviewSection({ orderId, productTitle }: ReviewSectionProps) {
             size="sm"
           >
             {submitting ? (
-              'กำลังส่ง...'
+              t('submitting')
             ) : (
               <>
                 <Send className="h-4 w-4 mr-2" />
-                ส่งรีวิว
+                {t('submitReview')}
               </>
             )}
           </Button>

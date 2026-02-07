@@ -10,6 +10,7 @@ import { productSchema, type ProductInput } from '@/lib/validations/product';
 import { PRODUCT_TYPES } from '@/lib/constants';
 import type { Product } from '@/types';
 import { FileText, Calendar, Link2, Video } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface ProductFormProps {
   product?: Product;
@@ -25,6 +26,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const isEditing = !!product;
+  const t = useTranslations('ProductForm');
 
   // Parse type_config
   const typeConfig = (product?.type_config as unknown as Record<string, unknown>) || {};
@@ -99,7 +101,7 @@ export function ProductForm({ product }: ProductFormProps) {
       {/* Product Type */}
       {!isEditing && (
         <div className="space-y-3">
-          <Label required>ประเภทสินค้า</Label>
+          <Label required>{t('productType')}</Label>
           <div className="grid grid-cols-3 gap-3">
             {(Object.entries(PRODUCT_TYPES) as [keyof typeof PRODUCT_TYPES, typeof PRODUCT_TYPES[keyof typeof PRODUCT_TYPES]][]).map(([type, info]) => {
               const Icon = typeIcons[type];
@@ -138,10 +140,10 @@ export function ProductForm({ product }: ProductFormProps) {
       {/* Basic Info */}
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="title" required>ชื่อสินค้า</Label>
+          <Label htmlFor="title" required>{t('productName')}</Label>
           <Input
             id="title"
-            placeholder="เช่น E-book การตลาดออนไลน์"
+            placeholder={t('productNamePlaceholder')}
             error={!!errors.title}
             {...register('title')}
           />
@@ -151,11 +153,11 @@ export function ProductForm({ product }: ProductFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description">รายละเอียด</Label>
+          <Label htmlFor="description">{t('description')}</Label>
           <RichTextEditor
             value={watch('description') || ''}
             onChange={(value) => setValue('description', value)}
-            placeholder="อธิบายสินค้าของคุณ..."
+            placeholder={t('descriptionPlaceholder')}
             error={!!errors.description}
           />
           {errors.description && (
@@ -166,7 +168,7 @@ export function ProductForm({ product }: ProductFormProps) {
         {/* Hide price for Link type */}
         {selectedType !== 'link' && (
           <div className="space-y-2">
-            <Label htmlFor="price" required>ราคา (บาท)</Label>
+            <Label htmlFor="price" required>{t('price')}</Label>
             <Input
               id="price"
               type="number"
@@ -186,10 +188,10 @@ export function ProductForm({ product }: ProductFormProps) {
       {/* Booking Specific */}
       {selectedType === 'booking' && (
         <div className="space-y-4 p-4 border rounded-lg">
-          <h4 className="font-medium">ตั้งค่าการจอง</h4>
+          <h4 className="font-medium">{t('bookingSettings')}</h4>
           
           <div className="space-y-2">
-            <Label>รูปแบบ</Label>
+            <Label>{t('format')}</Label>
             <div className="flex gap-2">
               <label className={`flex-1 flex items-center justify-center gap-2 p-3 border rounded-lg cursor-pointer transition-all ${
                 watch('location_type') === 'online' ? 'border-primary bg-primary/5' : 'hover:border-muted-foreground'
@@ -222,31 +224,31 @@ export function ProductForm({ product }: ProductFormProps) {
           {watch('location_type') === 'online' && (
             <div className="space-y-4 pt-2">
               <div className="space-y-2">
-                <Label htmlFor="meeting_platform">Platform</Label>
+                <Label htmlFor="meeting_platform">{t('platform')}</Label>
                 <select
                   id="meeting_platform"
                   {...register('meeting_platform')}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <option value="">เลือก Platform</option>
+                  <option value="">{t('selectPlatform')}</option>
                   <option value="google_meet">Google Meet</option>
                   <option value="zoom">Zoom</option>
                   <option value="teams">Microsoft Teams</option>
                   <option value="line">LINE Video Call</option>
                   <option value="discord">Discord</option>
-                  <option value="other">อื่นๆ</option>
+                  <option value="other">{t('other')}</option>
                 </select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="meeting_link">Default Meeting Link (ไม่บังคับ)</Label>
+                <Label htmlFor="meeting_link">{t('defaultMeetingLink')}</Label>
                 <Input
                   id="meeting_link"
                   placeholder="https://meet.google.com/xxx-xxxx-xxx"
                   {...register('meeting_link')}
                 />
                 <p className="text-xs text-muted-foreground">
-                  ใส่ลิงก์ประชุมเริ่มต้น หรือสามารถเพิ่มทีหลังตอนยืนยัน Order ได้
+                  {t('meetingLinkHint')}
                 </p>
               </div>
             </div>
@@ -256,19 +258,19 @@ export function ProductForm({ product }: ProductFormProps) {
           {watch('location_type') === 'offline' && (
             <div className="space-y-4 pt-2">
               <div className="space-y-2">
-                <Label htmlFor="location_name">ชื่อสถานที่</Label>
+                <Label htmlFor="location_name">{t('locationName')}</Label>
                 <Input
                   id="location_name"
-                  placeholder="เช่น Starbucks สยามพารากอน"
+                  placeholder={t('locationNamePlaceholder')}
                   {...register('location_name')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location_address">ที่อยู่/รายละเอียด</Label>
+                <Label htmlFor="location_address">{t('locationAddress')}</Label>
                 <textarea
                   id="location_address"
-                  placeholder="เช่น ชั้น 1 โซน A ใกล้ประตูทางเข้าหลัก"
+                  placeholder={t('locationAddressPlaceholder')}
                   {...register('location_address')}
                   rows={2}
                   className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
@@ -276,10 +278,10 @@ export function ProductForm({ product }: ProductFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location_notes">หมายเหตุ/คำแนะนำ (ไม่บังคับ)</Label>
+                <Label htmlFor="location_notes">{t('locationNotes')}</Label>
                 <Input
                   id="location_notes"
-                  placeholder="เช่น มีที่จอดรถฟรี 2 ชม."
+                  placeholder={t('locationNotesPlaceholder')}
                   {...register('location_notes')}
                 />
               </div>
@@ -288,7 +290,7 @@ export function ProductForm({ product }: ProductFormProps) {
 
           {!isEditing && (
             <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-              💡 ตั้งค่าระยะเวลาต่อ Slot และเพิ่มวัน/เวลาว่างได้ในขั้นตอนถัดไป
+              💡 {t('bookingHint')}
             </p>
           )}
         </div>
@@ -297,22 +299,22 @@ export function ProductForm({ product }: ProductFormProps) {
       {/* Link Specific */}
       {selectedType === 'link' && (
         <div className="space-y-4 p-4 border rounded-lg">
-          <h4 className="font-medium">ตั้งค่า Link</h4>
+          <h4 className="font-medium">{t('linkSettings')}</h4>
           
           <div className="space-y-2">
-            <Label htmlFor="link_url" required>URL</Label>
+            <Label htmlFor="link_url" required>{t('linkUrl')}</Label>
             <Input
               id="link_url"
               placeholder="https://your-link.com"
               {...register('link_url')}
             />
             <p className="text-xs text-muted-foreground">
-              ใส่ลิงก์ที่ต้องการ เช่น Affiliate Link, YouTube, Website
+              {t('linkUrlHint')}
             </p>
           </div>
 
           <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-            💡 อัปโหลดรูป Thumbnail ได้ในขั้นตอนถัดไป
+            💡 {t('linkThumbnailHint')}
           </p>
         </div>
       )}
@@ -325,9 +327,9 @@ export function ProductForm({ product }: ProductFormProps) {
           {...register('is_published')}
         />
         <div>
-          <p className="font-medium">เผยแพร่สินค้า</p>
+          <p className="font-medium">{t('publishToggle')}</p>
           <p className="text-sm text-muted-foreground">
-            เมื่อเปิด สินค้าจะแสดงในหน้าร้านค้าของคุณ
+            {t('publishHint')}
           </p>
         </div>
       </label>
@@ -336,12 +338,12 @@ export function ProductForm({ product }: ProductFormProps) {
       {!isEditing && (selectedType === 'digital' || selectedType === 'booking' || selectedType === 'link') && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>ขั้นตอนถัดไป:</strong>{' '}
+            <strong>{t('nextStep')}</strong>{' '}
             {selectedType === 'digital' 
-              ? 'อัปโหลดไฟล์ดิจิทัลที่จะส่งให้ลูกค้า' 
+              ? t('nextStepDigital')
               : selectedType === 'booking'
-              ? 'เพิ่มวัน/เวลาที่คุณว่างสำหรับให้ลูกค้าจอง'
-              : 'อัปโหลดรูป Thumbnail'}
+              ? t('nextStepBooking')
+              : t('nextStepLink')}
           </p>
         </div>
       )}
@@ -350,12 +352,12 @@ export function ProductForm({ product }: ProductFormProps) {
       <div className="flex gap-4">
         <Button type="submit" isLoading={isSubmitting}>
           {isEditing 
-            ? 'บันทึกการเปลี่ยนแปลง' 
-            : 'ถัดไป →'
+            ? t('saveChanges')
+            : t('next')
           }
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>
-          ยกเลิก
+          {t('cancel')}
         </Button>
       </div>
     </form>

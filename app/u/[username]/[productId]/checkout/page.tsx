@@ -2,8 +2,12 @@ import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { notFound, redirect } from 'next/navigation';
 import { CheckoutForm } from './checkout-form';
+import { getTranslations } from 'next-intl/server';
 
-export const metadata: Metadata = { title: "สั่งซื้อ" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Checkout');
+  return { title: t('metaTitle') };
+}
 
 interface PageProps {
   params: Promise<{ username: string; productId: string }>;

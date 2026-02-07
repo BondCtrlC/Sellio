@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui';
 import { uploadProductImage } from '@/actions/products';
 import { Camera, Package } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -19,6 +20,7 @@ export function ProductImageUpload({ productId, currentImageUrl, productTitle }:
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const t = useTranslations('ProductEdit');
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
@@ -35,13 +37,13 @@ export function ProductImageUpload({ productId, currentImageUrl, productTitle }:
 
     // Validate file type
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setError('กรุณาเลือกไฟล์รูปภาพ (JPG, PNG, WebP, GIF)');
+      setError(t('invalidImageType'));
       return;
     }
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      setError(`ไฟล์ใหญ่เกินไป (${formatFileSize(file.size)}) กรุณาเลือกไฟล์ไม่เกิน 10MB`);
+      setError(t('fileTooLarge', { size: formatFileSize(file.size) }));
       return;
     }
 
@@ -67,7 +69,7 @@ export function ProductImageUpload({ productId, currentImageUrl, productTitle }:
       }
     } catch (err) {
       console.error('Upload error:', err);
-      setError('เกิดข้อผิดพลาดในการอัปโหลด กรุณาลองใหม่');
+      setError(t('uploadError'));
       setPreviewUrl(currentImageUrl);
     } finally {
       setIsUploading(false);
@@ -94,7 +96,7 @@ export function ProductImageUpload({ productId, currentImageUrl, productTitle }:
         ) : (
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
             <Package className="h-12 w-12" />
-            <span className="text-sm">คลิกเพื่ออัปโหลดรูป</span>
+            <span className="text-sm">{t('clickToUpload')}</span>
           </div>
         )}
       </div>
@@ -108,10 +110,10 @@ export function ProductImageUpload({ productId, currentImageUrl, productTitle }:
           isLoading={isUploading}
         >
           <Camera className="h-4 w-4 mr-2" />
-          {isUploading ? 'กำลังอัปโหลด...' : 'เปลี่ยนรูปสินค้า'}
+          {isUploading ? t('uploading') : t('changeImage')}
         </Button>
         <p className="text-sm text-muted-foreground">
-          JPG, PNG, WebP ขนาดไม่เกิน 10MB
+          {t('imageHint')}
         </p>
       </div>
 

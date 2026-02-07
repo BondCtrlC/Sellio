@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Calendar, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui';
 
@@ -25,6 +26,7 @@ export function AddToCalendar({
   location,
   creatorName,
 }: AddToCalendarProps) {
+  const t = useTranslations('OrderSuccess');
   const [isOpen, setIsOpen] = useState(false);
 
   // Parse date and time
@@ -47,9 +49,9 @@ export function AddToCalendar({
   };
 
   // Build description
-  let description = `นัดหมายกับ ${creatorName}`;
+  let description = t('appointmentWith', { name: creatorName });
   if (meetingUrl) {
-    description += `\n\nลิงก์เข้าร่วม: ${meetingUrl}`;
+    description += '\n\n' + t('joinLink', { url: meetingUrl });
   }
 
   // Google Calendar URL
@@ -80,7 +82,7 @@ export function AddToCalendar({
       >
         <span className="flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          เพิ่มลงปฏิทิน
+          {t('addCalendar')}
         </span>
         <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </Button>
@@ -134,7 +136,7 @@ export function AddToCalendar({
             className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-t w-full text-left"
           >
             <Calendar className="h-5 w-5 text-gray-600" />
-            <span>ดาวน์โหลดไฟล์ .ics (Apple/อื่นๆ)</span>
+            <span>{t('downloadICS')}</span>
           </button>
         </div>
       )}

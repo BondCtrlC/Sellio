@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { settingsSchema, type SettingsInput } from '@/lib/validations/settings';
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 
 export type SettingsResult = {
   success: boolean;
@@ -10,6 +11,8 @@ export type SettingsResult = {
 };
 
 export async function updateSettings(data: SettingsInput): Promise<SettingsResult> {
+  const t = await getTranslations('ServerActions');
+
   // Validate input
   const parsed = settingsSchema.safeParse(data);
   if (!parsed.success) {
@@ -21,7 +24,7 @@ export async function updateSettings(data: SettingsInput): Promise<SettingsResul
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   // Get current creator to check if username changed
@@ -43,7 +46,7 @@ export async function updateSettings(data: SettingsInput): Promise<SettingsResul
       .single();
 
     if (existingUser) {
-      return { success: false, error: 'Username นี้ถูกใช้งานแล้ว กรุณาเลือกชื่ออื่น' };
+      return { success: false, error: t('usernameAlreadyUsedChooseOther') };
     }
   }
 
@@ -58,7 +61,7 @@ export async function updateSettings(data: SettingsInput): Promise<SettingsResul
     if (!hasContact) {
       return { 
         success: false, 
-        error: 'กรุณาเพิ่มช่องทางติดต่ออย่างน้อย 1 ช่องทาง (เบอร์โทร, Line, IG หรืออีเมล) ก่อนเปิดร้าน เพื่อให้ลูกค้าสามารถติดต่อคุณได้' 
+        error: t('pleaseAddContact') 
       };
     }
   }
@@ -86,15 +89,17 @@ export async function updateSettings(data: SettingsInput): Promise<SettingsResul
       seo_keywords: parsed.data.seo_keywords || null,
       // Email Notifications
       notification_email: parsed.data.notification_email || null,
+      // Language
+      store_language: parsed.data.store_language || 'th',
     })
     .eq('user_id', user.id);
 
   if (error) {
     console.error('Update settings error:', error);
     if (error.code === '23505') {
-      return { success: false, error: 'Username นี้ถูกใช้งานแล้ว กรุณาเลือกชื่ออื่น' };
+      return { success: false, error: t('usernameAlreadyUsedChooseOther') };
     }
-    return { success: false, error: 'ไม่สามารถบันทึกข้อมูลได้' };
+    return { success: false, error: t('cannotSaveData') };
   }
 
   revalidatePath('/dashboard');
@@ -109,20 +114,21 @@ export async function updateSettings(data: SettingsInput): Promise<SettingsResul
 }
 
 export async function updateAvatar(formData: FormData): Promise<SettingsResult> {
+  const t = await getTranslations('ServerActions');
   const file = formData.get('avatar') as File;
   
   if (!file || file.size === 0) {
-    return { success: false, error: 'กรุณาเลือกไฟล์' };
+    return { success: false, error: t('pleaseSelectFile') };
   }
 
   // Validate file type
   if (!file.type.startsWith('image/')) {
-    return { success: false, error: 'กรุณาเลือกไฟล์รูปภาพ' };
+    return { success: false, error: t('pleaseSelectImageFile') };
   }
 
   // Validate file size (max 5MB)
   if (file.size > 5 * 1024 * 1024) {
-    return { success: false, error: 'ไฟล์ต้องไม่เกิน 5MB' };
+    return { success: false, error: t('fileMax5MB') };
   }
 
   const supabase = await createClient();
@@ -130,7 +136,7 @@ export async function updateAvatar(formData: FormData): Promise<SettingsResult> 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   // Upload file
@@ -143,7 +149,7 @@ export async function updateAvatar(formData: FormData): Promise<SettingsResult> 
 
   if (uploadError) {
     console.error('Upload avatar error:', uploadError);
-    return { success: false, error: 'ไม่สามารถอัปโหลดรูปได้' };
+    return { success: false, error: t('cannotUploadImage') };
   }
 
   // Get public URL
@@ -159,7 +165,7 @@ export async function updateAvatar(formData: FormData): Promise<SettingsResult> 
 
   if (updateError) {
     console.error('Update avatar URL error:', updateError);
-    return { success: false, error: 'ไม่สามารถบันทึกรูปได้' };
+    return { success: false, error: t('cannotSaveImage') };
   }
 
   revalidatePath('/dashboard');

@@ -18,6 +18,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { formatPrice } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Users, Repeat, Clock } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { DailyStats, ProductStats, HourlyStats, DayOfWeekStats, CustomerInsights, RevenueGrowth } from '@/actions/analytics';
 
 // ============================================
@@ -28,6 +29,8 @@ interface RevenueChartProps {
 }
 
 export function RevenueChart({ data }: RevenueChartProps) {
+  const t = useTranslations('Analytics');
+
   const formatXAxis = (dateStr: string) => {
     const date = new Date(dateStr);
     return `${date.getDate()}/${date.getMonth() + 1}`;
@@ -40,7 +43,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>รายได้รายวัน</CardTitle>
+        <CardTitle>{t('dailyRevenue')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">
@@ -65,7 +68,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
                 tick={{ fill: 'currentColor' }}
               />
               <Tooltip 
-                formatter={(value) => [formatTooltipValue(Number(value) || 0), 'รายได้']}
+                formatter={(value) => [formatTooltipValue(Number(value) || 0), t('revenueLabel')]}
                 labelFormatter={(label) => {
                   const date = new Date(label);
                   return date.toLocaleDateString('th-TH', { 
@@ -104,6 +107,8 @@ interface OrdersChartProps {
 }
 
 export function OrdersChart({ data }: OrdersChartProps) {
+  const t = useTranslations('Analytics');
+
   const formatXAxis = (dateStr: string) => {
     const date = new Date(dateStr);
     return `${date.getDate()}/${date.getMonth() + 1}`;
@@ -112,7 +117,7 @@ export function OrdersChart({ data }: OrdersChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>คำสั่งซื้อรายวัน</CardTitle>
+        <CardTitle>{t('dailyOrders')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">
@@ -131,7 +136,7 @@ export function OrdersChart({ data }: OrdersChartProps) {
                 allowDecimals={false}
               />
               <Tooltip 
-                formatter={(value) => [Number(value) || 0, 'คำสั่งซื้อ']}
+                formatter={(value) => [Number(value) || 0, t('ordersLabel')]}
                 labelFormatter={(label) => {
                   const date = new Date(label);
                   return date.toLocaleDateString('th-TH', { 
@@ -180,15 +185,17 @@ const STATUS_COLORS = {
   refunded: '#6b7280',
 };
 
-const STATUS_LABELS = {
-  pending_payment: 'รอชำระเงิน',
-  pending_confirmation: 'รอยืนยัน',
-  confirmed: 'สำเร็จ',
-  cancelled: 'ยกเลิก',
-  refunded: 'คืนเงิน',
-};
-
 export function StatusPieChart({ data }: StatusPieChartProps) {
+  const t = useTranslations('Analytics');
+
+  const STATUS_LABELS = {
+    pending_payment: t('statusPending'),
+    pending_confirmation: t('statusConfirming'),
+    confirmed: t('statusConfirmed'),
+    cancelled: t('statusCancelled'),
+    refunded: t('statusRefunded'),
+  };
+
   const chartData = Object.entries(data)
     .filter(([, value]) => value > 0)
     .map(([key, value]) => ({
@@ -201,11 +208,11 @@ export function StatusPieChart({ data }: StatusPieChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>สถานะคำสั่งซื้อ</CardTitle>
+          <CardTitle>{t('orderStatus')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-            ยังไม่มีข้อมูล
+            {t('noData')}
           </div>
         </CardContent>
       </Card>
@@ -215,7 +222,7 @@ export function StatusPieChart({ data }: StatusPieChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>สถานะคำสั่งซื้อ</CardTitle>
+        <CardTitle>{t('orderStatus')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[250px]">
@@ -235,7 +242,7 @@ export function StatusPieChart({ data }: StatusPieChartProps) {
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value) => [Number(value) || 0, 'รายการ']}
+                formatter={(value) => [Number(value) || 0, t('items')]}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
@@ -278,6 +285,8 @@ const TYPE_LABELS = {
 };
 
 export function ProductTypePieChart({ data }: ProductTypePieChartProps) {
+  const t = useTranslations('Analytics');
+
   const chartData = Object.entries(data)
     .filter(([, value]) => value > 0)
     .map(([key, value]) => ({
@@ -290,11 +299,11 @@ export function ProductTypePieChart({ data }: ProductTypePieChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>ประเภทสินค้าที่ขายได้</CardTitle>
+          <CardTitle>{t('productTypes')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-            ยังไม่มีข้อมูล
+            {t('noData')}
           </div>
         </CardContent>
       </Card>
@@ -304,7 +313,7 @@ export function ProductTypePieChart({ data }: ProductTypePieChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>ประเภทสินค้าที่ขายได้</CardTitle>
+        <CardTitle>{t('productTypes')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[250px]">
@@ -324,7 +333,7 @@ export function ProductTypePieChart({ data }: ProductTypePieChartProps) {
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value) => [Number(value) || 0, 'รายการ']}
+                formatter={(value) => [Number(value) || 0, t('items')]}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
@@ -355,15 +364,17 @@ const PRODUCT_TYPE_LABELS: Record<string, string> = {
 };
 
 export function TopProductsTable({ products }: TopProductsTableProps) {
+  const t = useTranslations('Analytics');
+
   if (products.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>สินค้าขายดี</CardTitle>
+          <CardTitle>{t('topProducts')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="py-8 text-center text-muted-foreground">
-            ยังไม่มีข้อมูลการขาย
+            {t('noSalesData')}
           </div>
         </CardContent>
       </Card>
@@ -373,7 +384,7 @@ export function TopProductsTable({ products }: TopProductsTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>สินค้าขายดี Top 5</CardTitle>
+        <CardTitle>{t('topProducts5')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -389,7 +400,7 @@ export function TopProductsTable({ products }: TopProductsTableProps) {
                 <div>
                   <p className="font-medium">{product.title}</p>
                   <p className="text-sm text-muted-foreground">
-                    {PRODUCT_TYPE_LABELS[product.type] || product.type} • {product.orders} ออเดอร์
+                    {PRODUCT_TYPE_LABELS[product.type] || product.type} • {t('orderCount', { count: product.orders })}
                   </p>
                 </div>
               </div>
@@ -412,6 +423,7 @@ interface RevenueGrowthCardProps {
 }
 
 export function RevenueGrowthCard({ data }: RevenueGrowthCardProps) {
+  const t = useTranslations('Analytics');
   const isPositive = data.growthPercent >= 0;
   const isOrdersPositive = data.ordersGrowthPercent >= 0;
 
@@ -420,13 +432,13 @@ export function RevenueGrowthCard({ data }: RevenueGrowthCardProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="h-5 w-5" />
-          การเติบโต
+          {t('growth')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
           <div>
-            <p className="text-sm text-muted-foreground">รายได้ช่วงนี้</p>
+            <p className="text-sm text-muted-foreground">{t('currentRevenue')}</p>
             <p className="text-xl font-bold">{formatPrice(data.currentPeriodRevenue)}</p>
           </div>
           <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${
@@ -438,7 +450,7 @@ export function RevenueGrowthCard({ data }: RevenueGrowthCardProps) {
         </div>
         <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
           <div>
-            <p className="text-sm text-muted-foreground">คำสั่งซื้อช่วงนี้</p>
+            <p className="text-sm text-muted-foreground">{t('currentOrders')}</p>
             <p className="text-xl font-bold">{data.currentPeriodOrders}</p>
           </div>
           <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${
@@ -449,7 +461,7 @@ export function RevenueGrowthCard({ data }: RevenueGrowthCardProps) {
           </div>
         </div>
         <p className="text-xs text-muted-foreground text-center">
-          เทียบกับช่วงก่อนหน้า (รายได้ {formatPrice(data.previousPeriodRevenue)}, {data.previousPeriodOrders} ออเดอร์)
+          {t('comparedPrev', { revenue: formatPrice(data.previousPeriodRevenue), orders: data.previousPeriodOrders })}
         </p>
       </CardContent>
     </Card>
@@ -464,6 +476,8 @@ interface HourlyChartProps {
 }
 
 export function HourlyChart({ data }: HourlyChartProps) {
+  const t = useTranslations('Analytics');
+
   const formatHour = (hour: number) => {
     return `${String(hour).padStart(2, '0')}:00`;
   };
@@ -473,7 +487,7 @@ export function HourlyChart({ data }: HourlyChartProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Clock className="h-5 w-5" />
-          ช่วงเวลาที่ขายดี
+          {t('peakHours')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -494,8 +508,8 @@ export function HourlyChart({ data }: HourlyChartProps) {
                 allowDecimals={false}
               />
               <Tooltip 
-                formatter={(value) => [Number(value) || 0, 'คำสั่งซื้อ']}
-                labelFormatter={(label) => `เวลา ${formatHour(Number(label))}`}
+                formatter={(value) => [Number(value) || 0, t('ordersLabel')]}
+                labelFormatter={(label) => t('timeLabel', { time: formatHour(Number(label)) })}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
@@ -519,10 +533,12 @@ interface DayOfWeekChartProps {
 }
 
 export function DayOfWeekChart({ data }: DayOfWeekChartProps) {
+  const t = useTranslations('Analytics');
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>วันที่ขายดี</CardTitle>
+        <CardTitle>{t('bestDays')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[250px]">
@@ -542,7 +558,7 @@ export function DayOfWeekChart({ data }: DayOfWeekChartProps) {
               <Tooltip 
                 formatter={(value, name) => [
                   name === 'revenue' ? formatPrice(Number(value) || 0) : Number(value) || 0,
-                  name === 'revenue' ? 'รายได้' : 'คำสั่งซื้อ'
+                  name === 'revenue' ? t('revenueLabel') : t('ordersLabel')
                 ]}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
@@ -567,37 +583,39 @@ interface CustomerInsightsCardProps {
 }
 
 export function CustomerInsightsCard({ data }: CustomerInsightsCardProps) {
+  const t = useTranslations('Analytics');
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          ข้อมูลลูกค้า
+          {t('customerInsights')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center p-3 rounded-lg bg-blue-50">
             <p className="text-2xl font-bold text-blue-700">{data.totalCustomers}</p>
-            <p className="text-xs text-blue-600">ลูกค้าทั้งหมด</p>
+            <p className="text-xs text-blue-600">{t('totalCustomers')}</p>
           </div>
           <div className="text-center p-3 rounded-lg bg-purple-50">
             <p className="text-2xl font-bold text-purple-700">{data.repeatCustomers}</p>
-            <p className="text-xs text-purple-600">ลูกค้าซื้อซ้ำ</p>
+            <p className="text-xs text-purple-600">{t('repeatCustomers')}</p>
           </div>
         </div>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
               <Repeat className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">อัตราซื้อซ้ำ</span>
+              <span className="text-muted-foreground">{t('repeatRate')}</span>
             </div>
             <span className="font-semibold">{data.repeatRate.toFixed(1)}%</span>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
               <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">ออเดอร์เฉลี่ย/คน</span>
+              <span className="text-muted-foreground">{t('avgOrdersPerCustomer')}</span>
             </div>
             <span className="font-semibold">{data.averageOrdersPerCustomer.toFixed(1)}</span>
           </div>

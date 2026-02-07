@@ -3,9 +3,13 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCustomers } from '@/actions/customers';
 import { CustomersList } from './customers-list';
-
-export const metadata: Metadata = { title: "ลูกค้า" };
+import { getTranslations } from 'next-intl/server';
 import type { PlanType } from '@/types';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Customers');
+  return { title: t('metaTitle') };
+}
 
 async function getCreatorPlan() {
   const supabase = await createClient();

@@ -14,6 +14,7 @@ import {
 import { formatPrice, formatDate } from '@/lib/utils';
 import { ShareButtons } from '@/components/shared/share-buttons';
 import { ProductReviews } from '@/components/shared/product-reviews';
+import { useTranslations } from 'next-intl';
 
 // Memoized Description component to prevent video reload on slot change
 const ProductDescription = memo(function ProductDescription({ html }: { html: string }) {
@@ -88,6 +89,7 @@ const typeConfig = {
 export function ProductDetail({ product, creator, availableSlots }: ProductDetailProps) {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const config = typeConfig[product.type as keyof typeof typeConfig];
+  const t = useTranslations('ProductDetail');
   const Icon = config.icon;
 
   // Group slots by date
@@ -102,7 +104,7 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
   const handleCheckout = () => {
     // For booking/live, need to select a slot first
     if ((product.type === 'booking' || product.type === 'live') && !selectedSlot) {
-      alert('กรุณาเลือกวัน/เวลาก่อน');
+      alert(t('pleaseSelectSlot'));
       return;
     }
 
@@ -129,7 +131,7 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
         className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
-        กลับไปร้านค้า
+        {t('backToStore')}
       </Link>
 
       {/* Product Image */}
@@ -167,14 +169,14 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
         {(product.type === 'booking' || product.type === 'live') && product.type_config?.duration_minutes && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span>ระยะเวลา {product.type_config.duration_minutes} นาที</span>
+            <span>{t('duration', { minutes: product.type_config.duration_minutes })}</span>
           </div>
         )}
 
 
         {/* Price */}
         <div className="text-3xl font-bold">
-          {product.price > 0 ? formatPrice(product.price) : 'ฟรี'}
+          {product.price > 0 ? formatPrice(product.price) : t('free')}
         </div>
 
         {/* Share Buttons */}
@@ -188,17 +190,17 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
       {/* Slot Selection for Booking/Live */}
       {(product.type === 'booking' || product.type === 'live') && (
         <div className="mb-6">
-          <h3 className="font-semibold mb-2">เลือกวัน/เวลา</h3>
+          <h3 className="font-semibold mb-2">{t('selectDateTime')}</h3>
           {(product.type_config?.minimum_advance_hours as number) > 0 && (
             <p className="text-xs text-amber-600 mb-3 flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              ต้องจองล่วงหน้าอย่างน้อย {product.type_config?.minimum_advance_hours as number} ชั่วโมง
+              {t('advanceBooking', { hours: product.type_config?.minimum_advance_hours as number })}
             </p>
           )}
           
           {Object.keys(slotsByDate).length === 0 ? (
             <p className="text-muted-foreground text-sm py-4 text-center bg-muted rounded-lg">
-              ไม่มีช่วงเวลาที่ว่างในขณะนี้
+              {t('noSlotsAvailable')}
             </p>
           ) : (
             <div className="space-y-4">
@@ -256,10 +258,10 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                       const isDisabled = isFull || isTooClose || isInBuffer;
                       
                       // Determine status text
-                      let statusText = `ว่าง ${remaining} ที่นั่ง`;
-                      if (isFull) statusText = 'เต็ม';
-                      else if (isTooClose) statusText = 'จองล่วงหน้าไม่ทัน';
-                      else if (isInBuffer) statusText = 'ติดช่วงพักนัด';
+                      let statusText = t('slotsAvailable', { count: remaining });
+                      if (isFull) statusText = t('slotFull');
+                      else if (isTooClose) statusText = t('slotTooClose');
+                      else if (isInBuffer) statusText = t('slotInBuffer');
                       
                       return (
                         <button
@@ -304,7 +306,7 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
             className="w-full py-6 text-lg"
           >
             <ExternalLink className="h-5 w-5 mr-2" />
-            เปิดลิงก์
+            {t('openLink')}
           </Button>
         ) : (
           <Button 
@@ -312,8 +314,8 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
             className="w-full py-6 text-lg"
             disabled={(product.type === 'booking' || product.type === 'live') && availableSlots.length === 0}
           >
-            {product.type === 'digital' && 'ซื้อเลย'}
-            {(product.type === 'booking' || product.type === 'live') && 'จองเลย'}
+            {product.type === 'digital' && t('buyNow')}
+            {(product.type === 'booking' || product.type === 'live') && t('bookNow')}
             {product.price > 0 && ` • ${formatPrice(product.price)}`}
           </Button>
         )}

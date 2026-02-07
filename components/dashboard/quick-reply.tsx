@@ -11,6 +11,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 interface OrderInfo {
   id: string;
@@ -34,7 +35,7 @@ type TemplateCategory = 'confirmation' | 'reminder' | 'thankyou' | 'issue';
 interface Template {
   id: string;
   category: TemplateCategory;
-  name: string;
+  nameKey: string;
   getMessage: (order: OrderInfo, creatorName: string) => string;
 }
 
@@ -43,7 +44,7 @@ const templates: Template[] = [
   {
     id: 'confirm_payment',
     category: 'confirmation',
-    name: 'ยืนยันการชำระเงิน',
+    nameKey: 'tplConfirmPayment',
     getMessage: (order, creator) => 
 `สวัสดีค่ะ/ครับ คุณ${order.buyer_name} 🙏
 
@@ -64,7 +65,7 @@ ${creator}`
   {
     id: 'confirm_order',
     category: 'confirmation',
-    name: 'ยืนยันคำสั่งซื้อ',
+    nameKey: 'tplConfirmOrder',
     getMessage: (order, creator) => 
 `สวัสดีค่ะ/ครับ คุณ${order.buyer_name}
 
@@ -81,7 +82,7 @@ ${creator}`
   {
     id: 'booking_reminder',
     category: 'reminder',
-    name: 'เตือนนัดหมาย',
+    nameKey: 'tplBookingReminder',
     getMessage: (order, creator) => 
 `สวัสดีค่ะ/ครับ คุณ${order.buyer_name} 📅
 
@@ -96,7 +97,7 @@ ${creator}`
   {
     id: 'payment_reminder',
     category: 'reminder',
-    name: 'เตือนชำระเงิน',
+    nameKey: 'tplPaymentReminder',
     getMessage: (order, creator) => 
 `สวัสดีค่ะ/ครับ คุณ${order.buyer_name}
 
@@ -115,7 +116,7 @@ ${creator}`
   {
     id: 'thankyou_purchase',
     category: 'thankyou',
-    name: 'ขอบคุณที่ซื้อ',
+    nameKey: 'tplThankPurchase',
     getMessage: (order, creator) => 
 `ขอบคุณมากค่ะ/ครับ คุณ${order.buyer_name} 💕
 
@@ -130,7 +131,7 @@ ${creator}`
   {
     id: 'thankyou_review',
     category: 'thankyou',
-    name: 'ขอบคุณที่รีวิว',
+    nameKey: 'tplThankReview',
     getMessage: (order, creator) => 
 `ขอบคุณสำหรับรีวิวค่ะ/ครับ คุณ${order.buyer_name} 🙏💕
 
@@ -145,7 +146,7 @@ ${creator}`
   {
     id: 'issue_slip',
     category: 'issue',
-    name: 'สลิปไม่ชัด',
+    nameKey: 'tplIssueSlip',
     getMessage: (order, creator) => 
 `สวัสดีค่ะ/ครับ คุณ${order.buyer_name}
 
@@ -161,7 +162,7 @@ ${creator}`
   {
     id: 'issue_amount',
     category: 'issue',
-    name: 'ยอดไม่ตรง',
+    nameKey: 'tplIssueAmount',
     getMessage: (order, creator) => 
 `สวัสดีค่ะ/ครับ คุณ${order.buyer_name}
 
@@ -176,7 +177,7 @@ ${creator}`
   {
     id: 'issue_refund',
     category: 'issue',
-    name: 'แจ้งคืนเงิน',
+    nameKey: 'tplIssueRefund',
     getMessage: (order, creator) => 
 `สวัสดีค่ะ/ครับ คุณ${order.buyer_name}
 
@@ -192,17 +193,18 @@ ${creator}`
   },
 ];
 
-const categoryLabels: Record<TemplateCategory, string> = {
-  confirmation: '✅ ยืนยัน',
-  reminder: '⏰ เตือน',
-  thankyou: '💕 ขอบคุณ',
-  issue: '⚠️ ปัญหา',
-};
-
 export function QuickReply({ order, creatorName = 'ผู้ขาย' }: QuickReplyProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<TemplateCategory | 'all'>('all');
+  const t = useTranslations('QuickReply');
+
+  const categoryLabels: Record<TemplateCategory, string> = {
+    confirmation: t('catConfirmation'),
+    reminder: t('catReminder'),
+    thankyou: t('catThankyou'),
+    issue: t('catIssue'),
+  };
 
   const handleCopy = async (template: Template) => {
     const message = template.getMessage(order, creatorName);
@@ -218,7 +220,7 @@ export function QuickReply({ order, creatorName = 'ผู้ขาย' }: QuickR
 
   const filteredTemplates = selectedCategory === 'all' 
     ? templates 
-    : templates.filter(t => t.category === selectedCategory);
+    : templates.filter(tpl => tpl.category === selectedCategory);
 
   return (
     <div className="space-y-3">
@@ -230,7 +232,7 @@ export function QuickReply({ order, creatorName = 'ผู้ขาย' }: QuickR
       >
         <span className="flex items-center gap-2">
           <Sparkles className="h-4 w-4" />
-          ข้อความตอบกลับด่วน
+          {t('title')}
         </span>
         {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </Button>
@@ -248,7 +250,7 @@ export function QuickReply({ order, creatorName = 'ผู้ขาย' }: QuickR
                   : 'bg-gray-100 hover:bg-gray-200'
               }`}
             >
-              ทั้งหมด
+              {t('all')}
             </button>
             {(Object.keys(categoryLabels) as TemplateCategory[]).map(cat => (
               <button
@@ -275,7 +277,7 @@ export function QuickReply({ order, creatorName = 'ผู้ขาย' }: QuickR
                 <div className="flex items-center justify-between p-2 bg-gray-50 border-b">
                   <span className="text-sm font-medium flex items-center gap-2">
                     <MessageSquare className="h-3.5 w-3.5 text-gray-500" />
-                    {template.name}
+                    {t(template.nameKey as any)}
                   </span>
                   <Button
                     size="sm"
@@ -290,12 +292,12 @@ export function QuickReply({ order, creatorName = 'ผู้ขาย' }: QuickR
                     {copiedId === template.id ? (
                       <>
                         <Check className="h-3 w-3 mr-1" />
-                        คัดลอกแล้ว
+                        {t('copied')}
                       </>
                     ) : (
                       <>
                         <Copy className="h-3 w-3 mr-1" />
-                        คัดลอก
+                        {t('copy')}
                       </>
                     )}
                   </Button>
@@ -310,7 +312,7 @@ export function QuickReply({ order, creatorName = 'ผู้ขาย' }: QuickR
           {/* Tips */}
           <div className="p-2 border-t border-blue-200 bg-white">
             <p className="text-xs text-gray-500 text-center">
-              💡 คัดลอกแล้วนำไปวางใน Line, IG หรือช่องทางอื่น
+              {t('tip')}
             </p>
           </div>
         </div>

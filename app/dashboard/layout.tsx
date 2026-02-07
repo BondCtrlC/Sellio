@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Sidebar, NotificationBell, StoreLink } from '@/components/dashboard';
 import { OnboardingOverlay } from '@/components/dashboard/onboarding-checklist';
+import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui';
 
@@ -34,6 +35,7 @@ export default function DashboardLayout({
           </Button>
           <Image src="/logo-black.png" alt="Sellio" width={100} height={32} className="h-8 w-auto lg:hidden" />
           <div className="flex-1" />
+          <LanguageSwitcher />
           <StoreLink />
           <NotificationBell />
         </header>

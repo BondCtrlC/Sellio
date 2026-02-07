@@ -3,9 +3,13 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
 import { UpgradeClient } from './upgrade-client';
+import { getTranslations } from 'next-intl/server';
 import type { PlanType } from '@/types';
 
-export const metadata: Metadata = { title: "อัปเกรด Pro" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Upgrade');
+  return { title: t('metaTitle') };
+}
 
 async function getCreatorSubscriptionInfo() {
   const supabase = await createClient();

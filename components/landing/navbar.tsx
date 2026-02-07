@@ -5,9 +5,12 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { useTranslations } from 'next-intl';
+import { LanguageSwitcher } from '@/components/shared/language-switcher';
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const t = useTranslations('Navbar');
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
@@ -21,26 +24,27 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
             <Link href="#features" className="text-gray-600 hover:text-black transition-colors">
-              ฟีเจอร์
+              {t('features')}
             </Link>
             <Link href="#how-it-works" className="text-gray-600 hover:text-black transition-colors">
-              วิธีใช้งาน
+              {t('howItWorks')}
             </Link>
             <Link href="#pricing" className="text-gray-600 hover:text-black transition-colors">
-              ราคา
+              {t('pricing')}
             </Link>
             <Link href="#testimonials" className="text-gray-600 hover:text-black transition-colors">
-              รีวิว
+              {t('testimonials')}
             </Link>
           </div>
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
+            <LanguageSwitcher />
             <Link href="/login">
-              <Button variant="ghost">เข้าสู่ระบบ</Button>
+              <Button variant="ghost">{t('login')}</Button>
             </Link>
             <Link href="/signup">
-              <Button>เริ่มต้นฟรี</Button>
+              <Button>{t('getStarted')}</Button>
             </Link>
           </div>
 
@@ -62,35 +66,38 @@ export function Navbar() {
                 className="text-gray-600 hover:text-black transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                ฟีเจอร์
+                {t('features')}
               </Link>
               <Link 
                 href="#how-it-works" 
                 className="text-gray-600 hover:text-black transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                วิธีใช้งาน
+                {t('howItWorks')}
               </Link>
               <Link 
                 href="#pricing" 
                 className="text-gray-600 hover:text-black transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                ราคา
+                {t('pricing')}
               </Link>
               <Link 
                 href="#testimonials" 
                 className="text-gray-600 hover:text-black transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                รีวิว
+                {t('testimonials')}
               </Link>
+              <div className="px-2 py-2">
+                <LanguageSwitcher />
+              </div>
               <div className="flex flex-col gap-2 pt-4 border-t border-gray-100">
                 <Link href="/login">
-                  <Button variant="outline" className="w-full">เข้าสู่ระบบ</Button>
+                  <Button variant="outline" className="w-full">{t('login')}</Button>
                 </Link>
                 <Link href="/signup">
-                  <Button className="w-full">เริ่มต้นฟรี</Button>
+                  <Button className="w-full">{t('getStarted')}</Button>
                 </Link>
               </div>
             </div>

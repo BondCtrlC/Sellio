@@ -16,6 +16,7 @@ import {
   Mail,
 } from 'lucide-react';
 import { getOnboardingStatus, type OnboardingStatus } from '@/actions/onboarding';
+import { useTranslations } from 'next-intl';
 
 interface OnboardingStep {
   id: string;
@@ -32,6 +33,7 @@ interface OnboardingStep {
 export function OnboardingOverlay() {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations('Onboarding');
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
@@ -79,8 +81,8 @@ export function OnboardingOverlay() {
   const steps: OnboardingStep[] = [
     {
       id: 'profile',
-      title: 'ตั้งค่าโปรไฟล์',
-      description: 'เพิ่มรูปภาพและชื่อที่แสดง',
+      title: t('profileTitle'),
+      description: t('profileDesc'),
       icon: User,
       completed: status.hasProfile,
       href: '/dashboard/settings?tab=profile',
@@ -89,8 +91,8 @@ export function OnboardingOverlay() {
     },
     {
       id: 'contact',
-      title: 'เพิ่มช่องทางติดต่อ',
-      description: 'เบอร์โทร, Line, IG หรืออีเมล',
+      title: t('contactTitle'),
+      description: t('contactDesc'),
       icon: Phone,
       completed: status.hasContact,
       href: '/dashboard/settings?tab=profile',
@@ -99,8 +101,8 @@ export function OnboardingOverlay() {
     },
     {
       id: 'payment',
-      title: 'ตั้งค่าการรับเงิน',
-      description: 'PromptPay หรือบัญชีธนาคาร',
+      title: t('paymentTitle'),
+      description: t('paymentDesc'),
       icon: Wallet,
       completed: status.hasPayment,
       href: '/dashboard/settings?tab=payments',
@@ -109,8 +111,8 @@ export function OnboardingOverlay() {
     },
     {
       id: 'product',
-      title: 'สร้างสินค้าแรก',
-      description: 'เพิ่มสินค้าหรือบริการ',
+      title: t('productTitle'),
+      description: t('productDesc'),
       icon: Package,
       completed: status.hasProduct,
       href: '/dashboard/products/new',
@@ -119,8 +121,8 @@ export function OnboardingOverlay() {
     },
     {
       id: 'publish',
-      title: 'เปิดร้านค้า',
-      description: 'เผยแพร่หน้าร้านให้ลูกค้าเข้าถึง',
+      title: t('publishTitle'),
+      description: t('publishDesc'),
       icon: Store,
       completed: status.isPublished,
       href: '/dashboard/settings?tab=store',
@@ -129,8 +131,8 @@ export function OnboardingOverlay() {
     },
     {
       id: 'notification_email',
-      title: 'ตั้งค่าอีเมลแจ้งเตือน',
-      description: 'รับแจ้งเตือนทางอีเมลเมื่อมีออเดอร์ใหม่',
+      title: t('notificationTitle'),
+      description: t('notificationDesc'),
       icon: Mail,
       completed: status.hasNotificationEmail,
       href: '/dashboard/settings?tab=notifications',
@@ -165,9 +167,9 @@ export function OnboardingOverlay() {
               <Sparkles className="h-4.5 w-4.5 text-primary" />
             </div>
             <div className="text-left">
-              <p className="font-semibold text-sm">เริ่มต้นใช้งาน Sellio</p>
+              <p className="font-semibold text-sm">{t('headerTitle')}</p>
               <p className="text-xs text-muted-foreground">
-                {requiredCompleted}/{totalRequired} ขั้นตอน
+                {t('stepsProgress', { completed: requiredCompleted, total: totalRequired })}
               </p>
             </div>
           </div>
@@ -249,7 +251,7 @@ export function OnboardingOverlay() {
                         {optionalStep.title}
                       </p>
                       <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full">
-                        ไม่บังคับ
+                        {t('optional')}
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground">{optionalStep.description}</p>
@@ -260,14 +262,14 @@ export function OnboardingOverlay() {
                         onClick={() => navigateToStep(optionalStep.href)}
                         className="text-[11px] text-primary font-medium hover:underline"
                       >
-                        ตั้งค่า
+                        {t('setup')}
                       </button>
                       <span className="text-gray-300 mx-0.5">|</span>
                       <button
                         onClick={handleSkipLine}
                         className="text-[11px] text-muted-foreground hover:text-foreground"
                       >
-                        ข้าม
+                        {t('skip')}
                       </button>
                     </div>
                   )}
@@ -281,7 +283,7 @@ export function OnboardingOverlay() {
                 onClick={() => setDismissed(true)}
                 className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                ปิดหน้าต่างนี้
+                {t('dismiss')}
               </button>
             )}
           </div>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Sarabun, Prompt, Noto_Sans_Thai, IBM_Plex_Sans_Thai, Pridi } from "next/font/google";
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import "./globals.css";
 
 const inter = Inter({
@@ -72,18 +74,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="th" className="light" style={{ colorScheme: 'light' }} suppressHydrationWarning>
+    <html lang={locale} className="light" style={{ colorScheme: 'light' }} suppressHydrationWarning>
       <body 
         className={`${inter.variable} ${sarabun.variable} ${prompt.variable} ${notoSansThai.variable} ${ibmPlexSansThai.variable} ${pridi.variable} font-sans antialiased bg-white text-black`}
         suppressHydrationWarning
       >
-        {children}
+        <NextIntlClientProvider messages={messages} locale={locale}>
+          {children}
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -9,22 +9,24 @@ import { PRODUCT_TYPES } from '@/lib/constants';
 import { canCreateProduct, getPlanLimits } from '@/lib/plan';
 import { DeleteProductButton, TogglePublishButton } from './product-actions';
 import type { Product, PlanType } from '@/types';
+import { useTranslations } from 'next-intl';
 
 interface ProductsListProps {
   initialProducts: Product[];
   plan: PlanType;
 }
 
-const TYPE_FILTERS = [
-  { value: 'all', label: 'ทั้งหมด', icon: Filter },
-  { value: 'digital', label: 'ดิจิทัล', icon: FileText },
-  { value: 'booking', label: 'Booking/Live', icon: Calendar },
-  { value: 'link', label: 'Link/URL', icon: LinkIcon },
-];
-
 export function ProductsList({ initialProducts, plan }: ProductsListProps) {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const t = useTranslations('Products');
+
+  const TYPE_FILTERS = [
+    { value: 'all', label: t('filterAll'), icon: Filter },
+    { value: 'digital', label: t('filterDigital'), icon: FileText },
+    { value: 'booking', label: t('filterBooking'), icon: Calendar },
+    { value: 'link', label: t('filterLink'), icon: LinkIcon },
+  ];
 
   const limits = getPlanLimits(plan);
   const canCreate = canCreateProduct(plan, initialProducts.length);
@@ -64,12 +66,12 @@ export function ProductsList({ initialProducts, plan }: ProductsListProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">สินค้า</h2>
+          <h2 className="text-2xl font-bold">{t('title')}</h2>
           <p className="text-muted-foreground">
-            จัดการสินค้าและบริการของคุณ
+            {t('subtitle')}
             {plan === 'free' && (
               <span className="ml-2 text-xs font-medium text-amber-600">
-                ({initialProducts.length}/{limits.max_products} ชิ้น)
+                {t('itemCount', { current: initialProducts.length, max: limits.max_products })}
               </span>
             )}
           </p>
@@ -78,14 +80,14 @@ export function ProductsList({ initialProducts, plan }: ProductsListProps) {
           <Link href="/dashboard/products/new">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              เพิ่มสินค้า
+              {t('addProduct')}
             </Button>
           </Link>
         ) : (
           <Link href="/dashboard/upgrade">
             <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600">
               <Crown className="h-4 w-4 mr-2" />
-              อัปเกรดเป็น Pro
+              {t('upgradePro')}
             </Button>
           </Link>
         )}
@@ -96,13 +98,13 @@ export function ProductsList({ initialProducts, plan }: ProductsListProps) {
         <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
           <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
           <div>
-            <p className="font-medium text-amber-800">คุณใช้สินค้าครบ {limits.max_products} ชิ้นแล้ว</p>
+            <p className="font-medium text-amber-800">{t('limitTitle', { max: limits.max_products })}</p>
             <p className="text-sm text-amber-700 mt-1">
-              แพลน Free สร้างได้สูงสุด {limits.max_products} สินค้า อัปเกรดเป็น Pro เพียง 99 บาท/เดือน เพื่อสร้างสินค้าได้ไม่จำกัด
+              {t('limitDesc', { max: limits.max_products })}
             </p>
             <Link href="/dashboard/upgrade" className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-amber-800 hover:text-amber-900 underline">
               <Crown className="h-3.5 w-3.5" />
-              อัปเกรดเลย →
+              {t('upgradeNow')}
             </Link>
           </div>
         </div>
@@ -115,7 +117,7 @@ export function ProductsList({ initialProducts, plan }: ProductsListProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="ค้นหาสินค้า..."
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -161,16 +163,16 @@ export function ProductsList({ initialProducts, plan }: ProductsListProps) {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Package className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              {activeFilter === 'all' ? 'ยังไม่มีสินค้า' : 'ไม่พบสินค้าในหมวดหมู่นี้'}
+              {activeFilter === 'all' ? t('noProducts') : t('noProductsInCategory')}
             </h3>
             <p className="text-muted-foreground mb-4">
-              {activeFilter === 'all' ? 'เริ่มต้นสร้างสินค้าแรกของคุณ' : 'ลองเปลี่ยนหมวดหมู่หรือสร้างสินค้าใหม่'}
+              {activeFilter === 'all' ? t('startCreating') : t('trySwitchCategory')}
             </p>
             {canCreate && (
               <Link href="/dashboard/products/new">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  เพิ่มสินค้า
+                  {t('addProduct')}
                 </Button>
               </Link>
             )}
@@ -188,8 +190,15 @@ export function ProductsList({ initialProducts, plan }: ProductsListProps) {
 }
 
 function ProductRow({ product }: { product: Product }) {
+  const t = useTranslations('Products');
   const typeInfo = PRODUCT_TYPES[product.type as keyof typeof PRODUCT_TYPES] || PRODUCT_TYPES.booking;
-  const TypeIcon = TYPE_FILTERS.find(f => f.value === product.type)?.icon || Package;
+  const TYPE_ICONS = {
+    all: Filter,
+    digital: FileText,
+    booking: Calendar,
+    link: LinkIcon,
+  };
+  const TypeIcon = TYPE_ICONS[product.type as keyof typeof TYPE_ICONS] || Package;
 
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
@@ -214,7 +223,7 @@ function ProductRow({ product }: { product: Product }) {
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-semibold truncate">{product.title}</h3>
             <Badge variant={product.is_published ? 'success' : 'secondary'} className="flex-shrink-0">
-              {product.is_published ? 'เผยแพร่' : 'ซ่อน'}
+              {product.is_published ? t('published') : t('hidden')}
             </Badge>
           </div>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -240,7 +249,7 @@ function ProductRow({ product }: { product: Product }) {
           <Link href={`/dashboard/products/${product.id}/edit`}>
             <Button variant="outline" size="sm">
               <Pencil className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">แก้ไข</span>
+              <span className="hidden sm:inline">{t('edit')}</span>
             </Button>
           </Link>
           <TogglePublishButton product={product} />

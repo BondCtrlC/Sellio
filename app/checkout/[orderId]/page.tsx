@@ -3,8 +3,12 @@ import { notFound, redirect } from 'next/navigation';
 import { getOrderById } from '@/actions/orders';
 import { PaymentPage } from './payment-page';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
-export const metadata: Metadata = { title: "ชำระเงิน" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Payment');
+  return { title: t('metaTitle') };
+}
 
 interface PageProps {
   params: Promise<{ orderId: string }>;
@@ -12,6 +16,7 @@ interface PageProps {
 
 export default async function CheckoutPaymentPage({ params }: PageProps) {
   const { orderId } = await params;
+  const t = await getTranslations('Payment');
 
   const order = await getOrderById(orderId);
 
@@ -38,15 +43,15 @@ export default async function CheckoutPaymentPage({ params }: PageProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold mb-2">คำสั่งซื้อหมดอายุ</h1>
+          <h1 className="text-xl font-bold mb-2">{t('orderExpired')}</h1>
           <p className="text-muted-foreground mb-6">
-            คำสั่งซื้อนี้หมดอายุแล้ว กรุณากลับไปเลือกสินค้าและสั่งซื้อใหม่
+            {t('orderExpiredDesc')}
           </p>
           <Link 
             href="/"
             className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
           >
-            กลับหน้าหลัก
+            {t('backHome')}
           </Link>
         </div>
       </div>

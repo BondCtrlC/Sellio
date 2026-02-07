@@ -2,19 +2,25 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui';
 import { LoginForm } from './login-form';
+import { getTranslations } from 'next-intl/server';
 
-export const metadata: Metadata = {
-  title: "เข้าสู่ระบบ",
-  description: "เข้าสู่ระบบ Sellio เพื่อจัดการร้านค้าออนไลน์ของคุณ",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Auth');
+  return {
+    title: t('loginTitle'),
+    description: t('loginDescription'),
+  };
+}
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const t = await getTranslations('Auth');
+
   return (
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">เข้าสู่ระบบ</CardTitle>
+        <CardTitle className="text-2xl">{t('loginHeading')}</CardTitle>
         <CardDescription>
-          เข้าสู่ระบบเพื่อจัดการร้านค้าของคุณ
+          {t('loginSubheading')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -22,9 +28,9 @@ export default function LoginPage() {
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
-          ยังไม่มีบัญชี?{' '}
+          {t('noAccount')}{' '}
           <Link href="/signup" className="text-primary hover:underline font-medium">
-            สมัครสมาชิก
+            {t('signupLink')}
           </Link>
         </p>
       </CardFooter>

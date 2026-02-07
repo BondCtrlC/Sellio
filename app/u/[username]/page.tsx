@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { Metadata } from 'next';
 import { StoreHeader } from './store-header';
 import { ProductGrid } from './product-grid';
 import { StoreWrapper } from './store-wrapper';
 import { ShareButtons } from '@/components/shared/share-buttons';
+import { getTranslations } from 'next-intl/server';
 
 interface PageProps {
   params: Promise<{ username: string }>;
@@ -56,7 +58,8 @@ async function getCreatorByUsername(username: string) {
       seo_title,
       seo_description,
       seo_keywords,
-      og_image_url
+      og_image_url,
+      store_language
     `)
     .eq('username', username)
     .eq('is_published', true)
@@ -160,15 +163,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { username } = await params;
   const creator = await getCreatorByUsername(username);
   
+  const t = await getTranslations('StoreFront');
+
   if (!creator) {
     return {
-      title: 'ไม่พบร้านค้า',
+      title: t('storeNotFound'),
     };
   }
 
   // Use SEO settings if available, fallback to defaults
   const title = creator.seo_title || `${creator.display_name || creator.username} | Sellio`;
-  const description = creator.seo_description || creator.bio || `ร้านค้าของ ${creator.display_name || creator.username}`;
+  const description = creator.seo_description || creator.bio || t('storeOf', { name: creator.display_name || creator.username });
   const keywords = creator.seo_keywords || undefined;
   const ogImage = creator.og_image_url || creator.avatar_url;
 
@@ -199,6 +204,19 @@ export default async function StorePage({ params }: PageProps) {
     notFound();
   }
 
+  // Set locale cookie to match creator's store language for visitors
+  const cookieStore = await cookies();
+  const currentLocale = cookieStore.get('locale')?.value;
+  if (!currentLocale && creator.store_language) {
+    cookieStore.set('locale', creator.store_language, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    });
+  }
+
+  const t = await getTranslations('StoreFront');
+
   const { unsectionedProducts, sectionedProducts } = await getStoreData(creator.id);
   const hasProducts = unsectionedProducts.length > 0 || sectionedProducts.length > 0;
   const storeUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/u/${username}`;
@@ -222,7 +240,7 @@ export default async function StorePage({ params }: PageProps) {
       <main className="max-w-2xl mx-auto px-4 pb-12">
         {!hasProducts ? (
           <div className="text-center py-12 text-muted-foreground">
-            <p>ยังไม่มีสินค้า</p>
+            <p>{t('noProducts')}</p>
           </div>
         ) : (
           <div className="space-y-6">

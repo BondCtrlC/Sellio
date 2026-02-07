@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { OrderDetailModal } from './order-detail-modal';
+import { useTranslations } from 'next-intl';
 
 interface Order {
   id: string;
@@ -51,27 +52,28 @@ interface OrdersListProps {
   currentStatus: string;
 }
 
-const STATUS_TABS = [
-  { value: 'all', label: 'ทั้งหมด' },
-  { value: 'pending_confirmation', label: 'รอตรวจสอบ' },
-  { value: 'pending_payment', label: 'รอชำระ' },
-  { value: 'confirmed', label: 'สำเร็จ' },
-  { value: 'refunded', label: 'คืนเงิน' },
-  { value: 'cancelled', label: 'ยกเลิก' },
-];
-
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  pending_payment: { label: 'รอชำระเงิน', color: 'bg-blue-100 text-blue-700', icon: Clock },
-  pending_confirmation: { label: 'รอตรวจสอบ', color: 'bg-yellow-100 text-yellow-700', icon: Eye },
-  confirmed: { label: 'สำเร็จ', color: 'bg-green-100 text-green-700', icon: CheckCircle },
-  cancelled: { label: 'ยกเลิก', color: 'bg-red-100 text-red-700', icon: XCircle },
-  refunded: { label: 'คืนเงินแล้ว', color: 'bg-purple-100 text-purple-700', icon: RefreshCcw },
-};
-
 export function OrdersList({ orders, currentStatus }: OrdersListProps) {
   const router = useRouter();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const t = useTranslations('Orders');
+
+  const STATUS_TABS = [
+    { value: 'all', label: t('tabAll') },
+    { value: 'pending_confirmation', label: t('tabPendingConfirm') },
+    { value: 'pending_payment', label: t('tabPendingPayment') },
+    { value: 'confirmed', label: t('tabConfirmed') },
+    { value: 'refunded', label: t('tabRefunded') },
+    { value: 'cancelled', label: t('tabCancelled') },
+  ];
+
+  const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
+    pending_payment: { label: t('statusPendingPayment'), color: 'bg-blue-100 text-blue-700', icon: Clock },
+    pending_confirmation: { label: t('statusPendingConfirm'), color: 'bg-yellow-100 text-yellow-700', icon: Eye },
+    confirmed: { label: t('statusConfirmed'), color: 'bg-green-100 text-green-700', icon: CheckCircle },
+    cancelled: { label: t('statusCancelled'), color: 'bg-red-100 text-red-700', icon: XCircle },
+    refunded: { label: t('statusRefunded'), color: 'bg-purple-100 text-purple-700', icon: RefreshCcw },
+  };
 
   const handleStatusChange = (status: string) => {
     const params = new URLSearchParams();
@@ -119,7 +121,7 @@ export function OrdersList({ orders, currentStatus }: OrdersListProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="ค้นหาคำสั่งซื้อ..."
+            placeholder={t('searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm"
@@ -132,7 +134,7 @@ export function OrdersList({ orders, currentStatus }: OrdersListProps) {
         <Card>
           <CardContent className="p-12 text-center">
             <Package className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground">ไม่พบคำสั่งซื้อ</p>
+            <p className="text-muted-foreground">{t('noOrders')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -171,7 +173,7 @@ export function OrdersList({ orders, currentStatus }: OrdersListProps) {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <p className="font-semibold truncate">
-                            {order.product?.title || 'สินค้า'}
+                            {order.product?.title || t('product')}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             {order.buyer_name} • {order.buyer_email}

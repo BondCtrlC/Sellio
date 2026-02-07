@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 
 // ============================================
 // Types
@@ -59,6 +60,7 @@ export async function createFulfillment(
   content: FulfillmentContent
 ): Promise<{ success: boolean; error?: string; fulfillment?: Fulfillment }> {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   // Check if fulfillment already exists
   const { data: existing } = await supabase
@@ -83,7 +85,7 @@ export async function createFulfillment(
 
   if (error) {
     console.error('Create fulfillment error:', error);
-    return { success: false, error: 'ไม่สามารถสร้างข้อมูลการส่งมอบได้' };
+    return { success: false, error: t('cannotCreateFulfillment') };
   }
 
   revalidatePath(`/checkout/${orderId}/success`);
@@ -121,6 +123,7 @@ export async function getFulfillmentByToken(token: string): Promise<{
   } | null;
 }> {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   const { data, error } = await supabase
     .from('fulfillments')
@@ -155,7 +158,7 @@ export async function getFulfillmentByToken(token: string): Promise<{
     order: order ? {
       buyer_name: order.buyer_name,
       buyer_email: order.buyer_email,
-      product_title: (order.product as { title?: string } | null)?.title || 'สินค้า',
+      product_title: (order.product as { title?: string } | null)?.title || t('productDefault'),
     } : null,
   };
 }
@@ -168,11 +171,12 @@ export async function updateFulfillment(
   content: Partial<FulfillmentContent>
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   // Verify order belongs to this creator
@@ -183,12 +187,12 @@ export async function updateFulfillment(
     .single();
 
   if (!order) {
-    return { success: false, error: 'ไม่พบคำสั่งซื้อ' };
+    return { success: false, error: t('orderNotFound') };
   }
 
   const creator = order.creator as any;
   if (creator?.user_id !== user.id) {
-    return { success: false, error: 'ไม่มีสิทธิ์แก้ไข' };
+    return { success: false, error: t('noPermission') };
   }
 
   // Get existing fulfillment
@@ -199,7 +203,7 @@ export async function updateFulfillment(
     .single();
 
   if (!fulfillment) {
-    return { success: false, error: 'ไม่พบข้อมูลการส่งมอบ' };
+    return { success: false, error: t('fulfillmentNotFound') };
   }
 
   // Merge content
@@ -215,7 +219,7 @@ export async function updateFulfillment(
 
   if (error) {
     console.error('Update fulfillment error:', error);
-    return { success: false, error: 'ไม่สามารถอัพเดทได้' };
+    return { success: false, error: t('cannotUpdate') };
   }
 
   revalidatePath(`/checkout/${orderId}/success`);
@@ -228,6 +232,7 @@ export async function updateFulfillment(
 // ============================================
 export async function recordDownload(token: string): Promise<{ success: boolean; error?: string; url?: string }> {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   const { data: fulfillment, error: fetchError } = await supabase
     .from('fulfillments')
@@ -237,12 +242,12 @@ export async function recordDownload(token: string): Promise<{ success: boolean;
     .single();
 
   if (fetchError || !fulfillment) {
-    return { success: false, error: 'ไม่พบลิงก์ดาวน์โหลด' };
+    return { success: false, error: t('downloadLinkNotFound') };
   }
 
   // Check access expiry
   if (fulfillment.access_until && new Date(fulfillment.access_until) < new Date()) {
-    return { success: false, error: 'ลิงก์ดาวน์โหลดหมดอายุแล้ว' };
+    return { success: false, error: t('downloadLinkExpired') };
   }
 
   const content = fulfillment.content as DigitalFulfillmentContent;
@@ -263,7 +268,7 @@ export async function recordDownload(token: string): Promise<{ success: boolean;
 
   // For file type, check max downloads
   if (content.max_downloads && (content.download_count || 0) >= content.max_downloads) {
-    return { success: false, error: 'ดาวน์โหลดครบจำนวนที่กำหนดแล้ว' };
+    return { success: false, error: t('downloadLimitReached') };
   }
 
   // Update download count
@@ -291,6 +296,7 @@ export async function recordDownload(token: string): Promise<{ success: boolean;
 // ============================================
 export async function getRedirectUrl(token: string): Promise<{ success: boolean; error?: string; url?: string; name?: string }> {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   const { data: fulfillment, error: fetchError } = await supabase
     .from('fulfillments')
@@ -300,18 +306,18 @@ export async function getRedirectUrl(token: string): Promise<{ success: boolean;
     .single();
 
   if (fetchError || !fulfillment) {
-    return { success: false, error: 'ไม่พบลิงก์' };
+    return { success: false, error: t('linkNotFound') };
   }
 
   // Check access expiry
   if (fulfillment.access_until && new Date(fulfillment.access_until) < new Date()) {
-    return { success: false, error: 'ลิงก์หมดอายุแล้ว' };
+    return { success: false, error: t('linkExpired') };
   }
 
   const content = fulfillment.content as DigitalFulfillmentContent;
 
   if (content.delivery_type !== 'redirect') {
-    return { success: false, error: 'ไม่ใช่ลิงก์ redirect' };
+    return { success: false, error: t('notRedirectLink') };
   }
 
   // Mark as accessed

@@ -2,8 +2,12 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getCreatorOrders, getOrderStats } from '@/actions/orders';
 import { OrdersList } from './orders-list';
+import { getTranslations } from 'next-intl/server';
 
-export const metadata: Metadata = { title: "คำสั่งซื้อ" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Orders');
+  return { title: t('title') };
+}
 
 export default async function OrdersPage({
   searchParams,
@@ -11,6 +15,7 @@ export default async function OrdersPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status } = await searchParams;
+  const t = await getTranslations('Orders');
   
   const [ordersResult, stats] = await Promise.all([
     getCreatorOrders(status),
@@ -25,41 +30,41 @@ export default async function OrdersPage({
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold">คำสั่งซื้อ</h2>
-        <p className="text-muted-foreground">จัดการคำสั่งซื้อและยืนยันการชำระเงิน</p>
+        <h2 className="text-2xl font-bold">{t('title')}</h2>
+        <p className="text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           <StatCard 
-            label="ทั้งหมด" 
+            label={t('statAll')} 
             value={stats.total} 
             color="bg-gray-100"
           />
           <StatCard 
-            label="รอชำระ" 
+            label={t('statPendingPayment')} 
             value={stats.pending_payment} 
             color="bg-blue-100"
           />
           <StatCard 
-            label="รอตรวจสอบ" 
+            label={t('statPendingConfirm')} 
             value={stats.pending_confirmation} 
             color="bg-yellow-100"
             highlight
           />
           <StatCard 
-            label="สำเร็จ" 
+            label={t('statConfirmed')} 
             value={stats.confirmed} 
             color="bg-green-100"
           />
           <StatCard 
-            label="คืนเงิน" 
+            label={t('statRefunded')} 
             value={stats.refunded} 
             color="bg-purple-100"
           />
           <StatCard 
-            label="ยกเลิก" 
+            label={t('statCancelled')} 
             value={stats.cancelled} 
             color="bg-red-100"
           />

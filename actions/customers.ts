@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { hasFeature } from '@/lib/plan';
 import type { PlanType } from '@/types';
+import { getTranslations } from 'next-intl/server';
 
 // ============================================
 // Types
@@ -43,10 +44,11 @@ export interface CustomerDetails {
 // ============================================
 export async function getCustomers() {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ', customers: [] };
+    return { success: false, error: t('pleaseLogin'), customers: [] };
   }
 
   const { data: creator } = await supabase
@@ -56,7 +58,7 @@ export async function getCustomers() {
     .single();
 
   if (!creator) {
-    return { success: false, error: 'ไม่พบข้อมูล Creator', customers: [] };
+    return { success: false, error: t('creatorNotFound'), customers: [] };
   }
 
   // Get all orders with buyer info and product info
@@ -77,7 +79,7 @@ export async function getCustomers() {
 
   if (error) {
     console.error('Get customers error:', error);
-    return { success: false, error: 'ไม่สามารถโหลดข้อมูลลูกค้าได้', customers: [] };
+    return { success: false, error: t('cannotLoadCustomers'), customers: [] };
   }
 
   // Aggregate by email
@@ -134,6 +136,7 @@ export async function getCustomers() {
 // ============================================
 export async function getCustomerDetails(email: string): Promise<CustomerDetails | null> {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -184,7 +187,7 @@ export async function getCustomerDetails(email: string): Promise<CustomerDetails
         status: order.status,
         total: Number(order.total),
         created_at: order.created_at,
-        product_title: product?.title || 'สินค้า',
+        product_title: product?.title || t('productDefault'),
         product_type: product?.type || 'unknown',
       };
     }),
@@ -201,11 +204,13 @@ export async function getCustomerDetails(email: string): Promise<CustomerDetails
 // EXPORT CUSTOMERS (CSV format)
 // ============================================
 export async function exportCustomers() {
+  const t = await getTranslations('ServerActions');
+
   // Check plan permission server-side
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    return { success: false, error: t('pleaseLogin') };
   }
 
   const { data: creator } = await supabase
@@ -216,7 +221,7 @@ export async function exportCustomers() {
 
   const plan = (creator?.plan || 'free') as PlanType;
   if (!hasFeature(plan, 'export_csv')) {
-    return { success: false, error: 'ฟีเจอร์ Export สำหรับแพลน Pro เท่านั้น' };
+    return { success: false, error: t('exportProOnly') };
   }
 
   const result = await getCustomers();
@@ -225,7 +230,7 @@ export async function exportCustomers() {
     return { success: false, error: result.error };
   }
 
-  const headers = ['อีเมล', 'ชื่อ', 'เบอร์โทร', 'จำนวนออเดอร์', 'ยอดซื้อรวม', 'สินค้าที่ซื้อ'];
+  const headers = [t('csvEmail'), t('csvName'), t('csvPhone'), t('csvOrderCount'), t('csvTotalSpent'), t('csvProducts')];
   const rows = result.customers.map(c => [
     c.email,
     c.name,

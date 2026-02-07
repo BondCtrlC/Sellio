@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui';
 import { updateAvatar } from '@/actions/settings';
 import { Camera, User } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface AvatarUploadProps {
   currentAvatarUrl: string | null;
@@ -15,6 +16,7 @@ export function AvatarUpload({ currentAvatarUrl, displayName }: AvatarUploadProp
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatarUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const t = useTranslations('Settings');
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,10 +79,10 @@ export function AvatarUpload({ currentAvatarUrl, displayName }: AvatarUploadProp
           onClick={() => fileInputRef.current?.click()}
           isLoading={isUploading}
         >
-          {isUploading ? 'กำลังอัปโหลด...' : 'เปลี่ยนรูปโปรไฟล์'}
+          {isUploading ? t('avatarUploading') : t('avatarChange')}
         </Button>
         <p className="text-sm text-muted-foreground">
-          JPG, PNG หรือ GIF ขนาดไม่เกิน 5MB
+          {t('avatarFormats')}
         </p>
         {error && (
           <p className="text-sm text-destructive">{error}</p>

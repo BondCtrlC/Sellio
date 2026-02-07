@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui';
 import { Copy, Check } from 'lucide-react';
 
@@ -9,6 +10,7 @@ interface CopyLinkButtonProps {
 }
 
 export function CopyLinkButton({ orderId }: CopyLinkButtonProps) {
+  const t = useTranslations('OrderSuccess');
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -33,12 +35,12 @@ export function CopyLinkButton({ orderId }: CopyLinkButtonProps) {
       {copied ? (
         <>
           <Check className="h-4 w-4 text-green-500" />
-          คัดลอกแล้ว
+          {t('copiedLink')}
         </>
       ) : (
         <>
           <Copy className="h-4 w-4" />
-          คัดลอกลิงก์
+          {t('copyLink')}
         </>
       )}
     </Button>

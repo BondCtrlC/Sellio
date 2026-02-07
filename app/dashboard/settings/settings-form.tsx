@@ -30,6 +30,9 @@ import {
   ExternalLink,
   Bell
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { setLocale } from '@/actions/locale';
+import { Globe } from 'lucide-react';
 
 interface SettingsFormProps {
   creator: Creator;
@@ -44,21 +47,23 @@ interface SettingsFormProps {
 
 type SettingsTab = 'profile' | 'payments' | 'store' | 'seo' | 'notifications' | 'billing';
 
-const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
-  { id: 'profile', label: 'โปรไฟล์', icon: User },
-  { id: 'payments', label: 'การรับเงิน', icon: Wallet },
-  { id: 'store', label: 'ร้านค้า', icon: Store },
-  { id: 'seo', label: 'SEO', icon: Search },
-  { id: 'notifications', label: 'แจ้งเตือน', icon: Bell },
-  { id: 'billing', label: 'การเรียกเก็บเงิน', icon: CreditCard },
-];
-
 export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations('Settings');
+
+  const tabsList: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
+    { id: 'profile', label: t('tabProfile'), icon: User },
+    { id: 'payments', label: t('tabPayments'), icon: Wallet },
+    { id: 'store', label: t('tabStore'), icon: Store },
+    { id: 'seo', label: t('tabSEO'), icon: Search },
+    { id: 'notifications', label: t('tabNotifications'), icon: Bell },
+    { id: 'billing', label: t('tabBilling'), icon: CreditCard },
+  ];
+
   const initialTab = (searchParams.get('tab') as SettingsTab) || 'profile';
   const [activeTab, setActiveTab] = useState<SettingsTab>(
-    tabs.some(t => t.id === initialTab) ? initialTab : 'profile'
+    tabsList.some(tab => tab.id === initialTab) ? initialTab : 'profile'
   );
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -66,7 +71,7 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
   // Sync activeTab when URL search params change (e.g. from onboarding overlay)
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab') as SettingsTab;
-    if (tabFromUrl && tabs.some(t => t.id === tabFromUrl)) {
+    if (tabFromUrl && tabsList.some(tab => tab.id === tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
   }, [searchParams]);
@@ -96,6 +101,7 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
       seo_description: creator.seo_description || '',
       seo_keywords: creator.seo_keywords || '',
       notification_email: creator.notification_email || '',
+      store_language: creator.store_language || 'th',
     },
   });
 
@@ -111,11 +117,18 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
       setError(result.error);
     } else {
       setSuccess(true);
-      // Refresh page if username changed (to update header link, etc.)
-      if (data.username !== creator.username) {
-        router.refresh();
+      
+      // Sync locale cookie if language changed
+      const languageChanged = data.store_language !== creator.store_language;
+      if (languageChanged) {
+        await setLocale(data.store_language);
       }
-      setTimeout(() => setSuccess(false), 3000);
+      
+      if (data.username !== creator.username || languageChanged) {
+        window.location.reload();
+      } else {
+        setTimeout(() => setSuccess(false), 3000);
+      }
     }
   };
 
@@ -127,7 +140,7 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
       {/* Tab Navigation */}
       <div className="border-b mb-6">
         <nav className="flex gap-1 -mb-px overflow-x-auto">
-          {tabs.map((tab) => {
+          {tabsList.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
@@ -158,21 +171,21 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
       
       {success && (
         <div className="p-3 text-sm text-success bg-success/10 rounded-lg mb-4">
-          บันทึกข้อมูลเรียบร้อยแล้ว
+          {t('saveSuccess')}
         </div>
       )}
 
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* ============================== */}
-        {/* TAB: โปรไฟล์ */}
+        {/* TAB: Profile */}
         {/* ============================== */}
         {activeTab === 'profile' && (
           <div className="space-y-8">
             {/* Avatar */}
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-lg">รูปโปรไฟล์</h3>
-                <p className="text-sm text-muted-foreground">รูปที่จะแสดงในหน้าร้านค้าของคุณ</p>
+                <h3 className="font-semibold text-lg">{t('profileImage')}</h3>
+                <p className="text-sm text-muted-foreground">{t('profileImageDesc')}</p>
               </div>
               <AvatarUpload 
                 currentAvatarUrl={creator.avatar_url} 
@@ -182,15 +195,15 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
 
             <div className="border-t pt-6 space-y-4">
               <div>
-                <h3 className="font-semibold text-lg">ข้อมูลพื้นฐาน</h3>
-                <p className="text-sm text-muted-foreground">ข้อมูลที่จะแสดงในหน้าร้านค้า</p>
+                <h3 className="font-semibold text-lg">{t('basicInfo')}</h3>
+                <p className="text-sm text-muted-foreground">{t('basicInfoDesc')}</p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="display_name" required>ชื่อที่แสดง</Label>
+                <Label htmlFor="display_name" required>{t('displayName')}</Label>
                 <Input
                   id="display_name"
-                  placeholder="ชื่อร้านหรือชื่อของคุณ"
+                  placeholder={t('displayNamePlaceholder')}
                   error={!!errors.display_name}
                   {...register('display_name')}
                 />
@@ -200,10 +213,10 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
+                <Label htmlFor="bio">{t('bio')}</Label>
                 <Textarea
                   id="bio"
-                  placeholder="แนะนำตัวเองหรือร้านค้าของคุณ..."
+                  placeholder={t('bioPlaceholder')}
                   rows={3}
                   error={!!errors.bio}
                   {...register('bio')}
@@ -217,15 +230,15 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
             {/* Contact Info */}
             <div className="border-t pt-6 space-y-4">
               <div>
-                <h3 className="font-semibold text-lg">ช่องทางติดต่อ</h3>
-                <p className="text-sm text-muted-foreground">ข้อมูลติดต่อที่ลูกค้าสามารถใช้ได้</p>
+                <h3 className="font-semibold text-lg">{t('contactInfo')}</h3>
+                <p className="text-sm text-muted-foreground">{t('contactInfoDesc')}</p>
               </div>
               
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="contact_phone" className="flex items-center gap-2">
                     <Phone className="h-3.5 w-3.5" />
-                    เบอร์โทร
+                    {t('phone')}
                   </Label>
                   <Input
                     id="contact_phone"
@@ -238,7 +251,7 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                 <div className="space-y-2">
                   <Label htmlFor="contact_line" className="flex items-center gap-2">
                     <MessageCircle className="h-3.5 w-3.5" />
-                    Line ID
+                    {t('lineId')}
                   </Label>
                   <Input
                     id="contact_line"
@@ -253,7 +266,7 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                 <div className="space-y-2">
                   <Label htmlFor="contact_ig" className="flex items-center gap-2">
                     <Instagram className="h-3.5 w-3.5" />
-                    Instagram
+                    {t('instagram')}
                   </Label>
                   <Input
                     id="contact_ig"
@@ -266,7 +279,7 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                 <div className="space-y-2">
                   <Label htmlFor="contact_email" className="flex items-center gap-2">
                     <Mail className="h-3.5 w-3.5" />
-                    Email
+                    {t('email')}
                   </Label>
                   <Input
                     id="contact_email"
@@ -280,13 +293,13 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
             </div>
 
             <Button type="submit" isLoading={isSubmitting}>
-              บันทึกการเปลี่ยนแปลง
+              {t('saveChanges')}
             </Button>
           </div>
         )}
 
         {/* ============================== */}
-        {/* TAB: การรับเงิน */}
+        {/* TAB: Payments */}
         {/* ============================== */}
         {activeTab === 'payments' && (
           <div className="space-y-8">
@@ -297,14 +310,14 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                   <QrCode className="h-5 w-5 text-green-700" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">PromptPay</h3>
-                  <p className="text-sm text-muted-foreground">รับชำระเงินผ่าน QR Code พร้อมเพย์</p>
+                  <h3 className="font-semibold text-lg">{t('promptpay')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('promptpayDesc')}</p>
                 </div>
               </div>
               
               <div className="ml-0 space-y-4 p-4 bg-gray-50 rounded-xl">
                 <div className="space-y-2">
-                  <Label htmlFor="promptpay_phone">เบอร์โทร PromptPay</Label>
+                  <Label htmlFor="promptpay_phone">{t('promptpayPhone')}</Label>
                   <Input
                     id="promptpay_phone"
                     placeholder="0812345678"
@@ -316,15 +329,15 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                     <p className="text-sm text-destructive">{errors.promptpay_phone.message}</p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    เบอร์โทรที่ผูกกับ PromptPay สำหรับสร้าง QR Code ให้ลูกค้าโอนเงิน
+                    {t('promptpayPhoneHint')}
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="promptpay_name">ชื่อบัญชี</Label>
+                  <Label htmlFor="promptpay_name">{t('accountName')}</Label>
                   <Input
                     id="promptpay_name"
-                    placeholder="ชื่อที่จะแสดงบน QR Code"
+                    placeholder={t('accountNameOnQR')}
                     error={!!errors.promptpay_name}
                     {...register('promptpay_name')}
                   />
@@ -342,17 +355,17 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                   <Building2 className="h-5 w-5 text-blue-700" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">บัญชีธนาคาร</h3>
-                  <p className="text-sm text-muted-foreground">รับชำระเงินผ่านการโอนเงินธนาคาร</p>
+                  <h3 className="font-semibold text-lg">{t('bankAccount')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('bankAccountDesc')}</p>
                 </div>
               </div>
               
               <div className="ml-0 space-y-4 p-4 bg-gray-50 rounded-xl">
                 <div className="space-y-2">
-                  <Label htmlFor="bank_name">ชื่อธนาคาร</Label>
+                  <Label htmlFor="bank_name">{t('bankName')}</Label>
                   <Input
                     id="bank_name"
-                    placeholder="เช่น กสิกรไทย, กรุงเทพ, ไทยพาณิชย์"
+                    placeholder={t('bankNamePlaceholder')}
                     error={!!errors.bank_name}
                     {...register('bank_name')}
                   />
@@ -362,7 +375,7 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bank_account_number">เลขที่บัญชี</Label>
+                  <Label htmlFor="bank_account_number">{t('bankAccountNumber')}</Label>
                   <Input
                     id="bank_account_number"
                     placeholder="xxx-x-xxxxx-x"
@@ -376,10 +389,10 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bank_account_name">ชื่อบัญชี</Label>
+                  <Label htmlFor="bank_account_name">{t('bankAccountName')}</Label>
                   <Input
                     id="bank_account_name"
-                    placeholder="ชื่อ-นามสกุลเจ้าของบัญชี"
+                    placeholder={t('bankAccountNamePlaceholder')}
                     error={!!errors.bank_account_name}
                     {...register('bank_account_name')}
                   />
@@ -393,30 +406,74 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
             {/* Info box */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <span className="font-medium">คุณสามารถตั้งค่าได้ทั้ง PromptPay และ บัญชีธนาคาร</span>
+                <span className="font-medium">{t('paymentInfoNote')}</span>
                 <br />
-                <span className="text-blue-700">
-                  ลูกค้าจะสามารถเลือกช่องทางการชำระเงินที่สะดวกที่สุดได้เอง
-                </span>
+                <span className="text-blue-700">{t('paymentInfoNoteDesc')}</span>
               </p>
             </div>
 
             <Button type="submit" isLoading={isSubmitting}>
-              บันทึกการเปลี่ยนแปลง
+              {t('saveChanges')}
             </Button>
           </div>
         )}
 
         {/* ============================== */}
-        {/* TAB: ร้านค้า */}
+        {/* TAB: Store */}
         {/* ============================== */}
         {activeTab === 'store' && (
           <div className="space-y-8">
-            {/* Store Status */}
+            {/* Store Language */}
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-lg">สถานะร้านค้า</h3>
-                <p className="text-sm text-muted-foreground">ควบคุมการแสดงผลร้านค้าของคุณ</p>
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <Globe className="h-5 w-5" />
+                  {t('storeLanguage')}
+                </h3>
+                <p className="text-sm text-muted-foreground">{t('storeLanguageDesc')}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {(['th', 'en'] as const).map((lang) => {
+                  const isSelected = watch('store_language') === lang;
+                  return (
+                    <label
+                      key={lang}
+                      className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                          : 'border-border hover:border-primary/30 hover:bg-muted/50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        value={lang}
+                        className="sr-only"
+                        {...register('store_language')}
+                      />
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        isSelected ? 'border-primary' : 'border-muted-foreground/40'
+                      }`}>
+                        {isSelected && <div className="w-2 h-2 rounded-full bg-primary" />}
+                      </div>
+                      <span className="font-medium">
+                        {lang === 'th' ? t('languageThai') : t('languageEnglish')}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              
+              <p className="text-xs text-muted-foreground">
+                {t('languageNote')}
+              </p>
+            </div>
+
+            {/* Store Status */}
+            <div className="border-t pt-6 space-y-4">
+              <div>
+                <h3 className="font-semibold text-lg">{t('storeStatus')}</h3>
+                <p className="text-sm text-muted-foreground">{t('storeStatusDesc')}</p>
               </div>
               
               <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
@@ -426,14 +483,12 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                   {...register('is_published')}
                 />
                 <div>
-                  <p className="font-medium">เปิดร้านค้า</p>
-                  <p className="text-sm text-muted-foreground">
-                    เมื่อเปิด ลูกค้าจะสามารถเข้าชมและสั่งซื้อสินค้าจากร้านของคุณได้
-                  </p>
+                  <p className="font-medium">{t('openStore')}</p>
+                  <p className="text-sm text-muted-foreground">{t('openStoreDesc')}</p>
                 </div>
               </label>
               <p className="text-xs text-muted-foreground mt-1">
-                * ต้องเพิ่มช่องทางติดต่ออย่างน้อย 1 ช่องทาง (เบอร์โทร, Line, IG หรืออีเมล) ก่อนเปิดร้าน
+                {t('openStoreNote')}
               </p>
             </div>
 
@@ -442,14 +497,14 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
               <div>
                 <h3 className="font-semibold text-lg flex items-center gap-2">
                   <Link2 className="h-5 w-5" />
-                  ลิงก์ร้านค้า
+                  {t('storeLink')}
                 </h3>
-                <p className="text-sm text-muted-foreground">ตั้งชื่อลิงก์ร้านค้าของคุณ แล้วแชร์ให้ลูกค้า</p>
+                <p className="text-sm text-muted-foreground">{t('storeLinkDesc')}</p>
               </div>
 
               {/* Username Input */}
               <div className="space-y-2">
-                <Label htmlFor="username">ชื่อลิงก์ (Username)</Label>
+                <Label htmlFor="username">{t('username')}</Label>
                 <div className="flex items-center gap-0">
                   <span className="inline-flex items-center px-3 h-10 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground whitespace-nowrap">
                     {baseUrl}/u/
@@ -470,7 +525,7 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                   <p className="text-sm text-destructive">{errors.username.message}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  ใช้ได้เฉพาะ a-z, 0-9 และ _ (3-30 ตัวอักษร)
+                  {t('usernameHint')}
                 </p>
               </div>
 
@@ -479,9 +534,9 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                 <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                   <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                   <div className="text-sm text-amber-800">
-                    <p className="font-medium">ลิงก์เดิมจะใช้งานไม่ได้</p>
+                    <p className="font-medium">{t('usernameWarning')}</p>
                     <p className="text-amber-700">
-                      หากเปลี่ยนจาก <code className="bg-amber-100 px-1 rounded">/u/{creator.username}</code> เป็น <code className="bg-amber-100 px-1 rounded">/u/{watchedUsername}</code> ลิงก์เดิมที่แชร์ไว้จะเข้าไม่ได้
+                      {t('usernameWarningDesc', { old: creator.username, new: watchedUsername })}
                     </p>
                   </div>
                 </div>
@@ -498,18 +553,18 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                     navigator.clipboard.writeText(storeUrl);
                   }}
                 >
-                  คัดลอก
+                  {t('copyLink')}
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground">
                 {creator.is_published 
-                  ? '✅ ร้านค้าเปิดให้บริการอยู่' 
-                  : '⚠️ ร้านค้ายังไม่เปิดให้บริการ'}
+                  ? `✅ ${t('storeOpen')}` 
+                  : `⚠️ ${t('storeClosed')}`}
               </p>
             </div>
 
             <Button type="submit" isLoading={isSubmitting}>
-              บันทึกการเปลี่ยนแปลง
+              {t('saveChanges')}
             </Button>
           </div>
         )}
@@ -520,17 +575,15 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
         {activeTab === 'seo' && (
           <div className="space-y-6">
             <div>
-              <h3 className="font-semibold text-lg">SEO Settings</h3>
-              <p className="text-sm text-muted-foreground">
-                ตั้งค่า meta tags สำหรับหน้าร้านของคุณ เพื่อให้แสดงผลดีบน Google และ Social Media
-              </p>
+              <h3 className="font-semibold text-lg">{t('seoTitle')}</h3>
+              <p className="text-sm text-muted-foreground">{t('seoDesc')}</p>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="seo_title">SEO Title</Label>
+              <Label htmlFor="seo_title">{t('seoTitleLabel')}</Label>
               <Input
                 id="seo_title"
-                placeholder="ชื่อที่จะแสดงบน Google (ไม่เกิน 70 ตัวอักษร)"
+                placeholder={t('seoTitlePlaceholder')}
                 maxLength={70}
                 error={!!errors.seo_title}
                 {...register('seo_title')}
@@ -538,16 +591,14 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
               {errors.seo_title && (
                 <p className="text-sm text-destructive">{errors.seo_title.message}</p>
               )}
-              <p className="text-xs text-muted-foreground">
-                ถ้าไม่กรอก จะใช้ชื่อร้านเป็นค่าเริ่มต้น
-              </p>
+              <p className="text-xs text-muted-foreground">{t('seoTitleHint')}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="seo_description">SEO Description</Label>
+              <Label htmlFor="seo_description">{t('seoDescLabel')}</Label>
               <Textarea
                 id="seo_description"
-                placeholder="คำอธิบายที่จะแสดงบน Google (ไม่เกิน 160 ตัวอักษร)"
+                placeholder={t('seoDescPlaceholder')}
                 rows={2}
                 maxLength={160}
                 error={!!errors.seo_description}
@@ -559,42 +610,40 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="seo_keywords">Keywords</Label>
+              <Label htmlFor="seo_keywords">{t('seoKeywords')}</Label>
               <Input
                 id="seo_keywords"
-                placeholder="ขายของออนไลน์, ดิจิตอลสินค้า, creator"
+                placeholder={t('seoKeywordsPlaceholder')}
                 error={!!errors.seo_keywords}
                 {...register('seo_keywords')}
               />
-              <p className="text-xs text-muted-foreground">
-                คั่นด้วยเครื่องหมายจุลภาค (,)
-              </p>
+              <p className="text-xs text-muted-foreground">{t('seoKeywordsHint')}</p>
             </div>
 
             {/* Preview */}
             <div className="border-t pt-6">
-              <h4 className="font-medium mb-3 text-sm text-muted-foreground">ตัวอย่างการแสดงผลบน Google</h4>
+              <h4 className="font-medium mb-3 text-sm text-muted-foreground">{t('seoPreview')}</h4>
               <div className="p-4 bg-white border rounded-lg">
                 <p className="text-blue-700 text-lg font-medium truncate">
-                  {creator.seo_title || creator.display_name || 'ชื่อร้านค้า'} - Creator Store
+                  {creator.seo_title || creator.display_name || t('seoPreviewStoreName')} - Creator Store
                 </p>
                 <p className="text-green-700 text-sm truncate">
                   {storeUrl}
                 </p>
                 <p className="text-sm text-gray-600 line-clamp-2 mt-1">
-                  {creator.seo_description || creator.bio || 'คำอธิบายร้านค้าของคุณจะแสดงที่นี่...'}
+                  {creator.seo_description || creator.bio || t('seoPreviewDesc')}
                 </p>
               </div>
             </div>
 
             <Button type="submit" isLoading={isSubmitting}>
-              บันทึกการเปลี่ยนแปลง
+              {t('saveChanges')}
             </Button>
           </div>
         )}
 
         {/* ============================== */}
-        {/* TAB: แจ้งเตือน */}
+        {/* TAB: Notifications */}
         {/* ============================== */}
         {activeTab === 'notifications' && (
           <div className="space-y-8">
@@ -605,19 +654,17 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                   <Mail className="h-5 w-5 text-blue-700" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">แจ้งเตือนทางอีเมล</h3>
-                  <p className="text-sm text-muted-foreground">รับแจ้งเตือนทางอีเมลเมื่อมีคำสั่งซื้อใหม่</p>
+                  <h3 className="font-semibold text-lg">{t('notifEmailTitle')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('notifEmailDesc')}</p>
                 </div>
               </div>
 
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  ระบุอีเมลที่ต้องการรับแจ้งเตือน ระบบจะส่งอีเมลแจ้งเตือนให้คุณทันทีเมื่อมีคำสั่งซื้อใหม่หรือลูกค้าอัพโหลดสลิป
-                </p>
+                <p className="text-sm text-muted-foreground">{t('notifEmailInfo')}</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notification_email">อีเมลรับแจ้งเตือน</Label>
+                <Label htmlFor="notification_email">{t('notifEmail')}</Label>
                 <Input
                   id="notification_email"
                   type="email"
@@ -628,23 +675,21 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                 {errors.notification_email && (
                   <p className="text-sm text-destructive">{errors.notification_email.message}</p>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  หากไม่ระบุ ระบบจะไม่ส่งแจ้งเตือนเพิ่มเติม (ลูกค้ายังได้รับอีเมลยืนยันตามปกติ)
-                </p>
+                <p className="text-xs text-muted-foreground">{t('notifEmailHint')}</p>
               </div>
             </div>
 
             {/* What you'll receive */}
             <div className="border-t pt-6 space-y-4">
-              <h3 className="font-semibold text-lg">การแจ้งเตือนที่คุณจะได้รับ</h3>
+              <h3 className="font-semibold text-lg">{t('notifTypesTitle')}</h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="flex items-start gap-3 p-3 rounded-lg border">
                   <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                     <span className="text-sm">🛒</span>
                   </div>
                   <div>
-                    <p className="font-medium text-sm">คำสั่งซื้อใหม่</p>
-                    <p className="text-xs text-muted-foreground">เมื่อลูกค้าสร้างคำสั่งซื้อ</p>
+                    <p className="font-medium text-sm">{t('notifNewOrder')}</p>
+                    <p className="text-xs text-muted-foreground">{t('notifNewOrderDesc')}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 rounded-lg border">
@@ -652,8 +697,8 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                     <span className="text-sm">💳</span>
                   </div>
                   <div>
-                    <p className="font-medium text-sm">อัพโหลดสลิป</p>
-                    <p className="text-xs text-muted-foreground">เมื่อลูกค้าอัพโหลดสลิปชำระเงิน</p>
+                    <p className="font-medium text-sm">{t('notifSlipUpload')}</p>
+                    <p className="text-xs text-muted-foreground">{t('notifSlipUploadDesc')}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 rounded-lg border">
@@ -661,8 +706,8 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                     <span className="text-sm">📅</span>
                   </div>
                   <div>
-                    <p className="font-medium text-sm">ยกเลิก/เปลี่ยนนัด</p>
-                    <p className="text-xs text-muted-foreground">เมื่อลูกค้ายกเลิกหรือเปลี่ยนเวลานัดหมาย</p>
+                    <p className="font-medium text-sm">{t('notifBookingChange')}</p>
+                    <p className="text-xs text-muted-foreground">{t('notifBookingChangeDesc')}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 rounded-lg border bg-primary/5 border-primary/20">
@@ -670,22 +715,22 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                     <span className="text-sm">📧</span>
                   </div>
                   <div>
-                    <p className="font-medium text-sm">อีเมลยืนยันลูกค้า</p>
-                    <p className="text-xs text-muted-foreground">ส่งถึงลูกค้าอัตโนมัติเสมอ (ไม่ต้องตั้งค่า)</p>
+                    <p className="font-medium text-sm">{t('notifCustomerEmail')}</p>
+                    <p className="text-xs text-muted-foreground">{t('notifCustomerEmailDesc')}</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <Button type="submit" isLoading={isSubmitting}>
-              บันทึกการเปลี่ยนแปลง
+              {t('saveChanges')}
             </Button>
           </div>
         )}
       </form>
 
       {/* ============================== */}
-      {/* TAB: การเรียกเก็บเงิน (outside form) */}
+      {/* TAB: Billing (outside form) */}
       {/* ============================== */}
       {activeTab === 'billing' && billingInfo && (
         <BillingTab billingInfo={billingInfo} />
@@ -704,11 +749,10 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
   );
   const router = useRouter();
   const isPro = billingInfo.plan === 'pro';
+  const t = useTranslations('Settings');
 
   const handleCancel = async (immediate: boolean) => {
-    const msg = immediate
-      ? 'คุณแน่ใจหรือไม่ที่จะยกเลิก Pro ทันที?\n\nแพลน Pro จะถูกยกเลิกทันทีและเปลี่ยนเป็น Free'
-      : 'คุณแน่ใจหรือไม่ที่จะยกเลิก Pro?\n\nคุณจะยังใช้ Pro ได้จนถึงสิ้นสุดรอบบิลปัจจุบัน';
+    const msg = immediate ? t('billingConfirmImmediate') : t('billingConfirmEnd');
     
     if (!confirm(msg)) return;
     
@@ -724,20 +768,27 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
       if (data.success) {
         if (data.immediate) {
           setCancelStatus('cancelled');
-          // Refresh after a moment so user can see the message
           setTimeout(() => router.refresh(), 2000);
         } else {
           setCancelStatus('scheduled');
           router.refresh();
         }
       } else {
-        alert(data.error || 'เกิดข้อผิดพลาด');
+        alert(data.error || t('billingError'));
       }
     } catch {
-      alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      alert(t('billingErrorRetry'));
     } finally {
       setCancelling(false);
     }
+  };
+
+  const invoiceStatusConfig: Record<string, { label: string; className: string }> = {
+    paid: { label: t('invoicePaid'), className: 'bg-green-100 text-green-700' },
+    open: { label: t('invoiceOpen'), className: 'bg-amber-100 text-amber-700' },
+    void: { label: t('invoiceVoid'), className: 'bg-gray-100 text-gray-600' },
+    uncollectible: { label: t('invoiceUncollectible'), className: 'bg-red-100 text-red-700' },
+    draft: { label: t('invoiceDraft'), className: 'bg-gray-100 text-gray-600' },
   };
 
   return (
@@ -745,8 +796,8 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
       {/* Current Plan */}
       <div className="space-y-4">
         <div>
-          <h3 className="font-semibold text-lg">แพลนปัจจุบัน</h3>
-          <p className="text-sm text-muted-foreground">ข้อมูลการสมัครสมาชิกของคุณ</p>
+          <h3 className="font-semibold text-lg">{t('billingCurrentPlan')}</h3>
+          <p className="text-sm text-muted-foreground">{t('billingCurrentPlanDesc')}</p>
         </div>
 
         <div className={`p-5 rounded-xl border-2 ${isPro ? 'border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50' : 'border-gray-200 bg-gray-50'}`}>
@@ -765,11 +816,11 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {isPro ? '99 บาท/เดือน' : '0 บาท/เดือน'}
+                  {isPro ? t('billingProPrice') : t('billingFreePrice')}
                 </p>
                 {isPro && billingInfo.planExpiresAt && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    ต่ออายุถัดไป: {new Date(billingInfo.planExpiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    {t('billingNextRenewal', { date: new Date(billingInfo.planExpiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) })}
                   </p>
                 )}
               </div>
@@ -785,7 +836,7 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
                     disabled={cancelling}
                     className="text-red-600 border-red-200 hover:bg-red-50"
                   >
-                    {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิกเมื่อหมดรอบบิล'}
+                    {cancelling ? t('billingCancelling') : t('billingCancelAtEnd')}
                   </Button>
                   <button
                     type="button"
@@ -793,27 +844,27 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
                     disabled={cancelling}
                     className="text-xs text-muted-foreground hover:text-red-600 hover:underline transition-colors"
                   >
-                    ยกเลิกทันที
+                    {t('billingCancelNow')}
                   </button>
                 </>
               ) : isPro && cancelStatus === 'scheduled' ? (
                 <>
-                  <span className="text-sm text-amber-600 font-medium">ตั้งเวลายกเลิกแล้ว</span>
+                  <span className="text-sm text-amber-600 font-medium">{t('billingScheduled')}</span>
                   <button
                     type="button"
                     onClick={() => handleCancel(true)}
                     disabled={cancelling}
                     className="text-xs text-muted-foreground hover:text-red-600 hover:underline transition-colors"
                   >
-                    {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิกทันที'}
+                    {cancelling ? t('billingCancelling') : t('billingCancelNow')}
                   </button>
                 </>
               ) : isPro && cancelStatus === 'cancelled' ? (
-                <span className="text-sm text-green-600 font-medium">ยกเลิกแล้ว</span>
+                <span className="text-sm text-green-600 font-medium">{t('billingCancelled')}</span>
               ) : (
                 <Link href="/dashboard/upgrade">
                   <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
-                    อัปเกรดเป็น Pro
+                    {t('billingUpgradePro')}
                   </Button>
                 </Link>
               )}
@@ -825,18 +876,14 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
       {/* Cancel Status Messages */}
       {cancelStatus === 'scheduled' && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <p className="font-medium text-amber-800">ตั้งเวลายกเลิกเรียบร้อย</p>
-          <p className="text-sm text-amber-700 mt-1">
-            คุณจะยังใช้ Pro ได้จนถึงสิ้นสุดรอบบิลปัจจุบัน หลังจากนั้นจะเปลี่ยนเป็น Free อัตโนมัติ
-          </p>
+          <p className="font-medium text-amber-800">{t('billingScheduledMsg')}</p>
+          <p className="text-sm text-amber-700 mt-1">{t('billingScheduledMsgDesc')}</p>
         </div>
       )}
       {cancelStatus === 'cancelled' && (
         <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="font-medium text-green-800">ยกเลิก Subscription เรียบร้อยแล้ว</p>
-          <p className="text-sm text-green-700 mt-1">
-            แพลนของคุณเปลี่ยนเป็น Free แล้ว กำลังรีเฟรชหน้า...
-          </p>
+          <p className="font-medium text-green-800">{t('billingCancelledMsg')}</p>
+          <p className="text-sm text-green-700 mt-1">{t('billingCancelledMsgDesc')}</p>
         </div>
       )}
 
@@ -844,81 +891,68 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
       <div className="border-t pt-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-lg">ประวัติการชำระเงิน</h3>
-            <p className="text-sm text-muted-foreground">รายการ invoice ทั้งหมดจาก Stripe</p>
+            <h3 className="font-semibold text-lg">{t('invoiceHistory')}</h3>
+            <p className="text-sm text-muted-foreground">{t('invoiceHistoryDesc')}</p>
           </div>
         </div>
 
         {billingInfo.invoices.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <CreditCard className="h-10 w-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">ยังไม่มีประวัติการชำระเงิน</p>
+            <p className="text-sm">{t('noInvoices')}</p>
           </div>
         ) : (
           <div className="border rounded-lg overflow-x-auto">
             <table className="w-full text-sm min-w-[400px]">
               <thead className="bg-muted/50">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium">วันที่</th>
-                  <th className="text-left px-4 py-3 font-medium">จำนวน</th>
-                  <th className="text-left px-4 py-3 font-medium">สถานะ</th>
+                  <th className="text-left px-4 py-3 font-medium">{t('invoiceDate')}</th>
+                  <th className="text-left px-4 py-3 font-medium">{t('invoiceAmount')}</th>
+                  <th className="text-left px-4 py-3 font-medium">{t('invoiceStatus')}</th>
                   <th className="text-right px-4 py-3 font-medium"></th>
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {billingInfo.invoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
-                      {new Date(invoice.date).toLocaleDateString('th-TH', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
-                    </td>
-                    <td className="px-4 py-3 font-medium">
-                      {invoice.amount.toLocaleString('th-TH')} {invoice.currency.toUpperCase() === 'THB' ? '฿' : invoice.currency.toUpperCase()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <InvoiceStatusBadge status={invoice.status} />
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {invoice.invoice_pdf && (
-                        <a
-                          href={invoice.invoice_pdf}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          ดาวน์โหลด
-                        </a>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {billingInfo.invoices.map((invoice) => {
+                  const statusConf = invoiceStatusConfig[invoice.status] || { label: invoice.status, className: 'bg-gray-100 text-gray-600' };
+                  return (
+                    <tr key={invoice.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3">
+                        {new Date(invoice.date).toLocaleDateString('th-TH', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })}
+                      </td>
+                      <td className="px-4 py-3 font-medium">
+                        {invoice.amount.toLocaleString('th-TH')} {invoice.currency.toUpperCase() === 'THB' ? '฿' : invoice.currency.toUpperCase()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusConf.className}`}>
+                          {statusConf.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {invoice.invoice_pdf && (
+                          <a
+                            href={invoice.invoice_pdf}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            {t('invoiceDownload')}
+                          </a>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
     </div>
-  );
-}
-
-function InvoiceStatusBadge({ status }: { status: string }) {
-  const config: Record<string, { label: string; className: string }> = {
-    paid: { label: 'ชำระแล้ว', className: 'bg-green-100 text-green-700' },
-    open: { label: 'รอชำระ', className: 'bg-amber-100 text-amber-700' },
-    void: { label: 'ยกเลิก', className: 'bg-gray-100 text-gray-600' },
-    uncollectible: { label: 'เก็บเงินไม่ได้', className: 'bg-red-100 text-red-700' },
-    draft: { label: 'แบบร่าง', className: 'bg-gray-100 text-gray-600' },
-  };
-
-  const c = config[status] || { label: status, className: 'bg-gray-100 text-gray-600' };
-
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${c.className}`}>
-      {c.label}
-    </span>
   );
 }

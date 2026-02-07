@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui';
 import { cancelBooking, rescheduleBooking, getAvailableSlotsForReschedule } from '@/actions/orders';
 import { X, Calendar, Loader2, AlertTriangle, Check } from 'lucide-react';
@@ -25,6 +26,7 @@ type Slot = {
 const MAX_RESCHEDULES = 1;
 
 export function ManageBooking({ orderId, canManage, currentDate, currentTime, rescheduleCount = 0 }: ManageBookingProps) {
+  const t = useTranslations('ManageBooking');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -48,13 +50,13 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
     if (result.success && result.slots) {
       setSlots(result.slots);
     } else {
-      setError(result.error || 'ไม่สามารถโหลดเวลาว่างได้');
+      setError(result.error || t('cannotLoadSlots'));
     }
     setLoadingSlots(false);
   };
 
   const handleCancel = async () => {
-    if (!confirm('ยืนยันยกเลิกการจอง? การดำเนินการนี้ไม่สามารถย้อนกลับได้')) return;
+    if (!confirm(t('confirmCancelAlert'))) return;
     
     setIsLoading(true);
     setError(null);
@@ -64,12 +66,12 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
     console.log('cancelBooking result:', result);
     
     if (result.success) {
-      setSuccess('ยกเลิกการจองเรียบร้อยแล้ว');
+      setSuccess(t('cancelSuccess'));
       setShowCancelModal(false);
       // Reload page to show updated status
       window.location.reload();
     } else {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
     }
     
     setIsLoading(false);
@@ -77,11 +79,11 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
 
   const handleReschedule = async () => {
     if (!selectedSlot) {
-      setError('กรุณาเลือกเวลาใหม่');
+      setError(t('selectNewSlot'));
       return;
     }
     
-    if (!confirm('ยืนยันเปลี่ยนเวลานัดหมาย?')) return;
+    if (!confirm(t('confirmReschedule'))) return;
     
     setIsLoading(true);
     setError(null);
@@ -89,12 +91,12 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
     const result = await rescheduleBooking(orderId, selectedSlot);
     
     if (result.success) {
-      setSuccess('เปลี่ยนเวลานัดหมายเรียบร้อยแล้ว');
+      setSuccess(t('rescheduleSuccess'));
       setShowRescheduleModal(false);
       // Reload page to show updated booking time
       window.location.reload();
     } else {
-      setError(result.error || 'เกิดข้อผิดพลาด');
+      setError(result.error || t('error'));
     }
     
     setIsLoading(false);
@@ -122,14 +124,14 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
       {canReschedule && (
         <p className="text-xs text-amber-600 mt-3 flex items-center gap-1">
           <AlertTriangle className="h-3 w-3" />
-          สามารถเปลี่ยนเวลานัดหมายได้ 1 ครั้งเท่านั้น
+          {t('rescheduleOnce')}
         </p>
       )}
       
       {/* Already rescheduled message */}
       {!canReschedule && (
         <p className="text-xs text-muted-foreground mt-3">
-          คุณได้เปลี่ยนเวลานัดหมายไปแล้ว 1 ครั้ง
+          {t('alreadyRescheduled')}
         </p>
       )}
 
@@ -143,7 +145,7 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
           className={`flex-1 ${!canReschedule ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <Calendar className="h-4 w-4 mr-2" />
-          เปลี่ยนเวลา
+          {t('reschedule')}
         </Button>
         <Button
           variant="outline"
@@ -152,7 +154,7 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
           className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
         >
           <X className="h-4 w-4 mr-2" />
-          ยกเลิกนัด
+          {t('cancelBooking')}
         </Button>
       </div>
 
@@ -165,7 +167,7 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">ยกเลิกการจอง</h3>
+                <h3 className="font-bold text-lg">{t('cancelTitle')}</h3>
                 <p className="text-sm text-muted-foreground">
                   {formatDate(currentDate)} เวลา {currentTime?.slice(0, 5)} น.
                 </p>
@@ -173,11 +175,11 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">เหตุผลการยกเลิก (ไม่บังคับ)</label>
+              <label className="text-sm font-medium">{t('cancelReasonLabel')}</label>
               <textarea
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="ระบุเหตุผล..."
+                placeholder={t('cancelReasonPlaceholder')}
                 className="w-full px-3 py-2 border rounded-lg text-sm resize-none h-24"
               />
             </div>
@@ -193,7 +195,7 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
                 disabled={isLoading}
                 className="flex-1"
               >
-                ย้อนกลับ
+                {t('goBack')}
               </Button>
               <Button
                 onClick={handleCancel}
@@ -203,7 +205,7 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  'ยืนยันยกเลิก'
+                  t('confirmCancel')
                 )}
               </Button>
             </div>
@@ -221,9 +223,9 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
                   <Calendar className="h-6 w-6 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">เปลี่ยนเวลานัดหมาย</h3>
+                  <h3 className="font-bold text-lg">{t('rescheduleTitle')}</h3>
                   <p className="text-sm text-muted-foreground">
-                    เวลาเดิม: {formatDate(currentDate)} {currentTime?.slice(0, 5)} น.
+                    {t('currentTime', { date: formatDate(currentDate), time: currentTime?.slice(0, 5) })}
                   </p>
                 </div>
               </div>
@@ -231,7 +233,7 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
               <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <p className="text-sm text-amber-700 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                  <span>คุณสามารถเปลี่ยนเวลานัดหมายได้ <strong>1 ครั้งเท่านั้น</strong> กรุณาเลือกเวลาที่แน่ใจ</span>
+                  <span>{t('rescheduleWarning')}</span>
                 </p>
               </div>
             </div>
@@ -243,7 +245,7 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
                 </div>
               ) : slots.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  ไม่มีเวลาว่างอื่นให้เลือก
+                  {t('noSlots')}
                 </p>
               ) : (
                 <div className="space-y-4">
@@ -267,7 +269,7 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
                             <div className={`text-xs mt-0.5 ${
                               selectedSlot === slot.id ? 'text-white/80' : 'text-muted-foreground'
                             }`}>
-                              ว่าง {slot.remaining} ที่นั่ง
+                              {t('slotsAvailable', { count: slot.remaining })}
                             </div>
                           </button>
                         ))}
@@ -293,7 +295,7 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
                 disabled={isLoading}
                 className="flex-1"
               >
-                ย้อนกลับ
+                {t('goBack')}
               </Button>
               <Button
                 onClick={handleReschedule}
@@ -305,7 +307,7 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
                 ) : (
                   <>
                     <Check className="h-4 w-4 mr-2" />
-                    ยืนยันเปลี่ยน
+                    {t('confirmChange')}
                   </>
                 )}
               </Button>

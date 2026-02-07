@@ -8,6 +8,7 @@ import { ArrowLeft, Package, Calendar, Clock, Loader2, Ticket, Check, X } from '
 import { formatPrice, formatDate } from '@/lib/utils';
 import { createOrder } from '@/actions/orders';
 import { validateCoupon } from '@/actions/coupons';
+import { useTranslations } from 'next-intl';
 
 interface Product {
   id: string;
@@ -47,6 +48,7 @@ interface CheckoutFormProps {
 
 export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFormProps) {
   const router = useRouter();
+  const t = useTranslations('Checkout');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -94,7 +96,7 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
       );
 
       if (!result.success) {
-        setCouponError(result.error || 'คูปองไม่ถูกต้อง');
+        setCouponError(result.error || t('couponInvalid'));
         return;
       }
 
@@ -106,7 +108,7 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
       });
       setCouponCode('');
     } catch (err) {
-      setCouponError('เกิดข้อผิดพลาด');
+      setCouponError(t('couponError'));
     } finally {
       setCouponLoading(false);
     }
@@ -134,7 +136,7 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
       });
 
       if (!result.success) {
-        setError(result.error || 'เกิดข้อผิดพลาด');
+        setError(result.error || t('error'));
         setLoading(false);
         return;
       }
@@ -143,7 +145,7 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
       router.push(`/checkout/${result.order_id}`);
     } catch (err) {
       console.error(err);
-      setError('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      setError(t('errorRetry'));
       setLoading(false);
     }
   };
@@ -156,11 +158,11 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
         className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
-        กลับ
+        {t('back')}
       </Link>
 
       {/* Header */}
-      <h1 className="text-2xl font-bold mb-6">สั่งซื้อ</h1>
+      <h1 className="text-2xl font-bold mb-6">{t('title')}</h1>
 
       {/* Order Summary */}
       <Card className="mb-6">
@@ -185,7 +187,7 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold truncate">{product.title}</h3>
               <p className="text-sm text-muted-foreground">
-                โดย {creator.display_name || creator.username}
+                {t('by', { name: creator.display_name || creator.username })}
               </p>
               
               {/* Booking Info */}
@@ -215,7 +217,7 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
                   </div>
                 ) : (
                   <p className="text-lg font-bold">
-                    {product.price > 0 ? formatPrice(product.price) : 'ฟรี'}
+                    {product.price > 0 ? formatPrice(product.price) : t('free')}
                   </p>
                 )}
               </div>
@@ -252,11 +254,11 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <Ticket className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">มีคูปองส่วนลด?</span>
+              <span className="text-sm font-medium">{t('haveCoupon')}</span>
             </div>
             <div className="flex gap-2 mt-3">
               <Input
-                placeholder="กรอกรหัสคูปอง"
+                placeholder={t('enterCoupon')}
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                 className="flex-1 uppercase"
@@ -271,7 +273,7 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
                 {couponLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  'ใช้คูปอง'
+                  t('applyCoupon')
                 )}
               </Button>
             </div>
@@ -286,17 +288,17 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
       <form onSubmit={handleSubmit} className="space-y-4">
         <Card>
           <CardContent className="p-4 space-y-4">
-            <h3 className="font-semibold">ข้อมูลผู้ซื้อ</h3>
+            <h3 className="font-semibold">{t('buyerInfo')}</h3>
 
             {/* Name */}
             <div>
-              <Label htmlFor="buyer_name">ชื่อ *</Label>
+              <Label htmlFor="buyer_name">{t('nameLabel')}</Label>
               <Input
                 id="buyer_name"
                 name="buyer_name"
                 value={formData.buyer_name}
                 onChange={handleChange}
-                placeholder="ชื่อของคุณ"
+                placeholder={t('namePlaceholder')}
                 required
                 disabled={loading}
               />
@@ -304,7 +306,7 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
 
             {/* Email */}
             <div>
-              <Label htmlFor="buyer_email">อีเมล *</Label>
+              <Label htmlFor="buyer_email">{t('emailLabel')}</Label>
               <Input
                 id="buyer_email"
                 name="buyer_email"
@@ -316,13 +318,13 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
                 disabled={loading}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                ใช้สำหรับส่งยืนยันการสั่งซื้อ
+                {t('emailHint')}
               </p>
             </div>
 
             {/* Phone */}
             <div>
-              <Label htmlFor="buyer_phone">เบอร์โทร (ไม่บังคับ)</Label>
+              <Label htmlFor="buyer_phone">{t('phoneLabel')}</Label>
               <Input
                 id="buyer_phone"
                 name="buyer_phone"
@@ -336,13 +338,13 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
 
             {/* Note */}
             <div>
-              <Label htmlFor="buyer_note">หมายเหตุ (ไม่บังคับ)</Label>
+              <Label htmlFor="buyer_note">{t('noteLabel')}</Label>
               <textarea
                 id="buyer_note"
                 name="buyer_note"
                 value={formData.buyer_note}
                 onChange={handleChange}
-                placeholder="ข้อความถึงผู้ขาย..."
+                placeholder={t('notePlaceholder')}
                 className="w-full px-3 py-2 border rounded-lg resize-none h-20 text-sm"
                 disabled={loading}
               />
@@ -353,14 +355,14 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
         {/* Refund Account Info */}
         <Card className="border-blue-200 bg-blue-50/50">
           <CardContent className="p-4 space-y-3">
-            <h3 className="font-semibold text-sm">ข้อมูลสำหรับการคืนเงิน</h3>
+            <h3 className="font-semibold text-sm">{t('refundTitle')}</h3>
             <p className="text-xs text-muted-foreground">
-              กรอกเบอร์ PromptPay เพื่อใช้ในกรณีที่ต้องคืนเงิน
+              {t('refundDesc')}
             </p>
             
             {/* Refund PromptPay */}
             <div>
-              <Label htmlFor="refund_promptpay">เบอร์ PromptPay *</Label>
+              <Label htmlFor="refund_promptpay">{t('refundPromptPay')}</Label>
               <Input
                 id="refund_promptpay"
                 name="refund_promptpay"
@@ -391,17 +393,17 @@ export function CheckoutForm({ product, creator, slotId, slotInfo }: CheckoutFor
           {loading ? (
             <>
               <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-              กำลังดำเนินการ...
+              {t('processing')}
             </>
           ) : (
             <>
-              ดำเนินการต่อ • {finalPrice > 0 ? formatPrice(finalPrice) : 'ฟรี'}
+              {t('proceed')} • {finalPrice > 0 ? formatPrice(finalPrice) : t('free')}
             </>
           )}
         </Button>
 
         <p className="text-xs text-center text-muted-foreground">
-          กดปุ่มเพื่อไปยังหน้าชำระเงิน
+          {t('proceedHint')}
         </p>
       </form>
     </div>

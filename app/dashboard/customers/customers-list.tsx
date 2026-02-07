@@ -18,6 +18,7 @@ import { hasFeature } from '@/lib/plan';
 import { ProBadge } from '@/components/shared/pro-gate';
 import { exportCustomers, type Customer } from '@/actions/customers';
 import type { PlanType } from '@/types';
+import { useTranslations } from 'next-intl';
 
 interface CustomersListProps {
   initialCustomers: Customer[];
@@ -30,6 +31,7 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const t = useTranslations('Customers');
 
   const filteredCustomers = customers.filter(c => 
     c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -42,7 +44,6 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
     try {
       const result = await exportCustomers();
       if (result.success && result.csv) {
-        // Create and download CSV file
         const blob = new Blob(['\ufeff' + result.csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -76,19 +77,19 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">รายชื่อลูกค้า</h2>
-          <p className="text-muted-foreground">ลูกค้าทั้งหมดที่เคยสั่งซื้อ</p>
+          <h2 className="text-2xl font-bold">{t('title')}</h2>
+          <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
         {canExport ? (
           <Button onClick={handleExport} disabled={exporting || customers.length === 0}>
             <Download className="h-4 w-4 mr-2" />
-            {exporting ? 'กำลังส่งออก...' : 'ส่งออก CSV'}
+            {exporting ? t('exporting') : t('exportCSV')}
           </Button>
         ) : (
           <div className="flex items-center gap-2">
             <Button disabled variant="outline">
               <Download className="h-4 w-4 mr-2" />
-              ส่งออก CSV
+              {t('exportCSV')}
             </Button>
             <ProBadge />
           </div>
@@ -100,7 +101,7 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              ลูกค้าทั้งหมด
+              {t('totalCustomers')}
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -111,7 +112,7 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              รายได้รวม
+              {t('totalRevenue')}
             </CardTitle>
             <ShoppingBag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -122,7 +123,7 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              ค่าเฉลี่ยต่อออเดอร์
+              {t('avgOrderValue')}
             </CardTitle>
             <ShoppingBag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -136,7 +137,7 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="ค้นหาด้วยชื่อ, อีเมล หรือเบอร์โทร..."
+          placeholder={t('searchPlaceholder')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
@@ -150,17 +151,13 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
             <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
             {customers.length === 0 ? (
               <>
-                <h3 className="font-semibold mb-2">ยังไม่มีลูกค้า</h3>
-                <p className="text-muted-foreground">
-                  เมื่อมีลูกค้าสั่งซื้อจะแสดงที่นี่
-                </p>
+                <h3 className="font-semibold mb-2">{t('noCustomersYet')}</h3>
+                <p className="text-muted-foreground">{t('noCustomersYetDesc')}</p>
               </>
             ) : (
               <>
-                <h3 className="font-semibold mb-2">ไม่พบลูกค้า</h3>
-                <p className="text-muted-foreground">
-                  ลองค้นหาด้วยคำอื่น
-                </p>
+                <h3 className="font-semibold mb-2">{t('noCustomersFound')}</h3>
+                <p className="text-muted-foreground">{t('noCustomersFoundDesc')}</p>
               </>
             )}
           </CardContent>
@@ -190,7 +187,7 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
                       <div className="flex items-center gap-2">
                         <span className="font-semibold">{customer.name}</span>
                         <Badge variant="outline" className="text-xs">
-                          {customer.total_orders} ออเดอร์
+                          {t('ordersCount', { count: customer.total_orders })}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -214,7 +211,7 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
                         {formatPrice(customer.total_spent)}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        ซื้อล่าสุด {formatDate(customer.last_order_at)}
+                        {t('lastPurchase', { date: formatDate(customer.last_order_at) })}
                       </p>
                     </div>
                     {expandedEmail === customer.email ? (
@@ -231,14 +228,14 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
                     <div className="grid gap-4 md:grid-cols-2">
                       {/* Stats */}
                       <div className="space-y-2">
-                        <h4 className="text-sm font-medium">สถิติ</h4>
+                        <h4 className="text-sm font-medium">{t('stats')}</h4>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div className="p-2 rounded-lg bg-muted">
-                            <p className="text-muted-foreground">ซื้อครั้งแรก</p>
+                            <p className="text-muted-foreground">{t('firstPurchase')}</p>
                             <p className="font-medium">{formatDate(customer.first_order_at)}</p>
                           </div>
                           <div className="p-2 rounded-lg bg-muted">
-                            <p className="text-muted-foreground">ซื้อล่าสุด</p>
+                            <p className="text-muted-foreground">{t('lastPurchaseLabel')}</p>
                             <p className="font-medium">{formatDate(customer.last_order_at)}</p>
                           </div>
                         </div>
@@ -246,7 +243,7 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
 
                       {/* Products */}
                       <div className="space-y-2">
-                        <h4 className="text-sm font-medium">สินค้าที่เคยซื้อ</h4>
+                        <h4 className="text-sm font-medium">{t('productsBought')}</h4>
                         <div className="flex flex-wrap gap-2">
                           {customer.products_bought.map((product, idx) => (
                             <Badge key={idx} variant="secondary" className="text-xs">
@@ -268,7 +265,7 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
                         }}
                       >
                         <Mail className="h-3 w-3 mr-1" />
-                        ส่งอีเมล
+                        {t('sendEmail')}
                       </Button>
                       {customer.phone && (
                         <Button
@@ -280,7 +277,7 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
                           }}
                         >
                           <Phone className="h-3 w-3 mr-1" />
-                          โทร
+                          {t('call')}
                         </Button>
                       )}
                     </div>

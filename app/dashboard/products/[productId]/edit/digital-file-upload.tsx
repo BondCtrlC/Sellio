@@ -6,6 +6,7 @@ import { Button, Input } from '@/components/ui';
 import { deleteDigitalFile, saveDigitalFileInfo, saveDigitalRedirectInfo } from '@/actions/products';
 import { createClient } from '@/lib/supabase/client';
 import { Upload, FileText, Trash2, Download, File, Loader2, Link2, Pencil } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 type DeliveryType = 'file' | 'redirect';
 
@@ -29,6 +30,7 @@ export function DigitalFileUpload({
   currentRedirectName,
 }: DigitalFileUploadProps) {
   const router = useRouter();
+  const t = useTranslations('ProductEdit');
   const [deliveryType, setDeliveryType] = useState<DeliveryType>(currentDeliveryType);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -55,7 +57,7 @@ export function DigitalFileUpload({
 
     // Validate file size (500MB max)
     if (file.size > 500 * 1024 * 1024) {
-      setError('ไฟล์ต้องไม่เกิน 500MB');
+      setError(t('maxFileSize500'));
       return;
     }
 
@@ -79,7 +81,7 @@ export function DigitalFileUpload({
 
       if (uploadError) {
         console.error('Upload error:', uploadError);
-        setError(`ไม่สามารถอัปโหลดไฟล์ได้: ${uploadError.message}`);
+        setError(`${t('uploadFailed')}: ${uploadError.message}`);
         setIsUploading(false);
         return;
       }
@@ -97,7 +99,7 @@ export function DigitalFileUpload({
       });
 
       if (!result.success) {
-        setError(result.error || 'ไม่สามารถบันทึกข้อมูลไฟล์ได้');
+        setError(result.error || t('saveFailed'));
       } else {
         setFileInfo({ url: publicUrl, name: file.name });
         setError(null);
@@ -105,7 +107,7 @@ export function DigitalFileUpload({
       }
     } catch (err) {
       console.error('Upload error:', err);
-      setError('เกิดข้อผิดพลาดในการอัปโหลด');
+      setError(t('uploadErrorGeneric'));
     }
 
     setIsUploading(false);
@@ -116,7 +118,7 @@ export function DigitalFileUpload({
   };
 
   const handleDelete = async () => {
-    if (!confirm('ต้องการลบไฟล์นี้ใช่หรือไม่?')) return;
+    if (!confirm(t('confirmDeleteFile'))) return;
 
     setIsDeleting(true);
     setError(null);
@@ -134,7 +136,7 @@ export function DigitalFileUpload({
 
   const handleSaveRedirect = async () => {
     if (!redirectUrl.trim()) {
-      setError('กรุณาใส่ URL');
+      setError(t('enterUrl'));
       return;
     }
 
@@ -142,7 +144,7 @@ export function DigitalFileUpload({
     try {
       new URL(redirectUrl);
     } catch {
-      setError('URL ไม่ถูกต้อง');
+      setError(t('invalidUrl'));
       return;
     }
 
@@ -155,7 +157,7 @@ export function DigitalFileUpload({
     });
 
     if (!result.success) {
-      setError(result.error || 'ไม่สามารถบันทึกได้');
+      setError(result.error || t('saveFailedGeneric'));
     } else {
       router.refresh();
     }
@@ -202,7 +204,7 @@ export function DigitalFileUpload({
           }`}
         >
           <Upload className="h-4 w-4 inline mr-2" />
-          Upload File
+          {t('uploadFile')}
         </button>
         <button
           type="button"
@@ -214,7 +216,7 @@ export function DigitalFileUpload({
           }`}
         >
           <Link2 className="h-4 w-4 inline mr-2" />
-          Redirect to URL
+          {t('redirectToUrl')}
         </button>
       </div>
 
@@ -226,8 +228,8 @@ export function DigitalFileUpload({
             <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
               {getFileIcon(fileInfo.name)}
               <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{fileInfo.name || 'ไฟล์ดิจิทัล'}</p>
-                <p className="text-sm text-muted-foreground">ไฟล์พร้อมส่งให้ลูกค้า</p>
+                <p className="font-medium truncate">{fileInfo.name || t('digitalFileName')}</p>
+                <p className="text-sm text-muted-foreground">{t('fileReady')}</p>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -263,17 +265,17 @@ export function DigitalFileUpload({
               {isUploading ? (
                 <>
                   <Loader2 className="h-10 w-10 mx-auto text-primary mb-3 animate-spin" />
-                  <p className="font-medium mb-1">กำลังอัปโหลด...</p>
+                  <p className="font-medium mb-1">{t('uploading')}</p>
                   <p className="text-sm text-muted-foreground">
-                    กรุณารอสักครู่
+                    {t('pleaseWait')}
                   </p>
                 </>
               ) : (
                 <>
                   <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                  <p className="font-medium mb-1">คลิกเพื่ออัปโหลดไฟล์</p>
+                  <p className="font-medium mb-1">{t('clickToUploadFile')}</p>
                   <p className="text-sm text-muted-foreground">
-                    รองรับ PDF, ZIP, MP4, MP3 และอื่นๆ (สูงสุด 500MB)
+                    {t('fileFormats')}
                   </p>
                 </>
               )}
@@ -289,7 +291,7 @@ export function DigitalFileUpload({
               isLoading={isUploading}
             >
               <Upload className="h-4 w-4 mr-2" />
-              {isUploading ? 'กำลังอัปโหลด...' : 'เปลี่ยนไฟล์'}
+              {isUploading ? t('uploading') : t('changeFile')}
             </Button>
           )}
         </>
@@ -301,7 +303,7 @@ export function DigitalFileUpload({
           <div>
             <label className="block text-sm font-medium mb-1.5">
               <Link2 className="h-4 w-4 inline mr-1" />
-              URL ปลายทาง <span className="text-destructive">*</span>
+              {t('destinationUrl')} <span className="text-destructive">*</span>
             </label>
             <Input
               type="url"
@@ -311,24 +313,24 @@ export function DigitalFileUpload({
               className="bg-white"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              URL ที่ลูกค้าจะถูก redirect ไปหลังชำระเงิน
+              {t('redirectHint')}
             </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1.5">
               <Pencil className="h-4 w-4 inline mr-1" />
-              ชื่อที่แสดง (ไม่บังคับ)
+              {t('displayName')}
             </label>
             <Input
               type="text"
               value={redirectName}
               onChange={(e) => setRedirectName(e.target.value)}
-              placeholder='เช่น "Course 101"'
+              placeholder={t('displayNamePlaceholder')}
               className="bg-white"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              ชื่อที่จะแสดงให้ลูกค้าเห็น แทนที่จะแสดง URL ตรงๆ
+              {t('displayNameHint')}
             </p>
           </div>
 
@@ -338,7 +340,7 @@ export function DigitalFileUpload({
             isLoading={isSaving}
             className="w-full"
           >
-            {isSaving ? 'กำลังบันทึก...' : 'บันทึก Redirect URL'}
+            {isSaving ? t('saving') : t('saveRedirect')}
           </Button>
         </div>
       )}

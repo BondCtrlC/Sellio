@@ -6,9 +6,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Label } from '@/components/ui';
 import { signup } from '@/actions/auth';
 import { signupSchema, type SignupInput } from '@/lib/validations/auth';
+import { useTranslations } from 'next-intl';
 
 export function SignupForm() {
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations('Auth');
   
   const {
     register,
@@ -35,7 +37,7 @@ export function SignupForm() {
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="email" required>อีเมล</Label>
+        <Label htmlFor="email" required>{t('email')}</Label>
         <Input
           id="email"
           type="email"
@@ -49,11 +51,11 @@ export function SignupForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password" required>รหัสผ่าน</Label>
+        <Label htmlFor="password" required>{t('password')}</Label>
         <Input
           id="password"
           type="password"
-          placeholder="อย่างน้อย 6 ตัวอักษร"
+          placeholder={t('passwordPlaceholder')}
           error={!!errors.password}
           {...register('password')}
         />
@@ -63,9 +65,9 @@ export function SignupForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="username" required>Username</Label>
+        <Label htmlFor="username" required>{t('username')}</Label>
         <div className="flex items-center">
-          <span className="text-muted-foreground text-sm mr-1">store.app/u/</span>
+          <span className="text-muted-foreground text-sm mr-1">sellio.me/u/</span>
           <Input
             id="username"
             placeholder="yourname"
@@ -77,15 +79,15 @@ export function SignupForm() {
           <p className="text-sm text-destructive">{errors.username.message}</p>
         )}
         <p className="text-xs text-muted-foreground">
-          ใช้ได้เฉพาะ a-z, 0-9 และ _ เท่านั้น
+          {t('usernameHint')}
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="displayName" required>ชื่อที่แสดง</Label>
+        <Label htmlFor="displayName" required>{t('displayName')}</Label>
         <Input
           id="displayName"
-          placeholder="ชื่อร้านหรือชื่อของคุณ"
+          placeholder={t('displayNamePlaceholder')}
           error={!!errors.displayName}
           {...register('displayName')}
         />
@@ -95,7 +97,7 @@ export function SignupForm() {
       </div>
 
       <Button type="submit" className="w-full" isLoading={isSubmitting}>
-        สมัครสมาชิก
+        {t('signupButton')}
       </Button>
     </form>
   );

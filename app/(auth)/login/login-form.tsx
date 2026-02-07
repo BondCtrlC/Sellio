@@ -6,9 +6,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Label } from '@/components/ui';
 import { login } from '@/actions/auth';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
+import { useTranslations } from 'next-intl';
 
 export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations('Auth');
   
   const {
     register,
@@ -35,7 +37,7 @@ export function LoginForm() {
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="email">อีเมล</Label>
+        <Label htmlFor="email">{t('email')}</Label>
         <Input
           id="email"
           type="email"
@@ -49,7 +51,7 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">รหัสผ่าน</Label>
+        <Label htmlFor="password">{t('password')}</Label>
         <Input
           id="password"
           type="password"
@@ -63,7 +65,7 @@ export function LoginForm() {
       </div>
 
       <Button type="submit" className="w-full" isLoading={isSubmitting}>
-        เข้าสู่ระบบ
+        {t('loginButton')}
       </Button>
     </form>
   );

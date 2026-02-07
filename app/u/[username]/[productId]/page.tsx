@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { ProductDetail } from './product-detail';
+import { getTranslations } from 'next-intl/server';
 
 interface PageProps {
   params: Promise<{ username: string; productId: string }>;
@@ -54,19 +55,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { username, productId } = await params;
   const creator = await getCreatorByUsername(username);
   
+  const t = await getTranslations('ProductDetail');
+
   if (!creator) {
-    return { title: 'ไม่พบสินค้า' };
+    return { title: t('productNotFound') };
   }
 
   const product = await getProduct(productId, creator.id);
   
   if (!product) {
-    return { title: 'ไม่พบสินค้า' };
+    return { title: t('productNotFound') };
   }
 
   return {
     title: `${product.title} | ${creator.display_name || creator.username}`,
-    description: product.description || `สินค้าจาก ${creator.display_name || creator.username}`,
+    description: product.description || t('productOf', { name: creator.display_name || creator.username }),
     openGraph: {
       title: product.title,
       description: product.description || undefined,

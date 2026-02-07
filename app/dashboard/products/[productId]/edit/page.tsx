@@ -4,8 +4,13 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@/components/ui';
 import { ProductForm } from '../../product-form';
+import { getTranslations } from 'next-intl/server';
 
-export const metadata: Metadata = { title: "แก้ไขสินค้า" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('ProductEdit');
+  return { title: t('editTitle') };
+}
+
 import { ProductImageUpload } from './product-image-upload';
 import { DigitalFileUpload } from './digital-file-upload';
 import { BookingSlotsManager } from './booking-slots-manager';
@@ -72,6 +77,7 @@ export default async function EditProductPage({ params, searchParams }: EditProd
   const { productId } = await params;
   const { new: isNewProduct } = await searchParams;
   const { product, slots, creatorId } = await getProduct(productId);
+  const t = await getTranslations('ProductEdit');
 
   if (!product) {
     notFound();
@@ -95,16 +101,16 @@ export default async function EditProductPage({ params, searchParams }: EditProd
     <div className="max-w-2xl space-y-6">
       <div>
         <h2 className="text-2xl font-bold">
-          {isNewProduct ? 'ตั้งค่าสินค้า' : 'แก้ไขสินค้า'}
+          {isNewProduct ? t('setupTitle') : t('editTitle')}
         </h2>
         <p className="text-muted-foreground">
           {isNewProduct && needsSetup
             ? product.type === 'digital'
-              ? 'อัปโหลดไฟล์ที่จะส่งให้ลูกค้า'
+              ? t('setupDigital')
               : product.type === 'booking'
-              ? 'เพิ่มวัน/เวลาที่คุณว่างสำหรับให้ลูกค้าจอง'
-              : 'อัปโหลดรูป Thumbnail'
-            : 'แก้ไขรายละเอียดสินค้าของคุณ'}
+              ? t('setupBooking')
+              : t('setupLink')
+            : t('editDesc')}
         </p>
       </div>
 
@@ -115,17 +121,17 @@ export default async function EditProductPage({ params, searchParams }: EditProd
             <span className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center">
               <CheckCircle className="w-4 h-4" />
             </span>
-            <span>ข้อมูลสินค้า</span>
+            <span>{t('step1')}</span>
           </div>
           <div className="flex-1 h-px bg-border" />
           <div className="flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">2</span>
-            <span className="font-medium">อัปโหลด/ตั้งค่า</span>
+            <span className="font-medium">{t('step2')}</span>
           </div>
           <div className="flex-1 h-px bg-border" />
           <div className="flex items-center gap-2 text-muted-foreground">
             <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold">3</span>
-            <span>เสร็จสิ้น</span>
+            <span>{t('step3')}</span>
           </div>
         </div>
       )}
@@ -133,8 +139,8 @@ export default async function EditProductPage({ params, searchParams }: EditProd
       {/* Product Image */}
       <Card>
         <CardHeader>
-          <CardTitle>รูปสินค้า</CardTitle>
-          <CardDescription>รูปที่จะแสดงในหน้าร้านค้า</CardDescription>
+          <CardTitle>{t('productImage')}</CardTitle>
+          <CardDescription>{t('productImageDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <ProductImageUpload 
@@ -149,8 +155,8 @@ export default async function EditProductPage({ params, searchParams }: EditProd
       {product.type === 'digital' && (
         <Card>
           <CardHeader>
-            <CardTitle>ไฟล์ดิจิทัล</CardTitle>
-            <CardDescription>ไฟล์ที่จะส่งให้ลูกค้าหลังชำระเงิน หรือ URL ที่จะ redirect ไป</CardDescription>
+            <CardTitle>{t('digitalFile')}</CardTitle>
+            <CardDescription>{t('digitalFileDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <DigitalFileUpload
@@ -170,8 +176,8 @@ export default async function EditProductPage({ params, searchParams }: EditProd
       {product.type === 'booking' && (
         <Card>
           <CardHeader>
-            <CardTitle>ตั้งค่าการจอง</CardTitle>
-            <CardDescription>ตั้งค่าระยะเวลาและเงื่อนไขการจอง</CardDescription>
+            <CardTitle>{t('bookingSettingsTitle')}</CardTitle>
+            <CardDescription>{t('bookingSettingsDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <BookingSettings
@@ -187,8 +193,8 @@ export default async function EditProductPage({ params, searchParams }: EditProd
       {product.type === 'booking' && (
         <Card>
           <CardHeader>
-            <CardTitle>จัดการ Slot เวลา</CardTitle>
-            <CardDescription>เพิ่มวัน/เวลาที่คุณว่างสำหรับให้ลูกค้าจอง</CardDescription>
+            <CardTitle>{t('slotsTitle')}</CardTitle>
+            <CardDescription>{t('slotsDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <BookingSlotsManager
@@ -203,8 +209,8 @@ export default async function EditProductPage({ params, searchParams }: EditProd
       {/* Product Form */}
       <Card>
         <CardHeader>
-          <CardTitle>ข้อมูลสินค้า</CardTitle>
-          <CardDescription>แก้ไขรายละเอียดสินค้าของคุณ</CardDescription>
+          <CardTitle>{t('productInfo')}</CardTitle>
+          <CardDescription>{t('productInfoDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <ProductForm product={product} />
@@ -217,7 +223,7 @@ export default async function EditProductPage({ params, searchParams }: EditProd
           <Link href="/dashboard/products">
             <Button size="lg">
               <CheckCircle className="w-4 h-4 mr-2" />
-              เสร็จสิ้น
+              {t('finish')}
             </Button>
           </Link>
         </div>

@@ -1,10 +1,8 @@
-import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { getOrderById } from '@/actions/orders';
 import { getFulfillmentByOrderId } from '@/actions/fulfillments';
-
-export const metadata: Metadata = { title: "สั่งซื้อสำเร็จ" };
 import { CheckCircle, Package, Calendar, Mail, MessageCircle, Download, Video, MapPin, ExternalLink, Clock, XCircle } from 'lucide-react';
 import { Card, CardContent, Button } from '@/components/ui';
 import { formatPrice, formatDate } from '@/lib/utils';
@@ -18,8 +16,16 @@ interface PageProps {
   params: Promise<{ orderId: string }>;
 }
 
+export async function generateMetadata(): Promise<import('next').Metadata> {
+  const t = await getTranslations('OrderSuccess');
+  return {
+    title: t('metaTitle'),
+  };
+}
+
 export default async function SuccessPage({ params }: PageProps) {
   const { orderId } = await params;
+  const t = await getTranslations('OrderSuccess');
 
   const [order, fulfillment] = await Promise.all([
     getOrderById(orderId),
@@ -41,23 +47,23 @@ export default async function SuccessPage({ params }: PageProps) {
       return {
         bgColor: 'bg-red-100',
         icon: <XCircle className="h-10 w-10 text-red-600" />,
-        title: isBookingProduct ? 'การจองถูกยกเลิก' : 'คำสั่งซื้อถูกยกเลิก',
-        subtitle: isBookingProduct ? 'การจองนี้ได้ถูกยกเลิกแล้ว' : 'คำสั่งซื้อนี้ได้ถูกยกเลิกแล้ว',
+        title: isBookingProduct ? t('bookingCancelled') : t('orderCancelled'),
+        subtitle: isBookingProduct ? t('bookingCancelledDesc') : t('orderCancelledDesc'),
       };
     }
     if (isConfirmed) {
       return {
         bgColor: 'bg-green-100',
         icon: <CheckCircle className="h-10 w-10 text-green-600" />,
-        title: 'การชำระเงินสำเร็จ!',
-        subtitle: 'ขอบคุณสำหรับการสั่งซื้อ',
+        title: t('paymentSuccess'),
+        subtitle: t('thankYou'),
       };
     }
     return {
       bgColor: 'bg-yellow-100',
       icon: <Package className="h-10 w-10 text-yellow-600" />,
-      title: 'รอตรวจสอบการชำระเงิน',
-      subtitle: 'ระบบได้รับสลิปของคุณแล้ว กรุณารอการยืนยันจากผู้ขาย',
+      title: t('pendingPayment'),
+      subtitle: t('pendingPaymentDesc'),
     };
   };
 
@@ -85,7 +91,7 @@ export default async function SuccessPage({ params }: PageProps) {
         <Card className="mb-6">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">รายละเอียดคำสั่งซื้อ</h3>
+              <h3 className="font-semibold">{t('orderDetails')}</h3>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
                   #{orderId.slice(0, 8).toUpperCase()}
@@ -112,7 +118,7 @@ export default async function SuccessPage({ params }: PageProps) {
               <div className="flex-1">
                 <p className="font-medium">{order.product.title}</p>
                 <p className="text-sm text-muted-foreground">
-                  โดย {order.creator.display_name || order.creator.username}
+                  {t('by', { name: order.creator.display_name || order.creator.username })}
                 </p>
                 {order.booking_date && order.booking_time && (
                   <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
@@ -126,18 +132,18 @@ export default async function SuccessPage({ params }: PageProps) {
             {/* Buyer Info */}
             <div className="py-4 border-b space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">ชื่อ</span>
+                <span className="text-muted-foreground">{t('name')}</span>
                 <span>{order.buyer_name}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">อีเมล</span>
+                <span className="text-muted-foreground">{t('email')}</span>
                 <span>{order.buyer_email}</span>
               </div>
             </div>
 
             {/* Total */}
             <div className="pt-4 flex justify-between">
-              <span className="font-semibold">ยอดรวม</span>
+              <span className="font-semibold">{t('total')}</span>
               <span className="font-bold text-lg">{formatPrice(order.total)}</span>
             </div>
           </CardContent>
@@ -149,7 +155,7 @@ export default async function SuccessPage({ params }: PageProps) {
             {/* Red header */}
             <div className="bg-red-500 px-4 py-3">
               <h4 className="font-semibold text-white text-center">
-                {order.product.type === 'booking' || order.product.type === 'live' ? 'การจองถูกยกเลิก' : 'คำสั่งซื้อถูกยกเลิก'}
+                {order.product.type === 'booking' || order.product.type === 'live' ? t('bookingCancelled') : t('orderCancelled')}
               </h4>
             </div>
             <CardContent className="p-5 space-y-4">
@@ -157,10 +163,10 @@ export default async function SuccessPage({ params }: PageProps) {
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                 <h5 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
                   <span className="text-lg">💰</span>
-                  ขอคืนเงิน
+                  {t('requestRefund')}
                 </h5>
                 <p className="text-sm text-amber-700 mb-3">
-                  หากคุณได้ชำระเงินแล้ว กรุณาติดต่อผู้ขายโดยตรงเพื่อขอรับเงินคืน พร้อมแจ้งหมายเลขคำสั่งซื้อ <strong>#{orderId.slice(0, 8).toUpperCase()}</strong>
+                  {t('requestRefundDesc', { id: orderId.slice(0, 8).toUpperCase() })}
                 </p>
                 
                 {/* Contact buttons */}
@@ -173,7 +179,7 @@ export default async function SuccessPage({ params }: PageProps) {
                       className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-green-500 text-white text-sm font-semibold rounded-lg hover:bg-green-600 transition-colors"
                     >
                       <MessageCircle className="h-4 w-4" />
-                      ทัก Line ผู้ขายเพื่อขอคืนเงิน
+                      {t('lineRefund')}
                     </a>
                   )}
                   {order.creator.contact_ig && (
@@ -184,12 +190,12 @@ export default async function SuccessPage({ params }: PageProps) {
                       className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity"
                     >
                       <ExternalLink className="h-4 w-4" />
-                      ติดต่อผ่าน Instagram
+                      {t('igContact')}
                     </a>
                   )}
                   {!order.creator.contact_line && !order.creator.contact_ig && (
                     <p className="text-sm text-amber-600 text-center">
-                      ติดต่อผู้ขายผ่านช่องทางที่ท่านเคยติดต่อ
+                      {t('contactSellerOther')}
                     </p>
                   )}
                 </div>
@@ -197,7 +203,7 @@ export default async function SuccessPage({ params }: PageProps) {
 
               {/* Additional info */}
               <p className="text-xs text-muted-foreground text-center">
-                กรุณาเก็บหลักฐานการชำระเงิน (สลิป) ไว้เพื่อใช้ประกอบการขอคืนเงิน
+                {t('keepReceipt')}
               </p>
             </CardContent>
           </Card>
@@ -207,17 +213,17 @@ export default async function SuccessPage({ params }: PageProps) {
         {isPendingConfirmation && (
           <Card className="mb-6 bg-yellow-50 border-yellow-200">
             <CardContent className="p-4">
-              <h4 className="font-medium text-yellow-800 mb-2">ขั้นตอนถัดไป</h4>
+              <h4 className="font-medium text-yellow-800 mb-2">{t('nextSteps')}</h4>
               <ul className="text-sm text-yellow-700 space-y-1">
-                <li>• ผู้ขายจะตรวจสอบสลิปของคุณ</li>
-                <li>• คุณจะได้รับอีเมลยืนยันเมื่อการชำระเงินได้รับการอนุมัติ</li>
-                <li>• หากมีปัญหา ผู้ขายจะติดต่อกลับทางอีเมลของคุณ</li>
+                <li>• {t('nextStep1')}</li>
+                <li>• {t('nextStep2')}</li>
+                <li>• {t('nextStep3')}</li>
               </ul>
               
               {/* Add to Calendar for pending booking orders */}
               {order.booking_date && order.booking_time && (
                 <div className="mt-4 pt-3 border-t border-yellow-300">
-                  <p className="text-sm text-yellow-700 mb-2">📅 เพิ่มนัดหมายลงปฏิทินไว้ก่อน:</p>
+                  <p className="text-sm text-yellow-700 mb-2">📅 {t('addToCalendar')}</p>
                   <AddToCalendar
                     orderId={orderId}
                     productTitle={order.product.title}
@@ -237,10 +243,10 @@ export default async function SuccessPage({ params }: PageProps) {
             <CardContent className="p-4">
               <h4 className="font-medium text-green-800 mb-2 flex items-center gap-2">
                 <Mail className="h-4 w-4" />
-                ตรวจสอบอีเมลของคุณ
+                {t('checkEmail')}
               </h4>
               <p className="text-sm text-green-700">
-                ระบบได้ส่งรายละเอียดการสั่งซื้อและข้อมูลการเข้าถึงสินค้าไปยัง {order.buyer_email} แล้ว
+                {t('emailSent', { email: order.buyer_email })}
               </p>
             </CardContent>
           </Card>
@@ -252,24 +258,26 @@ export default async function SuccessPage({ params }: PageProps) {
             <CardContent className="p-4">
               <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
                 <Download className="h-4 w-4" />
-                ดาวน์โหลดสินค้า
+                {t('downloadProduct')}
               </h4>
               {(fulfillment.content as any).file_url ? (
                 <div className="space-y-3">
                   <p className="text-sm text-blue-700">
-                    ไฟล์: {(fulfillment.content as any).file_name || 'ไฟล์ดิจิทัล'}
+                    {(fulfillment.content as any).file_name 
+                      ? t('file', { name: (fulfillment.content as any).file_name })
+                      : t('digitalFile')}
                   </p>
                   <DownloadButton 
                     token={fulfillment.access_token} 
                     fileName={(fulfillment.content as any).file_name}
                   />
                   <p className="text-xs text-blue-600">
-                    ดาวน์โหลดแล้ว {(fulfillment.content as any).download_count || 0} / {(fulfillment.content as any).max_downloads || 5} ครั้ง
+                    {t('downloadCount', { count: (fulfillment.content as any).download_count || 0, max: (fulfillment.content as any).max_downloads || 5 })}
                   </p>
                 </div>
               ) : (
                 <p className="text-sm text-blue-600">
-                  ผู้ขายจะส่งไฟล์ให้คุณเร็วๆ นี้
+                  {t('sellerWillSendFile')}
                 </p>
               )}
             </CardContent>
@@ -282,12 +290,12 @@ export default async function SuccessPage({ params }: PageProps) {
             <CardContent className="p-4">
               <h4 className="font-medium text-indigo-800 mb-3 flex items-center gap-2">
                 <ExternalLink className="h-4 w-4" />
-                เข้าถึงสินค้า
+                {t('accessProduct')}
               </h4>
               {(fulfillment.content as any).redirect_url ? (
                 <div className="space-y-3">
                   <p className="text-sm text-indigo-700">
-                    {(fulfillment.content as any).redirect_name || 'คลิกปุ่มด้านล่างเพื่อเข้าถึงสินค้าของคุณ'}
+                    {(fulfillment.content as any).redirect_name || t('clickToAccess')}
                   </p>
                   <a
                     href={(fulfillment.content as any).redirect_url}
@@ -296,12 +304,12 @@ export default async function SuccessPage({ params }: PageProps) {
                     className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                   >
                     <ExternalLink className="h-4 w-4" />
-                    เข้าถึงสินค้า
+                    {t('accessProduct')}
                   </a>
                 </div>
               ) : (
                 <p className="text-sm text-indigo-600">
-                  ผู้ขายจะส่งลิงก์ให้คุณเร็วๆ นี้
+                  {t('sellerWillSendLink')}
                 </p>
               )}
             </CardContent>
@@ -314,7 +322,7 @@ export default async function SuccessPage({ params }: PageProps) {
             <CardContent className="p-4">
               <h4 className="font-medium text-purple-800 mb-3 flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                รายละเอียดการนัดหมาย
+                {t('bookingDetails')}
               </h4>
               
               {/* Date/Time Info */}
@@ -343,7 +351,7 @@ export default async function SuccessPage({ params }: PageProps) {
                     <>
                       {(fulfillment.content as any).meeting_platform && (
                         <p className="text-purple-700">
-                          <span className="font-medium">แพลตฟอร์ม:</span> {(fulfillment.content as any).meeting_platform}
+                          <span className="font-medium">{t('platform')}:</span> {(fulfillment.content as any).meeting_platform}
                         </p>
                       )}
                       {(fulfillment.content as any).meeting_url && (
@@ -354,7 +362,7 @@ export default async function SuccessPage({ params }: PageProps) {
                           className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                         >
                           <Video className="h-4 w-4" />
-                          เข้าร่วมประชุม
+                          {t('joinMeeting')}
                           <ExternalLink className="h-3 w-3" />
                         </a>
                       )}
@@ -371,13 +379,13 @@ export default async function SuccessPage({ params }: PageProps) {
                   )}
                   {(fulfillment.content as any).notes && (
                     <p className="text-purple-600 mt-2">
-                      <span className="font-medium">หมายเหตุ:</span> {(fulfillment.content as any).notes}
+                      <span className="font-medium">{t('notes')}:</span> {(fulfillment.content as any).notes}
                     </p>
                   )}
                 </div>
               ) : (
                 <p className="text-sm text-purple-600">
-                  ผู้ขายจะส่งรายละเอียดการนัดหมายให้คุณเร็วๆ นี้
+                  {t('sellerWillSendBooking')}
                 </p>
               )}
 
@@ -415,13 +423,13 @@ export default async function SuccessPage({ params }: PageProps) {
             <CardContent className="p-4">
               <h4 className="font-medium text-pink-800 mb-3 flex items-center gap-2">
                 <Video className="h-4 w-4" />
-                ข้อมูลการเข้าชม Live
+                {t('liveAccess')}
               </h4>
               {(fulfillment.content as any).access_url ? (
                 <div className="space-y-2 text-sm">
                   {(fulfillment.content as any).platform && (
                     <p className="text-pink-700">
-                      <span className="font-medium">แพลตฟอร์ม:</span> {(fulfillment.content as any).platform}
+                      <span className="font-medium">{t('platform')}:</span> {(fulfillment.content as any).platform}
                     </p>
                   )}
                   <a
@@ -431,23 +439,23 @@ export default async function SuccessPage({ params }: PageProps) {
                     className="inline-flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
                   >
                     <Video className="h-4 w-4" />
-                    เข้าชม Live
+                    {t('watchLive')}
                     <ExternalLink className="h-3 w-3" />
                   </a>
                   {(fulfillment.content as any).access_code && (
                     <p className="text-pink-700">
-                      <span className="font-medium">รหัสเข้าชม:</span> {(fulfillment.content as any).access_code}
+                      <span className="font-medium">{t('accessCode')}:</span> {(fulfillment.content as any).access_code}
                     </p>
                   )}
                   {(fulfillment.content as any).notes && (
                     <p className="text-pink-600 mt-2">
-                      <span className="font-medium">หมายเหตุ:</span> {(fulfillment.content as any).notes}
+                      <span className="font-medium">{t('notes')}:</span> {(fulfillment.content as any).notes}
                     </p>
                   )}
                 </div>
               ) : (
                 <p className="text-sm text-pink-600">
-                  ผู้ขายจะส่งลิงก์เข้าชมให้คุณก่อนเริ่ม Live
+                  {t('sellerWillSendLive')}
                 </p>
               )}
             </CardContent>
@@ -464,7 +472,7 @@ export default async function SuccessPage({ params }: PageProps) {
           <CardContent className="p-4">
             <h4 className="font-medium mb-3 flex items-center gap-2">
               <MessageCircle className="h-4 w-4" />
-              ติดต่อผู้ขาย
+              {t('contactSeller')}
             </h4>
             <div className="flex flex-wrap gap-2">
               {order.creator.contact_line && (
@@ -495,7 +503,7 @@ export default async function SuccessPage({ params }: PageProps) {
         <div className="text-center">
           <Link href={`/u/${order.creator.username}`}>
             <Button variant="outline" className="w-full">
-              กลับไปร้านค้า
+              {t('backToStore')}
             </Button>
           </Link>
         </div>

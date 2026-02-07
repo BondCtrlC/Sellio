@@ -76,6 +76,9 @@ export interface Creator extends BaseEntity {
   
   // Email Notifications
   notification_email: string | null;
+  
+  // Language
+  store_language: 'th' | 'en';
 }
 
 export type CreatorInsert = Omit<Creator, 'id' | 'created_at' | 'updated_at'>;

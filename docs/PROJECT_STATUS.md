@@ -6,8 +6,8 @@
 **URL:** sellio.me  
 **Pricing:** Free + Pro (99 THB/เดือน)  
 **Deployment:** Vercel  
-**Status:** MVP Ready (MUST + SHOULD + NICE TO HAVE เสร็จหมดแล้ว, เหลือ M2 Resend Domain)  
-**Last Updated:** February 7, 2026 (Session 7)
+**Status:** MVP Ready (MUST + SHOULD + NICE TO HAVE เสร็จหมดแล้ว, เหลือ M2 Resend Domain) | ✅ i18n Complete  
+**Last Updated:** February 7, 2026 (Session 8)
 
 ---
 
@@ -21,6 +21,7 @@
 - **Forms:** React Hook Form + Zod
 - **UI Components:** Shadcn-style custom components
 - **Charts:** Recharts
+- **i18n:** next-intl (cookie-based locale, Thai default)
 - **Email:** Resend
 - **Payments:** PromptPay QR + Bank Transfer (Stripe card ถูกลบแล้ว, รอ Stripe Connect)
 - **Deployment:** Vercel (Hobby plan)
@@ -266,6 +267,31 @@ new/
 | N3 | Onboarding Flow | ✅ Done | Floating overlay ทุกหน้า, 5+1 ขั้นตอน, บังคับช่องทางติดต่อก่อนเปิดร้าน |
 | N4 | Advanced Analytics (Pro) | ✅ Done | Analytics dashboard ขั้นสูง |
 
+### IN PROGRESS (กำลังทำ)
+
+| # | Task | Status | Description |
+|---|------|--------|-------------|
+| I1 | Multi-language (i18n) | ✅ Done | รองรับ ไทย/อังกฤษ ทั้ง platform ด้วย next-intl (cookie-based, ไม่เปลี่ยน URL) — 9 steps ครบ! |
+| I2 | Onboarding: Customize Store | ⬜ Pending | เพิ่มขั้นตอน "ปรับแต่งร้านค้า" (ไม่บังคับ) ใน onboarding flow |
+
+**i18n Rollout Plan (Incremental - ทำทีละส่วน, server รันได้ตลอด):**
+
+| Step | Area | Status | Files |
+|------|------|--------|-------|
+| 1 | Infrastructure (next-intl, provider, LanguageSwitcher) | ✅ Done | `i18n/request.ts`, `next.config.ts`, `layout.tsx`, `messages/*.json`, `language-switcher.tsx`, `actions/locale.ts` |
+| 2 | Landing Page (~8 files) | ✅ Done | `components/landing/*.tsx`, `app/page.tsx` |
+| 3 | Auth Pages (~4 files) | ✅ Done | `app/(auth)/login/`, `app/(auth)/signup/` |
+| 4 | Dashboard Navigation (~4 files) | ✅ Done | `sidebar.tsx`, `header.tsx`, `notification-bell.tsx`, `store-link.tsx`, `dashboard/layout.tsx` |
+| 5a | Dashboard Overview + Analytics | ✅ Done | `dashboard/page.tsx`, `analytics/*.tsx` |
+| 5b | Products (~10 files) | ✅ Done | `products/*.tsx`, `product-form.tsx`, `product-actions.tsx`, `booking-slots-manager.tsx`, `booking-settings.tsx`, `digital-file-upload.tsx`, `product-image-upload.tsx` |
+| 5c | Orders (~4 files) | ✅ Done | `orders/page.tsx`, `orders-list.tsx`, `order-detail-modal.tsx`, `fulfillment-editor.tsx` |
+| 5d | Other Dashboard Pages (~13 files) | ✅ Done | `customers/page+list`, `reviews/page+list`, `coupons/page+list+form`, `calendar/layout+page`, `upgrade/page+client`, `my-store/page+client`, `quick-reply.tsx` |
+| 5e | Settings (~3 files, heaviest) | ✅ Done | `settings/page.tsx`, `settings-form.tsx`, `avatar-upload.tsx` |
+| 6 | Store + Checkout (~24 files) | ✅ Done | `app/u/` (11 files), `app/checkout/` (8 files), `components/shared/` (4 files) — namespaces: StoreFront, ProductDetail, Checkout, Payment, OrderSuccess, ManageBooking, ReviewSection, ProductReviews, ShareButtons, DownloadButton |
+| 7 | Server Actions + Emails (~18 files) | ✅ Done | `actions/*.ts` (13 files), `lib/email.ts` — namespaces: ServerActions, Notifications, Emails |
+| 8 | DB + Store Language Setting | ✅ Done | `016_store_language.sql`, `types/index.ts`, `settings-form.tsx`, `settings.ts`, `validations/settings.ts`, `store page.tsx` — store_language column + UI selector + cookie sync |
+| 9 | Onboarding: Customize Store Step | ✅ Done | `onboarding-checklist.tsx` — namespace: Onboarding |
+
 ### FUTURE (Roadmap หลัง MVP)
 
 | # | Task | Description |
@@ -273,13 +299,19 @@ new/
 | F1 | Stripe Connect | ให้ creator เชื่อม Stripe รับเงินโดยตรง (Stan Store model) |
 | F2 | Remove Manual PromptPay | ลบ upload slip แบบ manual หลัง Stripe Connect พร้อม |
 | F3 | LINE Messaging API | แจ้งเตือนผ่าน LINE OA (ทดแทน LINE Notify ที่ปิดบริการแล้ว) |
-| F4 | Multi-language | รองรับภาษาอังกฤษ |
 
 ---
 
 ## Recent Changes Log
 
-### Session 7 (Feb 7, 2026) - Current Session
+### Session 8 (Feb 7, 2026) - Current Session
+
+| # | Change | Files Modified |
+|---|--------|----------------|
+| 1 | **Multi-language Plan** - ร่าง plan สำหรับ i18n ทั้ง platform (Thai/English) ด้วย next-intl | `docs/PROJECT_STATUS.md` |
+| 2 | **Incremental Rollout** - เปลี่ยนจากทำทีเดียว → ทำทีละส่วน (9 steps) เพื่อให้ server รันได้ตลอด | Plan file |
+
+### Session 7 (Feb 7, 2026) - Previous Session
 
 | # | Change | Files Modified |
 |---|--------|----------------|
@@ -463,6 +495,8 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 | Email Notifications (Creator) | `lib/email.ts` (`sendNewOrderNotificationEmail`, `sendSlipUploadedNotificationEmail`) |
 | Onboarding | `components/dashboard/onboarding-checklist.tsx`, `actions/onboarding.ts` |
 | Logo | `public/logo-black.png`, `public/logo-white.png` |
+| i18n Config | `i18n/request.ts`, `messages/th.json`, `messages/en.json` |
+| Language Switcher | `components/shared/language-switcher.tsx` |
 
 ---
 
@@ -478,7 +512,7 @@ npm run dev
 ---
 
 ## Last Updated
-February 7, 2026 (Session 7)
+February 7, 2026 (Session 8)
 
 ---
 

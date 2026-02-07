@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { PlanType } from '@/types';
+import { getTranslations } from 'next-intl/server';
 
 // ============================================
 // Types
@@ -104,6 +105,7 @@ export async function getAnalyticsData(
   customEnd?: string
 ): Promise<AnalyticsData | null> {
   const supabase = await createClient();
+  const t = await getTranslations('ServerActions');
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
@@ -318,7 +320,7 @@ export async function getAnalyticsData(
     }));
 
     // Day of week stats
-    const dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์'];
+    const dayNames = t.raw('dayNames') as string[];
     const dayMap = new Map<number, { orders: number; revenue: number }>();
     for (let d = 0; d < 7; d++) {
       dayMap.set(d, { orders: 0, revenue: 0 });

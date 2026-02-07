@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { loginSchema, signupSchema, type LoginInput, type SignupInput } from '@/lib/validations/auth';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 
 export type AuthResult = {
   success: boolean;
@@ -11,6 +12,8 @@ export type AuthResult = {
 };
 
 export async function login(data: LoginInput): Promise<AuthResult> {
+  const t = await getTranslations('ServerActions');
+
   // Validate input
   const parsed = loginSchema.safeParse(data);
   if (!parsed.success) {
@@ -25,9 +28,9 @@ export async function login(data: LoginInput): Promise<AuthResult> {
   });
 
   if (error) {
-    // Map Supabase errors to Thai messages
+    // Map Supabase errors to translated messages
     if (error.message.includes('Invalid login credentials')) {
-      return { success: false, error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' };
+      return { success: false, error: t('invalidCredentials') };
     }
     return { success: false, error: error.message };
   }
@@ -37,6 +40,8 @@ export async function login(data: LoginInput): Promise<AuthResult> {
 }
 
 export async function signup(data: SignupInput): Promise<AuthResult> {
+  const t = await getTranslations('ServerActions');
+
   // Validate input
   const parsed = signupSchema.safeParse(data);
   if (!parsed.success) {
@@ -53,7 +58,7 @@ export async function signup(data: SignupInput): Promise<AuthResult> {
     .single();
 
   if (existingUser) {
-    return { success: false, error: 'Username นี้ถูกใช้งานแล้ว' };
+    return { success: false, error: t('usernameAlreadyUsed') };
   }
 
   // Create user
@@ -70,7 +75,7 @@ export async function signup(data: SignupInput): Promise<AuthResult> {
 
   if (error) {
     if (error.message.includes('already registered')) {
-      return { success: false, error: 'อีเมลนี้ถูกใช้งานแล้ว' };
+      return { success: false, error: t('emailAlreadyUsed') };
     }
     return { success: false, error: error.message };
   }

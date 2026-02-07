@@ -20,6 +20,7 @@ import {
   addReviewResponse,
   type Review 
 } from '@/actions/reviews';
+import { useTranslations } from 'next-intl';
 
 interface ReviewsListProps {
   initialReviews: Review[];
@@ -32,6 +33,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<string>('all');
   const [selectedRating, setSelectedRating] = useState<string>('all');
+  const t = useTranslations('Reviews');
 
   // Get unique products for filter
   const products = useMemo(() => {
@@ -137,8 +139,8 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">รีวิวจากลูกค้า</h2>
-          <p className="text-muted-foreground">จัดการรีวิวสินค้าของคุณ</p>
+          <h2 className="text-2xl font-bold">{t('title')}</h2>
+          <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
       </div>
 
@@ -148,7 +150,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">กรอง:</span>
+              <span className="text-sm font-medium">{t('filter')}</span>
             </div>
 
             {/* Product Filter */}
@@ -158,12 +160,12 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                 onChange={(e) => setSelectedProduct(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg text-sm bg-background"
               >
-                <option value="all">สินค้าทั้งหมด ({reviews.length} รีวิว)</option>
+                <option value="all">{t('allProducts', { count: reviews.length })}</option>
                 {products.map(product => {
                   const count = reviews.filter(r => r.product_id === product.id).length;
                   return (
                     <option key={product.id} value={product.id}>
-                      {product.title} ({count} รีวิว)
+                      {t('productReviews', { title: product.title, count })}
                     </option>
                   );
                 })}
@@ -177,12 +179,12 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                 onChange={(e) => setSelectedRating(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg text-sm bg-background"
               >
-                <option value="all">คะแนนทั้งหมด</option>
-                <option value="5">⭐ 5 ดาว</option>
-                <option value="4">⭐ 4 ดาว</option>
-                <option value="3">⭐ 3 ดาว</option>
-                <option value="2">⭐ 2 ดาว</option>
-                <option value="1">⭐ 1 ดาว</option>
+                <option value="all">{t('allRatings')}</option>
+                <option value="5">{t('nStars', { n: 5 })}</option>
+                <option value="4">{t('nStars', { n: 4 })}</option>
+                <option value="3">{t('nStars', { n: 3 })}</option>
+                <option value="2">{t('nStars', { n: 2 })}</option>
+                <option value="1">{t('nStars', { n: 1 })}</option>
               </select>
             </div>
 
@@ -197,7 +199,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                 }}
               >
                 <X className="h-4 w-4 mr-1" />
-                ล้าง
+                {t('clear')}
               </Button>
             )}
           </div>
@@ -205,7 +207,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
           {/* Active Filter Info */}
           {hasActiveFilter && (
             <div className="mt-3 pt-3 border-t flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">กำลังแสดง:</span>
+              <span className="text-muted-foreground">{t('showing')}</span>
               {selectedProduct !== 'all' && (
                 <Badge variant="secondary" className="gap-1">
                   <Package className="h-3 w-3" />
@@ -215,10 +217,10 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
               {selectedRating !== 'all' && (
                 <Badge variant="secondary" className="gap-1">
                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  {selectedRating} ดาว
+                  {t('stars', { n: selectedRating })}
                 </Badge>
               )}
-              <span className="text-muted-foreground">({filteredReviews.length} รีวิว)</span>
+              <span className="text-muted-foreground">{t('reviewsCount', { count: filteredReviews.length })}</span>
             </div>
           )}
         </CardContent>
@@ -233,7 +235,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                 <Star className="h-6 w-6 text-yellow-600 fill-yellow-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">คะแนนเฉลี่ย</p>
+                <p className="text-sm text-muted-foreground">{t('avgRating')}</p>
                 <p className="text-2xl font-bold">{averageRating}/5</p>
               </div>
             </div>
@@ -246,7 +248,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                 <MessageSquare className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">รีวิวทั้งหมด</p>
+                <p className="text-sm text-muted-foreground">{t('totalReviews')}</p>
                 <p className="text-2xl font-bold">{totalReviews}</p>
               </div>
             </div>
@@ -259,7 +261,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                 <Eye className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">เผยแพร่แล้ว</p>
+                <p className="text-sm text-muted-foreground">{t('published')}</p>
                 <p className="text-2xl font-bold">{publishedCount}</p>
               </div>
             </div>
@@ -273,12 +275,10 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
           <CardContent className="py-12 text-center">
             <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
             <h3 className="font-semibold mb-2">
-              {hasActiveFilter ? 'ไม่พบรีวิวที่ตรงกับเงื่อนไข' : 'ยังไม่มีรีวิว'}
+              {hasActiveFilter ? t('noReviewsFilter') : t('noReviewsYet')}
             </h3>
             <p className="text-muted-foreground">
-              {hasActiveFilter 
-                ? 'ลองเปลี่ยนเงื่อนไขการกรอง' 
-                : 'เมื่อลูกค้ารีวิวสินค้าจะแสดงที่นี่'}
+              {hasActiveFilter ? t('changeFilter') : t('reviewsWillAppear')}
             </p>
           </CardContent>
         </Card>
@@ -307,7 +307,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                     <div>
                       <p className="font-medium">{review.buyer_name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {review.product?.title || 'สินค้า'}
+                        {review.product?.title || t('product')}
                       </p>
                     </div>
                   </div>
@@ -320,7 +320,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                       </Badge>
                     )}
                     {!review.is_published && (
-                      <Badge variant="secondary">ซ่อน</Badge>
+                      <Badge variant="secondary">{t('hidden')}</Badge>
                     )}
                   </div>
                 </div>
@@ -341,7 +341,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                 {/* Creator Response */}
                 {review.response && (
                   <div className="bg-muted rounded-lg p-3 mb-4">
-                    <p className="text-sm font-medium mb-1">การตอบกลับของคุณ:</p>
+                    <p className="text-sm font-medium mb-1">{t('yourResponse')}</p>
                     <p className="text-sm text-muted-foreground">{review.response}</p>
                   </div>
                 )}
@@ -350,7 +350,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                 {respondingTo === review.id && (
                   <div className="flex gap-2 mb-4">
                     <Input
-                      placeholder="เขียนการตอบกลับ..."
+                      placeholder={t('writeResponse')}
                       value={responseText}
                       onChange={(e) => setResponseText(e.target.value)}
                       className="flex-1"
@@ -370,7 +370,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                         setResponseText('');
                       }}
                     >
-                      ยกเลิก
+                      {t('cancel')}
                     </Button>
                   </div>
                 )}
@@ -382,7 +382,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                     size="sm"
                     onClick={() => handleTogglePublished(review.id)}
                     disabled={loading === review.id}
-                    title={review.is_published ? 'ซ่อนรีวิว' : 'แสดงรีวิว'}
+                    title={review.is_published ? t('hideReview') : t('showReview')}
                   >
                     {review.is_published ? (
                       <Eye className="h-4 w-4 text-green-600" />
@@ -395,7 +395,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                     size="sm"
                     onClick={() => handleToggleFeatured(review.id)}
                     disabled={loading === review.id}
-                    title={review.is_featured ? 'ยกเลิก Featured' : 'ตั้งเป็น Featured'}
+                    title={review.is_featured ? t('removeFeatured') : t('setFeatured')}
                   >
                     <Sparkles className={`h-4 w-4 ${review.is_featured ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground'}`} />
                   </Button>
@@ -409,7 +409,7 @@ export function ReviewsList({ initialReviews }: ReviewsListProps) {
                       }}
                     >
                       <MessageSquare className="h-4 w-4 mr-1" />
-                      ตอบกลับ
+                      {t('reply')}
                     </Button>
                   )}
                 </div>

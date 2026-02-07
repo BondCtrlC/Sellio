@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { createCoupon, updateCoupon, type Coupon, type CouponInput } from '@/actions/coupons';
 import { X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface CouponFormProps {
   coupon?: Coupon;
@@ -15,6 +16,7 @@ interface CouponFormProps {
 export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const t = useTranslations('Coupons');
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<CouponInput>({
     defaultValues: coupon ? {
@@ -45,15 +47,11 @@ export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
 
   // Convert date to Thailand timezone (UTC+7) at start of day
   const toThailandStartOfDay = (dateStr: string) => {
-    // dateStr is "YYYY-MM-DD", we want 00:00:00 in Thailand time
-    // Thailand is UTC+7, so we need to subtract 7 hours from midnight
-    // which means the UTC time is previous day at 17:00
     return `${dateStr}T00:00:00+07:00`;
   };
 
   // Convert date to Thailand timezone (UTC+7) at end of day
   const toThailandEndOfDay = (dateStr: string) => {
-    // For expiry, we want 23:59:59 in Thailand time
     return `${dateStr}T23:59:59+07:00`;
   };
 
@@ -62,7 +60,6 @@ export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
     setError('');
 
     try {
-      // Clean up NaN values and convert dates with Thailand timezone
       const formattedData = {
         ...data,
         discount_value: Number(data.discount_value) || 0,
@@ -79,14 +76,14 @@ export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
         : await createCoupon(formattedData);
 
       if (!result.success) {
-        setError(result.error || 'เกิดข้อผิดพลาด');
+        setError(result.error || t('error'));
         return;
       }
 
       onSuccess();
       onClose();
     } catch (err) {
-      setError('เกิดข้อผิดพลาด');
+      setError(t('error'));
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +94,7 @@ export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <Card className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto mx-4">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{coupon ? 'แก้ไขคูปอง' : 'สร้างคูปองใหม่'}</CardTitle>
+          <CardTitle>{coupon ? t('editCoupon') : t('createNewCoupon')}</CardTitle>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
@@ -112,11 +109,11 @@ export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
 
             {/* Code */}
             <div className="space-y-2">
-              <Label htmlFor="code">รหัสคูปอง *</Label>
+              <Label htmlFor="code">{t('couponCode')}</Label>
               <Input
                 id="code"
-                placeholder="เช่น SAVE10"
-                {...register('code', { required: 'กรุณากรอกรหัสคูปอง' })}
+                placeholder={t('codePlaceholder')}
+                {...register('code', { required: t('codeRequired') })}
                 className="uppercase"
               />
               {errors.code && (
@@ -126,10 +123,10 @@ export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
 
             {/* Name */}
             <div className="space-y-2">
-              <Label htmlFor="name">ชื่อคูปอง</Label>
+              <Label htmlFor="name">{t('couponName')}</Label>
               <Input
                 id="name"
-                placeholder="เช่น ลด 10% สำหรับสมาชิกใหม่"
+                placeholder={t('namePlaceholder')}
                 {...register('name')}
               />
             </div>
@@ -137,26 +134,26 @@ export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
             {/* Discount Type & Value */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="discount_type">ประเภทส่วนลด</Label>
+                <Label htmlFor="discount_type">{t('discountType')}</Label>
                 <select
                   id="discount_type"
                   {...register('discount_type')}
                   className="w-full h-10 px-3 rounded-lg border bg-background"
                 >
-                  <option value="percentage">เปอร์เซ็นต์ (%)</option>
-                  <option value="fixed">ลดคงที่ (฿)</option>
+                  <option value="percentage">{t('percentage')}</option>
+                  <option value="fixed">{t('fixed')}</option>
                 </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="discount_value">
-                  มูลค่าส่วนลด {discountType === 'percentage' ? '(%)' : '(฿)'}
+                  {t('discountValue', { unit: discountType === 'percentage' ? '%' : '฿' })}
                 </Label>
                 <Input
                   id="discount_value"
                   type="number"
                   step="0.01"
                   {...register('discount_value', { 
-                    required: 'กรุณากรอกมูลค่าส่วนลด',
+                    required: t('discountValueRequired'),
                   })}
                 />
                 {errors.discount_value && (
@@ -168,22 +165,20 @@ export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
             {/* Max Discount (for percentage) */}
             {discountType === 'percentage' && (
               <div className="space-y-2">
-                <Label htmlFor="max_discount">ส่วนลดสูงสุด (฿)</Label>
+                <Label htmlFor="max_discount">{t('maxDiscountLabel')}</Label>
                 <Input
                   id="max_discount"
                   type="number"
-                  placeholder="ไม่จำกัด"
+                  placeholder={t('unlimited')}
                   {...register('max_discount')}
                 />
-                <p className="text-xs text-muted-foreground">
-                  เว้นว่างถ้าไม่ต้องการจำกัดส่วนลดสูงสุด
-                </p>
+                <p className="text-xs text-muted-foreground">{t('maxDiscountHint')}</p>
               </div>
             )}
 
             {/* Min Purchase */}
             <div className="space-y-2">
-              <Label htmlFor="min_purchase">ยอดขั้นต่ำ (฿)</Label>
+              <Label htmlFor="min_purchase">{t('minPurchaseLabel')}</Label>
               <Input
                 id="min_purchase"
                 type="number"
@@ -195,16 +190,16 @@ export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
             {/* Usage Limits */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="usage_limit">จำนวนครั้งที่ใช้ได้</Label>
+                <Label htmlFor="usage_limit">{t('usageLimit')}</Label>
                 <Input
                   id="usage_limit"
                   type="number"
-                  placeholder="ไม่จำกัด"
+                  placeholder={t('unlimited')}
                   {...register('usage_limit')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="per_user_limit">ต่อคน</Label>
+                <Label htmlFor="per_user_limit">{t('perUser')}</Label>
                 <Input
                   id="per_user_limit"
                   type="number"
@@ -216,7 +211,7 @@ export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
             {/* Validity Period */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="starts_at">เริ่มใช้ได้</Label>
+                <Label htmlFor="starts_at">{t('startsAt')}</Label>
                 <Input
                   id="starts_at"
                   type="date"
@@ -224,7 +219,7 @@ export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="expires_at">หมดอายุ</Label>
+                <Label htmlFor="expires_at">{t('expiresAt')}</Label>
                 <Input
                   id="expires_at"
                   type="date"
@@ -242,7 +237,7 @@ export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
                 className="h-4 w-4 rounded border-gray-300"
               />
               <Label htmlFor="is_active" className="font-normal">
-                เปิดใช้งานคูปอง
+                {t('activateCoupon')}
               </Label>
             </div>
 
@@ -254,14 +249,14 @@ export function CouponForm({ coupon, onClose, onSuccess }: CouponFormProps) {
                 onClick={onClose}
                 className="flex-1"
               >
-                ยกเลิก
+                {t('cancelBtn')}
               </Button>
               <Button
                 type="submit"
                 disabled={isLoading}
                 className="flex-1"
               >
-                {isLoading ? 'กำลังบันทึก...' : coupon ? 'บันทึก' : 'สร้างคูปอง'}
+                {isLoading ? t('saving') : coupon ? t('save') : t('createCoupon')}
               </Button>
             </div>
           </form>
