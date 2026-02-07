@@ -23,6 +23,7 @@ interface UpgradeClientProps {
   productCount: number;
   hasSubscription: boolean;
   planExpiresAt: string | null;
+  cancelAtPeriodEnd: boolean;
 }
 
 const PRO_FEATURES = [
@@ -42,9 +43,10 @@ const FREE_FEATURES = [
   'ปฏิทินนัดหมาย',
 ];
 
-export function UpgradeClient({ plan, productCount, hasSubscription, planExpiresAt }: UpgradeClientProps) {
+export function UpgradeClient({ plan, productCount, hasSubscription, planExpiresAt, cancelAtPeriodEnd }: UpgradeClientProps) {
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [isScheduledCancel, setIsScheduledCancel] = useState(cancelAtPeriodEnd);
   const searchParams = useSearchParams();
   const success = searchParams.get('success');
   const cancelled = searchParams.get('cancelled');
@@ -71,18 +73,28 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
     }
   };
 
-  const handleCancel = async () => {
-    if (!confirm('คุณแน่ใจหรือไม่ที่จะยกเลิก Pro? คุณจะยังใช้ได้จนถึงวันหมดอายุ')) return;
+  const handleCancel = async (immediate: boolean) => {
+    const msg = immediate
+      ? 'คุณแน่ใจหรือไม่ที่จะยกเลิก Pro ทันที?\n\nแพลน Pro จะถูกยกเลิกทันทีและเปลี่ยนเป็น Free'
+      : 'คุณแน่ใจหรือไม่ที่จะยกเลิก Pro?\n\nคุณจะยังใช้ Pro ได้จนถึงสิ้นสุดรอบบิลปัจจุบัน';
+    
+    if (!confirm(msg)) return;
     
     setCancelling(true);
     try {
       const res = await fetch('/api/stripe/cancel-subscription', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ immediate }),
       });
       const data = await res.json();
       
       if (data.success) {
-        window.location.reload();
+        if (data.immediate) {
+          window.location.reload();
+        } else {
+          setIsScheduledCancel(true);
+        }
       } else {
         alert(data.error || 'เกิดข้อผิดพลาด');
       }
@@ -149,15 +161,39 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
                 )}
               </div>
               <div className="flex flex-col gap-2 items-end">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleCancel}
-                  disabled={cancelling}
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิก Subscription'}
-                </Button>
+                {isScheduledCancel ? (
+                  <>
+                    <span className="text-sm text-amber-600 font-medium">ตั้งเวลายกเลิกแล้ว</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCancel(true)}
+                      disabled={cancelling}
+                      className="text-xs text-muted-foreground hover:text-red-600 hover:underline transition-colors"
+                    >
+                      {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิกทันที'}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleCancel(false)}
+                      disabled={cancelling}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิกเมื่อหมดรอบบิล'}
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => handleCancel(true)}
+                      disabled={cancelling}
+                      className="text-xs text-muted-foreground hover:text-red-600 hover:underline transition-colors"
+                    >
+                      ยกเลิกทันที
+                    </button>
+                  </>
+                )}
                 <Link 
                   href="/dashboard/settings?tab=billing"
                   className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"

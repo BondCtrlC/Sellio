@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { stripe } from '@/lib/stripe';
 import { UpgradeClient } from './upgrade-client';
 import type { PlanType } from '@/types';
 
@@ -22,11 +23,23 @@ async function getCreatorSubscriptionInfo() {
     .select('*', { count: 'exact', head: true })
     .eq('creator_id', creator.id);
 
+  // Check if subscription is scheduled for cancellation
+  let cancelAtPeriodEnd = false;
+  if (creator.stripe_subscription_id) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(creator.stripe_subscription_id);
+      cancelAtPeriodEnd = subscription.cancel_at_period_end === true;
+    } catch {
+      // Subscription might not exist in Stripe anymore
+    }
+  }
+
   return {
     plan: (creator.plan || 'free') as PlanType,
     productCount: count || 0,
     hasSubscription: !!creator.stripe_subscription_id,
     planExpiresAt: creator.plan_expires_at,
+    cancelAtPeriodEnd,
   };
 }
 

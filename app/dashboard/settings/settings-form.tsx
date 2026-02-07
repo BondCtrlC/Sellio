@@ -693,7 +693,17 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
                   </button>
                 </>
               ) : isPro && cancelStatus === 'scheduled' ? (
-                <span className="text-sm text-amber-600 font-medium">ตั้งเวลายกเลิกแล้ว</span>
+                <>
+                  <span className="text-sm text-amber-600 font-medium">ตั้งเวลายกเลิกแล้ว</span>
+                  <button
+                    type="button"
+                    onClick={() => handleCancel(true)}
+                    disabled={cancelling}
+                    className="text-xs text-muted-foreground hover:text-red-600 hover:underline transition-colors"
+                  >
+                    {cancelling ? 'กำลังยกเลิก...' : 'ยกเลิกทันที'}
+                  </button>
+                </>
               ) : isPro && cancelStatus === 'cancelled' ? (
                 <span className="text-sm text-green-600 font-medium">ยกเลิกแล้ว</span>
               ) : (
