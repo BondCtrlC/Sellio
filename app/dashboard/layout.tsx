@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Sidebar, NotificationBell, StoreLink } from '@/components/dashboard';
+import { OnboardingOverlay } from '@/components/dashboard/onboarding-checklist';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui';
 
@@ -41,6 +42,9 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* Onboarding overlay - shows on all dashboard pages */}
+      <OnboardingOverlay />
     </div>
   );
 }

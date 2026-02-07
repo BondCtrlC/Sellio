@@ -47,6 +47,22 @@ export async function updateSettings(data: SettingsInput): Promise<SettingsResul
     }
   }
 
+  // Enforce contact info before publishing
+  if (parsed.data.is_published) {
+    const hasContact = !!(
+      parsed.data.contact_phone ||
+      parsed.data.contact_line ||
+      parsed.data.contact_ig ||
+      parsed.data.contact_email
+    );
+    if (!hasContact) {
+      return { 
+        success: false, 
+        error: 'กรุณาเพิ่มช่องทางติดต่ออย่างน้อย 1 ช่องทาง (เบอร์โทร, Line, IG หรืออีเมล) ก่อนเปิดร้าน เพื่อให้ลูกค้าสามารถติดต่อคุณได้' 
+      };
+    }
+  }
+
   // Update creator profile
   const { error } = await supabase
     .from('creators')

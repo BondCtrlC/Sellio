@@ -424,6 +424,9 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
                   </p>
                 </div>
               </label>
+              <p className="text-xs text-muted-foreground mt-1">
+                * ต้องเพิ่มช่องทางติดต่ออย่างน้อย 1 ช่องทาง (เบอร์โทร, Line, IG หรืออีเมล) ก่อนเปิดร้าน
+              </p>
             </div>
 
             {/* Store Link / Username */}
