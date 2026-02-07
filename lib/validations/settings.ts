@@ -77,10 +77,10 @@ export const settingsSchema = z.object({
     .max(500, 'Keywords ต้องไม่เกิน 500 ตัวอักษร')
     .optional()
     .or(z.literal('')),
-  // LINE Notify
-  line_notify_token: z
+  // Email Notifications
+  notification_email: z
     .string()
-    .max(200, 'Token ต้องไม่เกิน 200 ตัวอักษร')
+    .email('รูปแบบอีเมลไม่ถูกต้อง')
     .optional()
     .or(z.literal('')),
 });

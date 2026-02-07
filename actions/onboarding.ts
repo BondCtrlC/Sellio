@@ -8,7 +8,7 @@ export interface OnboardingStatus {
   hasPayment: boolean;
   hasProduct: boolean;
   isPublished: boolean;
-  hasLineNotify: boolean;
+  hasNotificationEmail: boolean;
 }
 
 export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
@@ -19,7 +19,7 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
 
   const { data: creator } = await supabase
     .from('creators')
-    .select('id, display_name, avatar_url, promptpay_id, bank_name, bank_account_number, bank_account_name, contact_phone, contact_line, contact_ig, contact_email, is_published, line_notify_token')
+    .select('id, display_name, avatar_url, promptpay_id, bank_name, bank_account_number, bank_account_name, contact_phone, contact_line, contact_ig, contact_email, is_published, notification_email')
     .eq('user_id', user.id)
     .single();
 
@@ -40,6 +40,6 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
     hasPayment,
     hasProduct: (productCount || 0) > 0,
     isPublished: creator.is_published,
-    hasLineNotify: !!creator.line_notify_token,
+    hasNotificationEmail: !!creator.notification_email,
   };
 }

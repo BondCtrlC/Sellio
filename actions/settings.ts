@@ -84,8 +84,8 @@ export async function updateSettings(data: SettingsInput): Promise<SettingsResul
       seo_title: parsed.data.seo_title || null,
       seo_description: parsed.data.seo_description || null,
       seo_keywords: parsed.data.seo_keywords || null,
-      // LINE Notify
-      line_notify_token: parsed.data.line_notify_token || null,
+      // Email Notifications
+      notification_email: parsed.data.notification_email || null,
     })
     .eq('user_id', user.id);
 

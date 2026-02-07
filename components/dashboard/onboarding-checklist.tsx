@@ -13,7 +13,7 @@ import {
   ChevronUp,
   Sparkles,
   Phone,
-  MessageCircle,
+  Mail,
 } from 'lucide-react';
 import { getOnboardingStatus, type OnboardingStatus } from '@/actions/onboarding';
 
@@ -40,7 +40,7 @@ export function OnboardingOverlay() {
 
   // Load status on mount and periodically
   useEffect(() => {
-    const skipped = localStorage.getItem('sellio_line_notify_skipped');
+    const skipped = localStorage.getItem('sellio_notification_skipped');
     if (skipped === 'true') setLineSkipped(true);
 
     loadStatus();
@@ -66,7 +66,7 @@ export function OnboardingOverlay() {
 
   const handleSkipLine = () => {
     setLineSkipped(true);
-    localStorage.setItem('sellio_line_notify_skipped', 'true');
+    localStorage.setItem('sellio_notification_skipped', 'true');
   };
 
   // Navigate to a step - use router.push for reliable navigation
@@ -128,11 +128,11 @@ export function OnboardingOverlay() {
       required: true,
     },
     {
-      id: 'line_notify',
-      title: 'ตั้งค่าแจ้งเตือนผ่าน LINE',
-      description: 'รับแจ้งเตือนเมื่อมีออเดอร์ใหม่',
-      icon: MessageCircle,
-      completed: status.hasLineNotify,
+      id: 'notification_email',
+      title: 'ตั้งค่าอีเมลแจ้งเตือน',
+      description: 'รับแจ้งเตือนทางอีเมลเมื่อมีออเดอร์ใหม่',
+      icon: Mail,
+      completed: status.hasNotificationEmail,
       href: '/dashboard/settings?tab=notifications',
       color: 'bg-emerald-100 text-emerald-700',
       required: false,
@@ -229,7 +229,7 @@ export function OnboardingOverlay() {
               );
             })}
 
-            {/* Optional: LINE Notify */}
+            {/* Optional: Notification Email */}
             {optionalStep && !optionalStep.skipped && (
               <>
                 <div className="border-t my-2" />
@@ -240,7 +240,7 @@ export function OnboardingOverlay() {
                     {optionalStep.completed ? (
                       <Check className="h-4 w-4 text-green-600" />
                     ) : (
-                      <MessageCircle className="h-4 w-4" />
+                      <Mail className="h-4 w-4" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">

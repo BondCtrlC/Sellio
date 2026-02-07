@@ -8,11 +8,11 @@ import {
   sendOrderConfirmationEmail, 
   sendPaymentRejectionEmail,
   sendNewOrderNotificationEmail,
+  sendSlipUploadedNotificationEmail,
   sendRefundNotificationEmail,
   sendBookingCancellationEmail,
   sendBookingRescheduleEmail
 } from '@/lib/email';
-import { notifyNewOrder, notifySlipUploaded, notifyPaymentConfirmed } from '@/lib/line-notify';
 
 // ============================================
 // Types
@@ -296,30 +296,30 @@ export async function createOrder(
     }
   }
 
-  // Send LINE Notify to creator (if token is set)
+  // Send email notification to creator (if notification_email is set)
   try {
     const { data: creatorData } = await supabase
       .from('creators')
-      .select('line_notify_token')
+      .select('notification_email')
       .eq('id', creatorId)
       .single();
 
-    if (creatorData?.line_notify_token) {
+    if (creatorData?.notification_email) {
       const { data: productData } = await supabase
         .from('products')
         .select('title')
         .eq('id', productId)
         .single();
 
-      notifyNewOrder(creatorData.line_notify_token, {
+      sendNewOrderNotificationEmail(creatorData.notification_email, {
         buyerName: parsed.data.buyer_name,
         productTitle: productData?.title || 'สินค้า',
-        total: finalTotal,
+        amount: finalTotal,
         orderId: order.id,
-      }).catch(err => console.error('LINE Notify error:', err));
+      }).catch(err => console.error('Order notification email error:', err));
     }
   } catch (e) {
-    console.error('LINE Notify lookup error:', e);
+    console.error('Notification email lookup error:', e);
   }
 
   return { success: true, order_id: order.id };
@@ -489,14 +489,14 @@ export async function uploadSlip(
     .update({ status: 'pending_confirmation' })
     .eq('id', orderId);
 
-  // Send LINE Notify to creator about slip upload
+  // Send email notification to creator about slip upload
   try {
     const { data: orderInfo } = await supabase
       .from('orders')
       .select(`
         id, total, buyer_name, creator_id,
         product:products(title),
-        creator:creators(line_notify_token)
+        creator:creators(notification_email)
       `)
       .eq('id', orderId)
       .single();
@@ -505,17 +505,17 @@ export async function uploadSlip(
       const creator = Array.isArray(orderInfo.creator) ? orderInfo.creator[0] : orderInfo.creator;
       const product = Array.isArray(orderInfo.product) ? orderInfo.product[0] : orderInfo.product;
       
-      if (creator?.line_notify_token) {
-        notifySlipUploaded(creator.line_notify_token, {
+      if (creator?.notification_email) {
+        sendSlipUploadedNotificationEmail(creator.notification_email, {
           buyerName: orderInfo.buyer_name,
           productTitle: product?.title || 'สินค้า',
-          total: Number(orderInfo.total),
+          amount: Number(orderInfo.total),
           orderId: orderInfo.id,
-        }).catch(err => console.error('LINE Notify slip error:', err));
+        }).catch(err => console.error('Slip notification email error:', err));
       }
     }
   } catch (e) {
-    console.error('LINE Notify slip lookup error:', e);
+    console.error('Slip notification email lookup error:', e);
   }
 
   revalidatePath(`/checkout/${orderId}`);
@@ -615,7 +615,7 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
   // Get creator with contact info
   const { data: creator } = await supabase
     .from('creators')
-    .select('id, display_name, contact_line, contact_ig, line_notify_token')
+    .select('id, display_name, contact_line, contact_ig')
     .eq('user_id', user.id)
     .single();
 
@@ -777,16 +777,6 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
     console.error('confirmOrder - email failed:', emailError);
   }
 
-  // Send LINE Notify about confirmation
-  if (creator.line_notify_token && product) {
-    notifyPaymentConfirmed(creator.line_notify_token, {
-      buyerName: order.buyer_name,
-      productTitle: product.title,
-      total: Number(order.total),
-      orderId: order.id,
-    }).catch(err => console.error('LINE Notify confirm error:', err));
-  }
-
   revalidatePath('/dashboard/orders');
   return { success: true };
 }
@@ -809,7 +799,7 @@ export async function rejectPayment(
   // Get creator with contact info
   const { data: creator } = await supabase
     .from('creators')
-    .select('id, display_name, contact_line, contact_ig, line_notify_token')
+    .select('id, display_name, contact_line, contact_ig')
     .eq('user_id', user.id)
     .single();
 
@@ -951,7 +941,7 @@ export async function refundOrder(
   // Get creator with contact info
   const { data: creator } = await supabase
     .from('creators')
-    .select('id, display_name, contact_line, contact_ig, line_notify_token')
+    .select('id, display_name, contact_line, contact_ig')
     .eq('user_id', user.id)
     .single();
 
