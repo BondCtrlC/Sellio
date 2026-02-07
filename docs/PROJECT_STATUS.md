@@ -6,7 +6,8 @@
 **URL:** sellio.me  
 **Pricing:** Free + Pro (99 THB/เดือน)  
 **Deployment:** Vercel  
-**Status:** MVP Ready (MUST + SHOULD + NICE TO HAVE เสร็จหมดแล้ว, เหลือ M2 Resend Domain)
+**Status:** MVP Ready (MUST + SHOULD + NICE TO HAVE เสร็จหมดแล้ว, เหลือ M2 Resend Domain)  
+**Last Updated:** February 7, 2026 (Session 7)
 
 ---
 
@@ -121,8 +122,9 @@ new/
 ### 9. Settings Page (Tabbed UI)
 - **Tab โปรไฟล์** - รูปโปรไฟล์, ชื่อ, Bio, ช่องทางติดต่อ (โทร, Line, IG, Email)
 - **Tab การรับเงิน** - PromptPay (QR Code) + บัญชีธนาคาร (โอนธนาคาร)
-- **Tab ร้านค้า** - เปิด/ปิดร้าน + ลิงก์ร้านค้าพร้อมปุ่มคัดลอก + เปลี่ยน URL slug
+- **Tab ร้านค้า** - เปิด/ปิดร้าน + ลิงก์ร้านค้าพร้อมปุ่มคัดลอก + เปลี่ยน URL slug (ต้องมีช่องทางติดต่อก่อนเปิดร้าน)
 - **Tab SEO** - meta title, description, keywords + Google Preview
+- **Tab แจ้งเตือน** - ตั้งค่าอีเมลรับแจ้งเตือน (คำสั่งซื้อใหม่, อัพโหลดสลิป, ยกเลิก/เปลี่ยนนัด)
 - **Tab การเรียกเก็บเงิน** - แพลนปัจจุบัน, ยกเลิก subscription (ทันที/หมดรอบบิล), ประวัติ invoice
 
 ### 10. Payment System
@@ -151,12 +153,22 @@ new/
 - Media delete button on click
 - Memoized - ป้องกัน video reload เมื่อเปลี่ยน slot
 
-### 14. Email Notifications
-- Order confirmation email
-- Payment confirmation email
-- Booking reminder email (24 ชม. ก่อนนัด)
-- CTA Button - "คลิกเพื่อรับสินค้า/บริการ" link ไปหน้า success
-- Booking: ปุ่ม "ดูรายละเอียดนัดหมาย" + "เปลี่ยนเวลานัด/ยกเลิกนัด"
+### 14. Email Notifications (Resend)
+- **ส่งถึงลูกค้า (Buyer):**
+  - Order confirmation email
+  - Payment confirmation email
+  - Payment rejection email
+  - Refund notification email (พร้อมสลิปคืนเงิน)
+  - Booking reminder email (24 ชม. ก่อนนัด)
+  - Booking cancellation / reschedule email
+  - CTA Button - "คลิกเพื่อรับสินค้า/บริการ" link ไปหน้า success
+  - Booking: ปุ่ม "ดูรายละเอียดนัดหมาย" + "เปลี่ยนเวลานัด/ยกเลิกนัด"
+- **ส่งถึง Creator (Notification Email):**
+  - แจ้งเตือนคำสั่งซื้อใหม่ (`sendNewOrderNotificationEmail`)
+  - แจ้งเตือนลูกค้าอัพโหลดสลิป (`sendSlipUploadedNotificationEmail`)
+  - Booking cancellation / reschedule notification
+  - Creator ตั้งค่าอีเมลรับแจ้งเตือนได้ในหน้าตั้งค่า > แจ้งเตือน
+- **หมายเหตุ:** เดิมใช้ LINE Notify แต่ LINE Notify ปิดบริการ 31 มี.ค. 2025 จึงเปลี่ยนเป็น Email ผ่าน Resend
 
 ### 15. Store Link in Header
 - Always visible `/u/username` link
@@ -210,6 +222,15 @@ new/
 - PRO badge หลังชื่อสำหรับ Pro users
 - Upgrade CTA สำหรับ Free users / จัดการ Subscription สำหรับ Pro users
 
+### 23. Onboarding Flow
+- **Floating overlay** มุมขวาล่าง แสดงทุกหน้า dashboard (จนกว่าจะทำครบ)
+- **ขั้นตอนบังคับ (5 ขั้น):** ตั้งค่าโปรไฟล์, เพิ่มช่องทางติดต่อ, ตั้งค่าการรับเงิน, สร้างสินค้าแรก, เปิดร้านค้า
+- **ขั้นตอนไม่บังคับ (1 ขั้น):** ตั้งค่าอีเมลแจ้งเตือน (ข้ามได้)
+- Progress bar แสดงความคืบหน้า
+- ยุบ/ขยายได้, auto-refresh ทุก 15 วินาที + เมื่อเปลี่ยนหน้า
+- คลิกขั้นตอนจะนำไปหน้าที่เกี่ยวข้อง (ใช้ `router.push` + sync tab)
+- **บังคับช่องทางติดต่อก่อนเปิดร้าน** (server-side enforcement)
+
 ---
 
 ## Pre-Launch TODO List 📋
@@ -240,9 +261,9 @@ new/
 
 | # | Task | Status | Description |
 |---|------|--------|-------------|
-| N1 | LINE Notify Integration | ✅ Done | แจ้งเตือน creator ผ่าน LINE เมื่อมีออเดอร์ |
+| N1 | Email Notifications (Creator) | ✅ Done | แจ้งเตือน creator ทางอีเมลเมื่อมีออเดอร์/อัพสลิป (เดิมเป็น LINE Notify แต่ปิดบริการ 31 มี.ค. 2025) |
 | N2 | Pro Badge on Store | ✅ Done | แสดง badge บนหน้าร้านว่าเป็น Pro |
-| N3 | Onboarding Flow | ✅ Done | Flow แนะนำสำหรับ creator ใหม่ |
+| N3 | Onboarding Flow | ✅ Done | Floating overlay ทุกหน้า, 5+1 ขั้นตอน, บังคับช่องทางติดต่อก่อนเปิดร้าน |
 | N4 | Advanced Analytics (Pro) | ✅ Done | Analytics dashboard ขั้นสูง |
 
 ### FUTURE (Roadmap หลัง MVP)
@@ -251,23 +272,35 @@ new/
 |---|------|-------------|
 | F1 | Stripe Connect | ให้ creator เชื่อม Stripe รับเงินโดยตรง (Stan Store model) |
 | F2 | Remove Manual PromptPay | ลบ upload slip แบบ manual หลัง Stripe Connect พร้อม |
-| F3 | LINE Messaging API | ส่งข้อความหาลูกค้าผ่าน LINE OA |
+| F3 | LINE Messaging API | แจ้งเตือนผ่าน LINE OA (ทดแทน LINE Notify ที่ปิดบริการแล้ว) |
 | F4 | Multi-language | รองรับภาษาอังกฤษ |
 
 ---
 
 ## Recent Changes Log
 
-### Session 6 (Feb 7, 2026) - Current Session
+### Session 7 (Feb 7, 2026) - Current Session
+
+| # | Change | Files Modified |
+|---|--------|----------------|
+| 1 | **Onboarding Overlay** - ย้ายจาก dashboard page เป็น floating overlay มุมขวาล่างทุกหน้า | `onboarding-checklist.tsx`, `dashboard/layout.tsx`, `dashboard/page.tsx` |
+| 2 | **Onboarding: เพิ่มขั้นตอน** - เพิ่ม "ช่องทางติดต่อ" (บังคับ) + "อีเมลแจ้งเตือน" (ไม่บังคับ/ข้ามได้) | `onboarding-checklist.tsx`, `actions/onboarding.ts` |
+| 3 | **บังคับช่องทางติดต่อก่อนเปิดร้าน** - Server-side enforcement + UI hint | `actions/settings.ts`, `settings-form.tsx` |
+| 4 | **Fix: Tab navigation** - Settings form sync activeTab กับ URL ?tab= params (แก้ปุ่ม onboarding ไม่เปลี่ยน tab) | `settings-form.tsx`, `onboarding-checklist.tsx` |
+| 5 | **Replace LINE Notify → Email (Resend)** - LINE Notify ปิดบริการ 31 มี.ค. 2025, เปลี่ยนเป็นส่งอีเมลแจ้งเตือนผ่าน Resend | `actions/orders.ts`, `lib/email.ts`, `settings-form.tsx`, `types/index.ts`, `validations/settings.ts`, `actions/settings.ts`, `actions/onboarding.ts`, `015_notification_email.sql` |
+| 6 | **ลบ LINE Notify** - ลบ `lib/line-notify.ts`, เปลี่ยน DB column `line_notify_token` → `notification_email` | `lib/line-notify.ts` (deleted), `015_notification_email.sql` |
+| 7 | **Email Template ใหม่** - `sendSlipUploadedNotificationEmail` แจ้ง creator เมื่อลูกค้าอัพสลิป | `lib/email.ts` |
+
+### Session 6 (Feb 7, 2026) - Previous Session
 
 | # | Change | Files Modified |
 |---|--------|----------------|
 | 1 | **SHOULD Fixes** - Fix 6 issues: server-side export check, calendar SEO, product limit on new page, pricing text, broken links, footer placeholders | `actions/customers.ts`, `calendar/layout.tsx`, `products/new/page.tsx`, `pricing.tsx`, `footer.tsx` |
-| 2 | **N1: LINE Notify** - แจ้งเตือน creator ผ่าน LINE เมื่อมี: สร้างออเดอร์, อัพโหลดสลิป, ยืนยันชำระ | `lib/line-notify.ts`, `actions/orders.ts`, `settings-form.tsx`, `validations/settings.ts`, `actions/settings.ts`, `014_line_notify.sql` |
+| 2 | **N1: LINE Notify** - แจ้งเตือน creator ผ่าน LINE (ต่อมาเปลี่ยนเป็น Email ใน Session 7) | `lib/line-notify.ts`, `actions/orders.ts`, `settings-form.tsx`, `validations/settings.ts`, `actions/settings.ts`, `014_line_notify.sql` |
 | 3 | **N2: Pro Badge on Store** - แสดง verified badge (✓) ข้างชื่อ creator ที่เป็น Pro ทุก layout | `store-header.tsx` |
 | 4 | **N3: Onboarding Flow** - Checklist progress bar สำหรับ creator ใหม่ (โปรไฟล์/การรับเงิน/สินค้า/เปิดร้าน) | `onboarding-checklist.tsx`, `dashboard/page.tsx` |
 | 5 | **N4: Advanced Analytics (Pro)** - การเติบโต, ช่วงเวลาขายดี, วันที่ขายดี, ข้อมูลลูกค้า + Pro gate | `actions/analytics.ts`, `analytics-charts.tsx`, `analytics/page.tsx` |
-| 6 | **Settings Notifications Tab** - เพิ่ม tab แจ้งเตือนในตั้งค่า (LINE Notify setup guide) | `settings-form.tsx` |
+| 6 | **Settings Notifications Tab** - เพิ่ม tab แจ้งเตือนในตั้งค่า | `settings-form.tsx` |
 
 ### Session 5 (Feb 7, 2026) - Previous Session
 
@@ -336,14 +369,14 @@ Run in order via Supabase SQL Editor:
 1. `001_initial.sql` - Base tables
 2. `002` through `012` - Various features
 3. `013_plan_subscription.sql` - Plan & subscription fields
+4. `014_line_notify.sql` - LINE Notify token field (ถูกแทนที่ด้วย 015)
+5. `015_notification_email.sql` - Replace LINE Notify → Email Notifications
 
-**Latest migration (013):**
+**Latest migration (015):**
 ```sql
-ALTER TABLE public.creators
-  ADD COLUMN IF NOT EXISTS plan VARCHAR(20) DEFAULT 'free' NOT NULL,
-  ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT,
-  ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT,
-  ADD COLUMN IF NOT EXISTS plan_expires_at TIMESTAMPTZ;
+-- Replace LINE Notify (discontinued) with Email Notifications
+ALTER TABLE public.creators DROP COLUMN IF EXISTS line_notify_token;
+ALTER TABLE public.creators ADD COLUMN IF NOT EXISTS notification_email TEXT;
 ```
 
 ---
@@ -427,8 +460,8 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 | Billing/Subscription | `settings-form.tsx` (BillingTab), `api/stripe/cancel-subscription/route.ts` |
 | Upgrade Page | `app/dashboard/upgrade/page.tsx`, `upgrade-client.tsx` |
 | Payment Page | `app/checkout/[orderId]/payment-page.tsx` |
-| LINE Notify | `lib/line-notify.ts` |
-| Onboarding | `components/dashboard/onboarding-checklist.tsx` |
+| Email Notifications (Creator) | `lib/email.ts` (`sendNewOrderNotificationEmail`, `sendSlipUploadedNotificationEmail`) |
+| Onboarding | `components/dashboard/onboarding-checklist.tsx`, `actions/onboarding.ts` |
 | Logo | `public/logo-black.png`, `public/logo-white.png` |
 
 ---
@@ -445,7 +478,7 @@ npm run dev
 ---
 
 ## Last Updated
-February 7, 2026
+February 7, 2026 (Session 7)
 
 ---
 
