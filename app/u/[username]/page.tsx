@@ -229,11 +229,6 @@ export default async function StorePage({ params }: PageProps) {
 
   return (
     <StoreWrapper design={creator.store_design}>
-      {/* Language Switcher */}
-      <div className="flex justify-end max-w-2xl mx-auto px-4 pt-3">
-        <LanguageSwitcher />
-      </div>
-
       {/* Store Header */}
       <StoreHeader creator={creator} />
 
@@ -281,6 +276,10 @@ export default async function StorePage({ params }: PageProps) {
           </a>
         </footer>
       )}
+      {/* Language Switcher - fixed bottom overlay */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <LanguageSwitcher />
+      </div>
     </StoreWrapper>
   );
 }
