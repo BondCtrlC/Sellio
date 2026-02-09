@@ -276,10 +276,11 @@ export default async function StorePage({ params }: PageProps) {
           </a>
         </footer>
       )}
-      {/* Language Switcher - fixed bottom overlay */}
-      <div className="fixed bottom-4 right-4 z-50">
+    </StoreWrapper>
+
+      {/* Language Switcher - fixed bottom overlay (outside StoreWrapper to ensure fixed works on mobile) */}
+      <div className="fixed bottom-4 right-4 z-[9999]">
         <LanguageSwitcher />
       </div>
-    </StoreWrapper>
   );
 }
