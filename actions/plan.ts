@@ -65,24 +65,32 @@ export async function getCreatorInvoices(): Promise<InvoiceItem[]> {
     .eq('user_id', user.id)
     .single();
 
-  if (!creator?.stripe_customer_id) return [];
+  if (!creator?.stripe_customer_id) {
+    console.log('No stripe_customer_id found for invoices');
+    return [];
+  }
 
   try {
+    console.log('Fetching invoices for customer:', creator.stripe_customer_id);
     const invoices = await stripe.invoices.list({
       customer: creator.stripe_customer_id,
       limit: 24,
     });
 
-    return invoices.data.map((inv: any) => ({
-      id: inv.id,
-      date: new Date((inv.created || 0) * 1000).toISOString(),
-      amount: formatStripeAmountToDisplay(inv.amount_paid || inv.total || 0, inv.currency || 'thb'),
-      currency: inv.currency || 'thb',
-      status: inv.status || 'unknown',
-      invoice_pdf: inv.invoice_pdf || null,
-    }));
+    console.log('Found', invoices.data.length, 'invoices');
+
+    return invoices.data
+      .filter((inv: any) => inv.status !== 'draft') // Skip draft invoices
+      .map((inv: any) => ({
+        id: inv.id,
+        date: new Date((inv.created || 0) * 1000).toISOString(),
+        amount: formatStripeAmountToDisplay(inv.amount_paid || inv.total || 0, inv.currency || 'thb'),
+        currency: inv.currency || 'thb',
+        status: inv.status || 'unknown',
+        invoice_pdf: inv.invoice_pdf || null,
+      }));
   } catch (error) {
-    console.error('Failed to fetch invoices:', error);
+    console.error('Failed to fetch invoices for customer', creator.stripe_customer_id, ':', error);
     return [];
   }
 }

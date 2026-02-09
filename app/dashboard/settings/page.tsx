@@ -9,6 +9,9 @@ import { stripe } from '@/lib/stripe';
 import { getTranslations } from 'next-intl/server';
 import type { PlanType } from '@/types';
 
+// Force dynamic rendering to prevent stale Stripe data
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('Settings');
   return { title: t('metaTitle') };

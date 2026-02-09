@@ -6,6 +6,9 @@ import { UpgradeClient } from './upgrade-client';
 import { getTranslations } from 'next-intl/server';
 import type { PlanType } from '@/types';
 
+// Force dynamic rendering to prevent stale Stripe data
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('Upgrade');
   return { title: t('metaTitle') };

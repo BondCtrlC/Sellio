@@ -284,6 +284,23 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   const supabase = createAdminClient();
 
+  // Only process update if subscription matches the current one in DB
+  // (prevents stale webhook from old subscription overwriting new subscription data)
+  const { data: creator } = await supabase
+    .from('creators')
+    .select('stripe_subscription_id')
+    .eq('id', creatorId)
+    .single();
+
+  if (creator?.stripe_subscription_id && creator.stripe_subscription_id !== subscription.id) {
+    console.log(
+      'Skipping update — subscription', subscription.id,
+      'does not match current subscription', creator.stripe_subscription_id,
+      'for creator:', creatorId
+    );
+    return;
+  }
+
   // Check if subscription is active or past_due
   const isActive = ['active', 'trialing'].includes(sub.status);
   const periodEnd = sub.current_period_end as number;
@@ -314,6 +331,24 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   }
 
   const supabase = createAdminClient();
+
+  // IMPORTANT: Only downgrade if the deleted subscription matches the current one in DB.
+  // This prevents a race condition where cancelling and re-subscribing quickly causes
+  // the old subscription's delete webhook to overwrite the new subscription.
+  const { data: creator } = await supabase
+    .from('creators')
+    .select('stripe_subscription_id')
+    .eq('id', creatorId)
+    .single();
+
+  if (creator?.stripe_subscription_id && creator.stripe_subscription_id !== subscription.id) {
+    console.log(
+      'Skipping downgrade — deleted subscription', subscription.id,
+      'does not match current subscription', creator.stripe_subscription_id,
+      'for creator:', creatorId
+    );
+    return;
+  }
 
   const { error } = await supabase
     .from('creators')
