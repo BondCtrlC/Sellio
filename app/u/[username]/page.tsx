@@ -209,11 +209,16 @@ export default async function StorePage({ params }: PageProps) {
   const cookieStore = await cookies();
   const currentLocale = cookieStore.get('locale')?.value;
   if (!currentLocale && creator.store_language) {
-    cookieStore.set('locale', creator.store_language, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: 'lax',
-    });
+    try {
+      cookieStore.set('locale', creator.store_language, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 365,
+        sameSite: 'lax',
+      });
+    } catch {
+      // cookies().set() may throw in Server Components in some Next.js versions
+      // The language switcher handles this client-side instead
+    }
   }
 
   const t = await getTranslations('StoreFront');
