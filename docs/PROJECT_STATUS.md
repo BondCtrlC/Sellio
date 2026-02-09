@@ -6,8 +6,8 @@
 **URL:** sellio.me  
 **Pricing:** Free + Pro (99 THB/เดือน)  
 **Deployment:** Vercel  
-**Status:** MVP Ready (MUST + SHOULD + NICE TO HAVE เสร็จหมดแล้ว, เหลือ M2 Resend Domain) | ✅ i18n Complete + Polished  
-**Last Updated:** February 7, 2026 (Session 9)
+**Status:** MVP Ready (MUST + SHOULD + NICE TO HAVE เสร็จหมดแล้ว, เหลือ M2 Resend Domain) | ✅ i18n Complete + Polished | ✅ Yearly Subscription  
+**Last Updated:** February 8, 2026 (Session 10)
 
 ---
 
@@ -226,7 +226,7 @@ new/
 ### 23. Onboarding Flow
 - **Floating overlay** มุมขวาล่าง แสดงทุกหน้า dashboard (จนกว่าจะทำครบ)
 - **ขั้นตอนบังคับ (5 ขั้น):** ตั้งค่าโปรไฟล์, เพิ่มช่องทางติดต่อ, ตั้งค่าการรับเงิน, สร้างสินค้าแรก, เปิดร้านค้า
-- **ขั้นตอนไม่บังคับ (1 ขั้น):** ตั้งค่าอีเมลแจ้งเตือน (ข้ามได้)
+- **ขั้นตอนไม่บังคับ (2 ขั้น):** ปรับแต่งร้านค้า (ข้ามได้), ตั้งค่าอีเมลแจ้งเตือน (ข้ามได้)
 - Progress bar แสดงความคืบหน้า
 - ยุบ/ขยายได้, auto-refresh ทุก 15 วินาที + เมื่อเปลี่ยนหน้า
 - คลิกขั้นตอนจะนำไปหน้าที่เกี่ยวข้อง (ใช้ `router.push` + sync tab)
@@ -264,7 +264,7 @@ new/
 |---|------|--------|-------------|
 | N1 | Email Notifications (Creator) | ✅ Done | แจ้งเตือน creator ทางอีเมลเมื่อมีออเดอร์/อัพสลิป (เดิมเป็น LINE Notify แต่ปิดบริการ 31 มี.ค. 2025) |
 | N2 | Pro Badge on Store | ✅ Done | แสดง badge บนหน้าร้านว่าเป็น Pro |
-| N3 | Onboarding Flow | ✅ Done | Floating overlay ทุกหน้า, 5+1 ขั้นตอน, บังคับช่องทางติดต่อก่อนเปิดร้าน |
+| N3 | Onboarding Flow | ✅ Done | Floating overlay ทุกหน้า, 5+2 ขั้นตอน, บังคับช่องทางติดต่อก่อนเปิดร้าน |
 | N4 | Advanced Analytics (Pro) | ✅ Done | Analytics dashboard ขั้นสูง |
 
 ### IN PROGRESS (กำลังทำ)
@@ -272,7 +272,7 @@ new/
 | # | Task | Status | Description |
 |---|------|--------|-------------|
 | I1 | Multi-language (i18n) | ✅ Done | รองรับ ไทย/อังกฤษ ทั้ง platform ด้วย next-intl (cookie-based, ไม่เปลี่ยน URL) — 9 steps + polish ครบ! |
-| I2 | Onboarding: Customize Store | ⬜ Pending | เพิ่มขั้นตอน "ปรับแต่งร้านค้า" (ไม่บังคับ) ใน onboarding flow |
+| I2 | Onboarding: Customize Store | ✅ Done | เพิ่มขั้นตอน "ปรับแต่งร้านค้า" (ไม่บังคับ) ใน onboarding flow |
 | I3 | i18n Polish (Session 9) | ✅ Done | แปลภาษาที่เหลือ (~100 keys), แก้ navbar, เพิ่มปุ่มเปลี่ยนภาษาหน้าร้าน, แก้ auth bug |
 
 **i18n Rollout Plan (Incremental - ทำทีละส่วน, server รันได้ตลอด):**
@@ -309,7 +309,14 @@ new/
 
 ## Recent Changes Log
 
-### Session 9 (Feb 7, 2026) - Current Session
+### Session 10 (Feb 8, 2026) - Current Session
+
+| # | Change | Files Modified |
+|---|--------|----------------|
+| 1 | **I2: Onboarding Customize Store** - เพิ่มขั้นตอน "ปรับแต่งร้านค้า" (ไม่บังคับ, ข้ามได้) ใน onboarding flow — เช็คจาก store_items, store_sections, store_design | `actions/onboarding.ts`, `onboarding-checklist.tsx`, `messages/*.json` |
+| 2 | **Yearly Subscription** - เพิ่ม toggle Monthly/Yearly บน pricing (landing) + upgrade page, API รองรับ yearly 899 บาท/ปี (ลด 25%) | `pricing.tsx`, `upgrade-client.tsx`, `create-subscription/route.ts`, `messages/*.json` |
+
+### Session 9 (Feb 7, 2026) - Previous Session
 
 | # | Change | Files Modified |
 |---|--------|----------------|
@@ -435,8 +442,8 @@ CHECK (store_language IN ('th', 'en'));
 
 ## Pricing Model
 
-| Feature | Free | Pro (99 THB/เดือน) |
-|---------|------|---------------------|
+| Feature | Free | Pro |
+|---------|------|-----|
 | สินค้า | 2 ชิ้น | ไม่จำกัด |
 | หน้าร้านสวย | ✅ | ✅ |
 | PromptPay QR | ✅ | ✅ |
@@ -448,7 +455,10 @@ CHECK (store_language IN ('th', 'en'));
 | ลบ Branding | ❌ | ✅ |
 | Analytics ขั้นสูง | ❌ | ✅ |
 
-**Landing page message:** "3.3 บาท/วัน" (99 บาท/เดือน)
+**Pro Pricing:**
+- **Monthly:** 99 บาท/เดือน (3.3 บาท/วัน)
+- **Yearly:** 899 บาท/ปี (2.4 บาท/วัน — ลด 25%)
+- Toggle สลับ monthly/yearly บน landing page + upgrade page
 
 ---
 
@@ -578,7 +588,7 @@ npm run dev
 | ServerActions | ~140 | Server action error/success messages |
 | Notifications | ~14 | Dashboard notifications |
 | Emails | ~60 | Email templates |
-| Onboarding | ~18 | Onboarding checklist |
+| Onboarding | ~20 | Onboarding checklist |
 | **ProGate** | **3** | **Pro feature gate** |
 | **RichTextEditor** | **~25** | **Rich text editor UI** |
 | **Spinner** | **1** | **Loading spinner** |
@@ -590,7 +600,7 @@ npm run dev
 ---
 
 ## Last Updated
-February 7, 2026 (Session 9)
+February 8, 2026 (Session 10)
 
 ---
 

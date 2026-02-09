@@ -8,6 +8,7 @@ export interface OnboardingStatus {
   hasPayment: boolean;
   hasProduct: boolean;
   isPublished: boolean;
+  hasCustomizedStore: boolean;
   hasNotificationEmail: boolean;
 }
 
@@ -19,7 +20,7 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
 
   const { data: creator } = await supabase
     .from('creators')
-    .select('id, display_name, avatar_url, promptpay_id, bank_name, bank_account_number, bank_account_name, contact_phone, contact_line, contact_ig, contact_email, is_published, notification_email')
+    .select('id, display_name, avatar_url, promptpay_id, bank_name, bank_account_number, bank_account_name, contact_phone, contact_line, contact_ig, contact_email, is_published, notification_email, store_design')
     .eq('user_id', user.id)
     .single();
 
@@ -31,6 +32,19 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
     .select('*', { count: 'exact', head: true })
     .eq('creator_id', creator.id);
 
+  // Check if store has been customized (has items, sections, or custom design)
+  const { count: storeItemCount } = await supabase
+    .from('store_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('creator_id', creator.id);
+
+  const { count: storeSectionCount } = await supabase
+    .from('store_sections')
+    .select('*', { count: 'exact', head: true })
+    .eq('creator_id', creator.id);
+
+  const hasCustomizedStore = (storeItemCount || 0) > 0 || (storeSectionCount || 0) > 0 || !!creator.store_design;
+
   const hasContact = !!(creator.contact_phone || creator.contact_line || creator.contact_ig || creator.contact_email);
   const hasPayment = !!(creator.promptpay_id || (creator.bank_name && creator.bank_account_number && creator.bank_account_name));
 
@@ -40,6 +54,7 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
     hasPayment,
     hasProduct: (productCount || 0) > 0,
     isPublished: creator.is_published,
+    hasCustomizedStore,
     hasNotificationEmail: !!creator.notification_email,
   };
 }

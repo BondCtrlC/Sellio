@@ -14,6 +14,7 @@ import {
   Sparkles,
   Phone,
   Mail,
+  Palette,
 } from 'lucide-react';
 import { getOnboardingStatus, type OnboardingStatus } from '@/actions/onboarding';
 import { useTranslations } from 'next-intl';
@@ -38,12 +39,15 @@ export function OnboardingOverlay() {
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const [lineSkipped, setLineSkipped] = useState(false);
+  const [notificationSkipped, setNotificationSkipped] = useState(false);
+  const [customizeSkipped, setCustomizeSkipped] = useState(false);
 
   // Load status on mount and periodically
   useEffect(() => {
     const skipped = localStorage.getItem('sellio_notification_skipped');
-    if (skipped === 'true') setLineSkipped(true);
+    if (skipped === 'true') setNotificationSkipped(true);
+    const customizeStoreSkipped = localStorage.getItem('sellio_customize_store_skipped');
+    if (customizeStoreSkipped === 'true') setCustomizeSkipped(true);
 
     loadStatus();
     const interval = setInterval(loadStatus, 15000);
@@ -66,9 +70,14 @@ export function OnboardingOverlay() {
     }
   };
 
-  const handleSkipLine = () => {
-    setLineSkipped(true);
+  const handleSkipNotification = () => {
+    setNotificationSkipped(true);
     localStorage.setItem('sellio_notification_skipped', 'true');
+  };
+
+  const handleSkipCustomize = () => {
+    setCustomizeSkipped(true);
+    localStorage.setItem('sellio_customize_store_skipped', 'true');
   };
 
   // Navigate to a step - use router.push for reliable navigation
@@ -130,6 +139,17 @@ export function OnboardingOverlay() {
       required: true,
     },
     {
+      id: 'customize_store',
+      title: t('customizeTitle'),
+      description: t('customizeDesc'),
+      icon: Palette,
+      completed: status.hasCustomizedStore,
+      href: '/dashboard/my-store',
+      color: 'bg-pink-100 text-pink-700',
+      required: false,
+      skipped: customizeSkipped,
+    },
+    {
       id: 'notification_email',
       title: t('notificationTitle'),
       description: t('notificationDesc'),
@@ -138,18 +158,18 @@ export function OnboardingOverlay() {
       href: '/dashboard/settings?tab=notifications',
       color: 'bg-emerald-100 text-emerald-700',
       required: false,
-      skipped: lineSkipped,
+      skipped: notificationSkipped,
     },
   ];
 
   const requiredSteps = steps.filter(s => s.required);
+  const optionalSteps = steps.filter(s => !s.required);
   const requiredCompleted = requiredSteps.filter(s => s.completed).length;
   const allRequiredDone = requiredCompleted === requiredSteps.length;
 
-  // Hide overlay when all required steps are done AND optional is done or skipped
-  const optionalStep = steps.find(s => !s.required);
-  const optionalHandled = !optionalStep || optionalStep.completed || optionalStep.skipped;
-  if (allRequiredDone && optionalHandled) return null;
+  // Hide overlay when all required steps are done AND all optional are done or skipped
+  const allOptionalHandled = optionalSteps.every(s => s.completed || s.skipped);
+  if (allRequiredDone && allOptionalHandled) return null;
 
   const totalRequired = requiredSteps.length;
   const progressPercent = Math.round((requiredCompleted / totalRequired) * 100);
@@ -231,54 +251,61 @@ export function OnboardingOverlay() {
               );
             })}
 
-            {/* Optional: Notification Email */}
-            {optionalStep && !optionalStep.skipped && (
+            {/* Optional steps */}
+            {optionalSteps.some(s => !s.skipped) && (
               <>
                 <div className="border-t my-2" />
-                <div className="flex items-center gap-3 p-2.5 rounded-xl">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    optionalStep.completed ? 'bg-green-100' : optionalStep.color
-                  }`}>
-                    {optionalStep.completed ? (
-                      <Check className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Mail className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className={`font-medium text-xs ${optionalStep.completed ? 'line-through text-muted-foreground' : ''}`}>
-                        {optionalStep.title}
-                      </p>
-                      <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full">
-                        {t('optional')}
-                      </span>
+                {optionalSteps.map((step) => {
+                  if (step.skipped) return null;
+                  const Icon = step.icon;
+                  const handleSkip = step.id === 'customize_store' ? handleSkipCustomize : handleSkipNotification;
+                  return (
+                    <div key={step.id} className="flex items-center gap-3 p-2.5 rounded-xl">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        step.completed ? 'bg-green-100' : step.color
+                      }`}>
+                        {step.completed ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Icon className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className={`font-medium text-xs ${step.completed ? 'line-through text-muted-foreground' : ''}`}>
+                            {step.title}
+                          </p>
+                          <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full">
+                            {t('optional')}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">{step.description}</p>
+                      </div>
+                      {step.completed ? null : (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => navigateToStep(step.href)}
+                            className="text-[11px] text-primary font-medium hover:underline"
+                          >
+                            {t('setup')}
+                          </button>
+                          <span className="text-gray-300 mx-0.5">|</span>
+                          <button
+                            onClick={handleSkip}
+                            className="text-[11px] text-muted-foreground hover:text-foreground"
+                          >
+                            {t('skip')}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-[11px] text-muted-foreground">{optionalStep.description}</p>
-                  </div>
-                  {optionalStep.completed ? null : (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button
-                        onClick={() => navigateToStep(optionalStep.href)}
-                        className="text-[11px] text-primary font-medium hover:underline"
-                      >
-                        {t('setup')}
-                      </button>
-                      <span className="text-gray-300 mx-0.5">|</span>
-                      <button
-                        onClick={handleSkipLine}
-                        className="text-[11px] text-muted-foreground hover:text-foreground"
-                      >
-                        {t('skip')}
-                      </button>
-                    </div>
-                  )}
-                </div>
+                  );
+                })}
               </>
             )}
 
             {/* Dismiss when all required done */}
-            {allRequiredDone && !optionalHandled && (
+            {allRequiredDone && !allOptionalHandled && (
               <button
                 onClick={() => setDismissed(true)}
                 className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"

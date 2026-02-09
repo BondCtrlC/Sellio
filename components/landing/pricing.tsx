@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { Check, X, Sparkles, Zap } from 'lucide-react';
@@ -7,6 +8,11 @@ import { useTranslations } from 'next-intl';
 
 export function Pricing() {
   const t = useTranslations('Pricing');
+  const [isYearly, setIsYearly] = useState(false);
+
+  const proPrice = isYearly ? t('proYearlyPrice') : '3.3';
+  const proMonthlyLabel = isYearly ? t('proYearlyMonthly') : t('proMonthly');
+  const proCtaNote = isYearly ? t('ctaNotePro', { price: '2.4' }) : t('ctaNotePro', { price: '3.3' });
 
   const plans = [
     {
@@ -36,9 +42,9 @@ export function Pricing() {
     {
       name: 'Pro',
       description: t('proDesc'),
-      price: '3.3',
+      price: proPrice,
       period: t('proPeriod'),
-      monthlyPrice: t('proMonthly'),
+      monthlyPrice: proMonthlyLabel,
       highlight: true,
       features: [
         { text: t('proEverythingFree'), included: true, bold: true },
@@ -51,7 +57,7 @@ export function Pricing() {
       ],
       cta: t('ctaPro'),
       ctaVariant: 'default' as const,
-      ctaNote: t('ctaNotePro'),
+      ctaNote: proCtaNote,
     },
   ];
 
@@ -68,6 +74,34 @@ export function Pricing() {
           <p className="text-lg text-gray-600">
             {t('subtitle')}
           </p>
+
+          {/* Monthly / Yearly Toggle */}
+          <div className="flex items-center justify-center gap-3 mt-8">
+            <span className={`text-sm font-medium ${!isYearly ? 'text-gray-900' : 'text-gray-400'}`}>
+              {t('toggleMonthly')}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsYearly(!isYearly)}
+              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none ${
+                isYearly ? 'bg-green-500' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300 ${
+                  isYearly ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-sm font-medium ${isYearly ? 'text-gray-900' : 'text-gray-400'}`}>
+              {t('toggleYearly')}
+            </span>
+            {isYearly && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                {t('proYearlySave')}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Pricing Cards */}

@@ -6,6 +6,15 @@ export async function POST(request: NextRequest) {
   let step = 'init';
   
   try {
+    // Parse interval from body (default: month)
+    let interval: 'month' | 'year' = 'month';
+    try {
+      const body = await request.json();
+      if (body.interval === 'year') interval = 'year';
+    } catch {
+      // No body or invalid JSON — default to month
+    }
+
     step = 'auth';
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -65,6 +74,12 @@ export async function POST(request: NextRequest) {
     }
 
     step = 'create_session';
+    const amount = interval === 'year' ? 899 : 99;
+    const planLabel = interval === 'year' ? 'Sellio Pro (Yearly)' : 'Sellio Pro';
+    const planDescription = interval === 'year'
+      ? 'สินค้าไม่จำกัด, Export ข้อมูล, จัดการรีวิว, ลบ Branding และอื่นๆ (รายปี — ประหยัด 25%)'
+      : 'สินค้าไม่จำกัด, Export ข้อมูล, จัดการรีวิว, ลบ Branding และอื่นๆ';
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
@@ -73,12 +88,12 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: 'thb',
             product_data: {
-              name: 'Sellio Pro',
-              description: 'สินค้าไม่จำกัด, Export ข้อมูล, จัดการรีวิว, ลบ Branding และอื่นๆ',
+              name: planLabel,
+              description: planDescription,
             },
-            unit_amount: formatAmountForStripe(99, 'thb'),
+            unit_amount: formatAmountForStripe(amount, 'thb'),
             recurring: {
-              interval: 'month',
+              interval,
             },
           },
           quantity: 1,

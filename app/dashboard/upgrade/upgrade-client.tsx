@@ -31,6 +31,7 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [isScheduledCancel, setIsScheduledCancel] = useState(cancelAtPeriodEnd);
+  const [isYearly, setIsYearly] = useState(false);
   const searchParams = useSearchParams();
   const success = searchParams.get('success');
   const cancelled = searchParams.get('cancelled');
@@ -60,6 +61,8 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
     try {
       const res = await fetch('/api/stripe/create-subscription', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interval: isYearly ? 'year' : 'month' }),
       });
       const data = await res.json();
       
@@ -137,8 +140,38 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
           {isPro ? t('youArePro') : t('upgradeToPro')}
         </h1>
         <p className="text-muted-foreground text-lg">
-          {isPro ? t('unlimitedFeatures') : t('unlockAll')}
+          {isPro ? t('unlimitedFeatures') : t('unlockAll', { price: isYearly ? t('pricePerYear') : t('pricePerMonth') })}
         </p>
+
+        {/* Monthly / Yearly Toggle */}
+        {!isPro && (
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <span className={`text-sm font-medium ${!isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
+              {t('toggleMonthly')}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsYearly(!isYearly)}
+              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none ${
+                isYearly ? 'bg-green-500' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300 ${
+                  isYearly ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-sm font-medium ${isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
+              {t('toggleYearly')}
+            </span>
+            {isYearly && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                {t('yearlySave')}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Current Plan Status */}
@@ -252,10 +285,10 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
               Pro
             </h3>
             <div className="mb-1">
-              <span className="text-3xl font-bold">99</span>
-              <span className="text-muted-foreground ml-1">{t('perMonth')}</span>
+              <span className="text-3xl font-bold">{isYearly ? '899' : '99'}</span>
+              <span className="text-muted-foreground ml-1">{isYearly ? t('perYear') : t('perMonth')}</span>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">{t('perDay')}</p>
+            <p className="text-sm text-muted-foreground mb-4">{t('perDay', { price: isYearly ? '2.4' : '3.3' })}</p>
             
             <ul className="space-y-3 mb-6">
               {PRO_FEATURES.map((feature, i) => {
