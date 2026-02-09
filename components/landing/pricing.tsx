@@ -96,11 +96,7 @@ export function Pricing() {
             <span className={`text-sm font-medium ${isYearly ? 'text-gray-900' : 'text-gray-400'}`}>
               {t('toggleYearly')}
             </span>
-            {isYearly && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                {t('proYearlySave')}
-              </span>
-            )}
+            
           </div>
         </div>
 
@@ -121,6 +117,15 @@ export function Pricing() {
                   <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-white text-sm font-medium">
                     <Sparkles className="w-4 h-4" />
                     {t('recommended')}
+                  </div>
+                </div>
+              )}
+
+              {/* Yearly Save Badge */}
+              {plan.highlight && isYearly && (
+                <div className="absolute -top-4 -right-3">
+                  <div className="inline-flex items-center px-4 py-1.5 bg-green-500 rounded-full text-white text-sm font-bold shadow-lg shadow-green-500/30 animate-pulse">
+                    {t('proYearlySave')}
                   </div>
                 </div>
               )}
