@@ -25,9 +25,10 @@ interface UpgradeClientProps {
   hasSubscription: boolean;
   planExpiresAt: string | null;
   cancelAtPeriodEnd: boolean;
+  subscriptionInterval: 'month' | 'year';
 }
 
-export function UpgradeClient({ plan, productCount, hasSubscription, planExpiresAt, cancelAtPeriodEnd }: UpgradeClientProps) {
+export function UpgradeClient({ plan, productCount, hasSubscription, planExpiresAt, cancelAtPeriodEnd, subscriptionInterval }: UpgradeClientProps) {
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [isScheduledCancel, setIsScheduledCancel] = useState(cancelAtPeriodEnd);
@@ -180,7 +181,7 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
                   <Crown className="h-5 w-5 text-amber-600" />
                   <span className="font-semibold text-lg">Sellio Pro</span>
                 </div>
-                <p className="text-sm text-muted-foreground">{t('pricePerMonth')}</p>
+                <p className="text-sm text-muted-foreground">{subscriptionInterval === 'year' ? t('pricePerYear') : t('pricePerMonth')}</p>
                 {planExpiresAt && (
                   <p className="text-sm text-muted-foreground mt-1">
                     {t('nextRenewal', { date: new Date(planExpiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) })}

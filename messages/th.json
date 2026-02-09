@@ -644,6 +644,7 @@
     "billingCurrentPlan": "แพลนปัจจุบัน",
     "billingCurrentPlanDesc": "ข้อมูลการสมัครสมาชิกของคุณ",
     "billingProPrice": "99 บาท/เดือน",
+    "billingProPriceYearly": "899 บาท/ปี",
     "billingFreePrice": "0 บาท/เดือน",
     "billingNextRenewal": "ต่ออายุถัดไป: {date}",
     "billingCancelling": "กำลังยกเลิก...",

@@ -644,6 +644,7 @@
     "billingCurrentPlan": "Current Plan",
     "billingCurrentPlanDesc": "Your subscription information",
     "billingProPrice": "฿99/month",
+    "billingProPriceYearly": "฿899/year",
     "billingFreePrice": "฿0/month",
     "billingNextRenewal": "Next renewal: {date}",
     "billingCancelling": "Cancelling...",

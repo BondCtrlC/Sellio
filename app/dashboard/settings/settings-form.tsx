@@ -41,6 +41,7 @@ interface SettingsFormProps {
     hasSubscription: boolean;
     planExpiresAt: string | null;
     cancelAtPeriodEnd: boolean;
+    subscriptionInterval: 'month' | 'year';
     invoices: InvoiceItem[];
   };
 }
@@ -816,7 +817,9 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {isPro ? t('billingProPrice') : t('billingFreePrice')}
+                  {isPro 
+                    ? (billingInfo.subscriptionInterval === 'year' ? t('billingProPriceYearly') : t('billingProPrice'))
+                    : t('billingFreePrice')}
                 </p>
                 {isPro && billingInfo.planExpiresAt && (
                   <p className="text-sm text-muted-foreground mt-1">
