@@ -831,6 +831,7 @@
     "recommended": "Recommended",
     "perMonth": "/month",
     "perYear": "/year",
+    "perDayUnit": "/day",
     "perDay": "That's only ฿{price} per day",
     "upgradeNow": "Upgrade to Pro Now",
     "openingPayment": "Opening payment page...",

@@ -831,6 +831,7 @@
     "recommended": "แนะนำ",
     "perMonth": "บาท/เดือน",
     "perYear": "บาท/ปี",
+    "perDayUnit": "/วัน",
     "perDay": "เท่ากับวันละ {price} บาท",
     "upgradeNow": "อัปเกรดเป็น Pro เลย",
     "openingPayment": "กำลังเปิดหน้าชำระเงิน...",

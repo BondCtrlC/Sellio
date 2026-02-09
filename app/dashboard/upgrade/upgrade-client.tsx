@@ -279,16 +279,25 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
               {t('recommended')}
             </span>
           </div>
+          {/* Yearly Save Badge */}
+          {isYearly && !isPro && (
+            <div className="absolute -top-4 -right-3">
+              <div className="inline-flex items-center px-5 py-2 bg-green-500 rounded-full text-white text-base font-bold shadow-xl shadow-green-500/30">
+                {t('yearlySave')}
+              </div>
+            </div>
+          )}
           <CardContent className="pt-8">
             <h3 className="text-xl font-bold mb-1 flex items-center gap-2">
               <Crown className="h-5 w-5 text-amber-500" />
               Pro
             </h3>
-            <div className="mb-1">
-              <span className="text-3xl font-bold">{isYearly ? '899' : '99'}</span>
-              <span className="text-muted-foreground ml-1">{isYearly ? t('perYear') : t('perMonth')}</span>
+            <div className="mb-1 flex items-baseline gap-2">
+              <span className="text-sm">฿</span>
+              <span className="text-3xl font-bold">{isYearly ? '2.4' : '3.3'}</span>
+              <span className="text-muted-foreground">{t('perDayUnit')}</span>
+              <span className="text-sm text-muted-foreground ml-1">({isYearly ? t('pricePerYear') : t('pricePerMonth')})</span>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">{t('perDay', { price: isYearly ? '2.4' : '3.3' })}</p>
             
             <ul className="space-y-3 mb-6">
               {PRO_FEATURES.map((feature, i) => {
