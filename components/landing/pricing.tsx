@@ -123,8 +123,8 @@ export function Pricing() {
 
               {/* Yearly Save Badge */}
               {plan.highlight && isYearly && (
-                <div className="absolute -top-4 -right-3">
-                  <div className="inline-flex items-center px-4 py-1.5 bg-green-500 rounded-full text-white text-sm font-bold shadow-lg shadow-green-500/30 animate-pulse">
+                <div className="absolute -top-5 -right-4">
+                  <div className="inline-flex items-center px-5 py-2 bg-green-500 rounded-full text-white text-base font-bold shadow-xl shadow-green-500/30">
                     {t('proYearlySave')}
                   </div>
                 </div>
