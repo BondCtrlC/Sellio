@@ -165,11 +165,7 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
             <span className={`text-sm font-medium ${isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
               {t('toggleYearly')}
             </span>
-            {isYearly && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                {t('yearlySave')}
-              </span>
-            )}
+            
           </div>
         )}
       </div>
@@ -274,7 +270,7 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
               </span>
             </div>
           )}
-          <div className="absolute -top-3 right-4">
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
             <span className="bg-red-500 text-white text-xs font-medium px-3 py-1 rounded-full">
               {t('recommended')}
             </span>
