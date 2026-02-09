@@ -228,59 +228,61 @@ export default async function StorePage({ params }: PageProps) {
   const storeUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/u/${username}`;
 
   return (
-    <StoreWrapper design={creator.store_design}>
-      {/* Store Header */}
-      <StoreHeader creator={creator} />
+    <>
+      <StoreWrapper design={creator.store_design}>
+        {/* Store Header */}
+        <StoreHeader creator={creator} />
 
-      {/* Share Buttons */}
-      <div className="max-w-2xl mx-auto px-4 py-2 flex justify-center">
-        <ShareButtons
-          url={storeUrl}
-          title={creator.display_name || creator.username}
-          description={creator.bio || undefined}
-          compact
-        />
-      </div>
+        {/* Share Buttons */}
+        <div className="max-w-2xl mx-auto px-4 py-2 flex justify-center">
+          <ShareButtons
+            url={storeUrl}
+            title={creator.display_name || creator.username}
+            description={creator.bio || undefined}
+            compact
+          />
+        </div>
 
-      {/* Products */}
-      <main className="max-w-2xl mx-auto px-4 pb-12">
-        {!hasProducts ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <p>{t('noProducts')}</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Unsectioned Products */}
-            {unsectionedProducts.length > 0 && (
-              <ProductGrid products={unsectionedProducts} creatorUsername={username} design={creator.store_design} />
-            )}
+        {/* Products */}
+        <main className="max-w-2xl mx-auto px-4 pb-12">
+          {!hasProducts ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p>{t('noProducts')}</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Unsectioned Products */}
+              {unsectionedProducts.length > 0 && (
+                <ProductGrid products={unsectionedProducts} creatorUsername={username} design={creator.store_design} />
+              )}
 
-            {/* Sectioned Products */}
-            {sectionedProducts.map(({ section, products }) => (
-              <div key={section.id}>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-1">
-                  {section.title}
-                </h3>
-                <ProductGrid products={products} creatorUsername={username} design={creator.store_design} />
-              </div>
-            ))}
-          </div>
+              {/* Sectioned Products */}
+              {sectionedProducts.map(({ section, products }) => (
+                <div key={section.id}>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-1">
+                    {section.title}
+                  </h3>
+                  <ProductGrid products={products} creatorUsername={username} design={creator.store_design} />
+                </div>
+              ))}
+            </div>
+          )}
+        </main>
+
+        {/* Footer - hidden for Pro users */}
+        {creator.plan !== 'pro' && (
+          <footer className="text-center py-6 text-sm text-muted-foreground border-t">
+            <a href="https://sellio.me" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+              Powered by Sellio
+            </a>
+          </footer>
         )}
-      </main>
+      </StoreWrapper>
 
-      {/* Footer - hidden for Pro users */}
-      {creator.plan !== 'pro' && (
-        <footer className="text-center py-6 text-sm text-muted-foreground border-t">
-          <a href="https://sellio.me" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
-            Powered by Sellio
-          </a>
-        </footer>
-      )}
-    </StoreWrapper>
-
-      {/* Language Switcher - fixed bottom overlay (outside StoreWrapper to ensure fixed works on mobile) */}
+      {/* Language Switcher - fixed bottom overlay (outside StoreWrapper for mobile fixed positioning) */}
       <div className="fixed bottom-4 right-4 z-[9999]">
         <LanguageSwitcher />
       </div>
+    </>
   );
 }
