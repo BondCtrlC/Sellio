@@ -74,7 +74,7 @@ export async function verifySlip(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': SLIP2GO_SECRET_KEY,
+        'Authorization': `Bearer ${SLIP2GO_SECRET_KEY}`,
       },
       body: JSON.stringify({ payload }),
     });
