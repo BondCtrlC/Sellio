@@ -916,6 +916,33 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
         </div>
       )}
 
+      {/* Switch to Monthly (only for yearly Pro users) */}
+      {isPro && !isMonthly && cancelStatus === 'none' && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="font-semibold text-blue-800">{t('switchToMonthly')}</p>
+              <p className="text-sm text-blue-700 mt-1">
+                {t('switchToMonthlyDesc', { date: billingInfo.planExpiresAt ? new Date(billingInfo.planExpiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) : '-' })}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                if (confirm(t('switchToMonthlyConfirm'))) {
+                  handleCancel(false);
+                }
+              }}
+              disabled={cancelling}
+              className="border-blue-300 text-blue-700 hover:bg-blue-100 whitespace-nowrap shrink-0"
+            >
+              {cancelling ? t('billingCancelling') : t('switchToMonthlyBtn')}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Cancel Status Messages */}
       {cancelStatus === 'scheduled' && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">

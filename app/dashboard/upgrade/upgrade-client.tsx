@@ -277,6 +277,34 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
         </Card>
       )}
 
+      {/* Switch to Monthly (for yearly Pro users) */}
+      {isPro && !isMonthly && !isScheduledCancel && (
+        <Card className="mb-8 border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-semibold text-lg text-blue-800">{t('switchToMonthly')}</p>
+                <p className="text-sm text-blue-700 mt-1">
+                  {t('switchToMonthlyDesc', { date: planExpiresAt ? new Date(planExpiresAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) : '-' })}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (confirm(t('switchToMonthlyConfirm'))) {
+                    handleCancel(false);
+                  }
+                }}
+                disabled={cancelling}
+                className="border-blue-300 text-blue-700 hover:bg-blue-100 whitespace-nowrap shrink-0"
+              >
+                {cancelling ? t('cancelling') : t('switchToMonthlyBtn')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Pricing Cards */}
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         {/* Free Plan */}
