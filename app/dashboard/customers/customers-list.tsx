@@ -11,7 +11,9 @@ import {
   ShoppingBag,
   Download,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  CreditCard,
+  Package
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { hasFeature } from '@/lib/plan';
@@ -239,6 +241,18 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
                             <p className="font-medium">{formatDate(customer.last_order_at)}</p>
                           </div>
                         </div>
+                        {/* PromptPay Number */}
+                        {(customer.promptpay || customer.phone) && (
+                          <div className="p-2 rounded-lg bg-muted text-sm">
+                            <p className="text-muted-foreground flex items-center gap-1">
+                              <CreditCard className="h-3 w-3" />
+                              {t('promptPayPhone')}
+                            </p>
+                            <p className="font-medium font-mono">
+                              {customer.promptpay || customer.phone}
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Products */}
@@ -253,6 +267,54 @@ export function CustomersList({ initialCustomers, plan }: CustomersListProps) {
                         </div>
                       </div>
                     </div>
+
+                    {/* Order History */}
+                    {customer.orders.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <h4 className="text-sm font-medium flex items-center gap-1">
+                          <Package className="h-4 w-4" />
+                          {t('orderHistory')} ({customer.orders.length})
+                        </h4>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {customer.orders.map((order) => (
+                            <div
+                              key={order.id}
+                              className="p-3 rounded-lg bg-muted/50 border text-sm flex items-center justify-between"
+                            >
+                              <div>
+                                <p className="font-medium">{order.product_title}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatDate(order.created_at)}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Badge
+                                  variant={
+                                    order.status === 'confirmed'
+                                      ? 'default'
+                                      : order.status === 'pending_payment'
+                                        ? 'outline'
+                                        : 'secondary'
+                                  }
+                                  className={`text-xs ${
+                                    order.status === 'confirmed'
+                                      ? 'bg-green-100 text-green-700 hover:bg-green-100'
+                                      : order.status === 'pending_confirmation'
+                                        ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100'
+                                        : ''
+                                  }`}
+                                >
+                                  {t(`orderStatus_${order.status}`)}
+                                </Badge>
+                                <span className="font-semibold whitespace-nowrap">
+                                  {formatPrice(order.total)}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Quick Actions */}
                     <div className="flex gap-2 mt-4">

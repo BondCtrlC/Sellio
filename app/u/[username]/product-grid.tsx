@@ -26,7 +26,7 @@ export function ProductGrid({ products, creatorUsername, design }: ProductGridPr
   // Vertical (Grid) Layout
   if (productLayout === 'vertical') {
     return (
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-6">
         {products.map((product) => (
           <VerticalProductCard 
             key={product.id} 
@@ -42,7 +42,7 @@ export function ProductGrid({ products, creatorUsername, design }: ProductGridPr
   // Compact (List) Layout
   if (productLayout === 'compact') {
     return (
-      <div className="space-y-3">
+      <div className="space-y-6">
         {products.map((product) => (
           <CompactProductCard 
             key={product.id} 
@@ -57,7 +57,7 @@ export function ProductGrid({ products, creatorUsername, design }: ProductGridPr
 
   // Default: Horizontal Layout
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {products.map((product) => (
         <ProductCard 
           key={product.id} 

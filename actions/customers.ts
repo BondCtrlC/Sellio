@@ -8,15 +8,25 @@ import { getTranslations } from 'next-intl/server';
 // ============================================
 // Types
 // ============================================
+export interface CustomerOrder {
+  id: string;
+  product_title: string;
+  total: number;
+  status: string;
+  created_at: string;
+}
+
 export interface Customer {
   email: string;
   name: string;
   phone: string | null;
+  promptpay: string | null;
   total_orders: number;
   total_spent: number;
   first_order_at: string;
   last_order_at: string;
   products_bought: string[];
+  orders: CustomerOrder[];
 }
 
 export interface CustomerDetails {
@@ -71,6 +81,7 @@ export async function getCustomers() {
       buyer_email,
       buyer_name,
       buyer_phone,
+      refund_promptpay,
       created_at,
       product:products(title)
     `)
@@ -94,8 +105,17 @@ export async function getCustomers() {
       : product?.title;
     const isConfirmed = order.status === 'confirmed';
 
+    const orderInfo: CustomerOrder = {
+      id: order.id,
+      product_title: productTitle || '-',
+      total: Number(order.total),
+      status: order.status,
+      created_at: order.created_at,
+    };
+
     if (existing) {
       existing.total_orders += 1;
+      existing.orders.push(orderInfo);
       if (isConfirmed) {
         existing.total_spent += Number(order.total);
       }
@@ -107,6 +127,10 @@ export async function getCustomers() {
         existing.name = order.buyer_name; // Use latest name
         existing.phone = order.buyer_phone;
       }
+      // Keep the latest non-null promptpay
+      if (order.refund_promptpay && !existing.promptpay) {
+        existing.promptpay = order.refund_promptpay;
+      }
       if (productTitle && !existing.products_bought.includes(productTitle)) {
         existing.products_bought.push(productTitle);
       }
@@ -115,11 +139,13 @@ export async function getCustomers() {
         email,
         name: order.buyer_name,
         phone: order.buyer_phone,
+        promptpay: order.refund_promptpay || null,
         total_orders: 1,
         total_spent: isConfirmed ? Number(order.total) : 0,
         first_order_at: order.created_at,
         last_order_at: order.created_at,
         products_bought: productTitle ? [productTitle] : [],
+        orders: [orderInfo],
       });
     }
   });

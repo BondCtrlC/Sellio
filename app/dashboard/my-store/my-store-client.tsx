@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { StoreEditor } from '@/components/my-store/store-editor';
 import { MobilePreview } from '@/components/my-store/mobile-preview';
 import { DesignEditor } from '@/components/my-store/design-editor';
-import { ExternalLink, LayoutGrid, Palette } from 'lucide-react';
+import { ExternalLink, LayoutGrid, Palette, Eye, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { DEFAULT_STORE_DESIGN } from '@/types';
@@ -21,6 +21,7 @@ type TabType = 'store' | 'design';
 
 export function MyStoreClient({ creator, sections, unsectionedItems }: MyStoreClientProps) {
   const [activeTab, setActiveTab] = useState<TabType>('store');
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [currentDesign, setCurrentDesign] = useState<StoreDesign>(
     creator.store_design || DEFAULT_STORE_DESIGN
   );
@@ -78,10 +79,36 @@ export function MyStoreClient({ creator, sections, unsectionedItems }: MyStoreCl
         </button>
       </div>
 
-      {/* Two Column Layout */}
+      {/* Mobile: Toggle between Editor & Preview */}
+      <div className="flex lg:hidden gap-1 mb-4 bg-muted p-1 rounded-lg w-fit">
+        <button
+          onClick={() => setShowMobilePreview(false)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            !showMobilePreview
+              ? 'bg-white shadow text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Pencil className="h-4 w-4" />
+          {t('editor')}
+        </button>
+        <button
+          onClick={() => setShowMobilePreview(true)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            showMobilePreview
+              ? 'bg-white shadow text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Eye className="h-4 w-4" />
+          {t('preview')}
+        </button>
+      </div>
+
+      {/* Two Column Layout (Desktop) / Toggle (Mobile) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100%-8rem)]">
         {/* Left: Editor */}
-        <div className="overflow-y-auto pr-2">
+        <div className={`overflow-y-auto pr-2 ${showMobilePreview ? 'hidden lg:block' : ''}`}>
           {activeTab === 'store' ? (
             <StoreEditor
               creator={creator}
@@ -97,7 +124,9 @@ export function MyStoreClient({ creator, sections, unsectionedItems }: MyStoreCl
         </div>
 
         {/* Right: Preview */}
-        <div className="hidden lg:flex items-start justify-center bg-muted/30 rounded-xl p-6">
+        <div className={`items-start justify-center bg-muted/30 rounded-xl p-4 sm:p-6 ${
+          showMobilePreview ? 'flex' : 'hidden lg:flex'
+        }`}>
           <MobilePreview
             creator={creatorWithDesign}
             sections={sections}
