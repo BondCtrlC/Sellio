@@ -42,7 +42,7 @@ function escapeICS(text: string): string {
  * Generate unique ID for calendar event
  */
 function generateUID(): string {
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}@sellio.app`;
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}@trysellio.com`;
 }
 
 /**
@@ -81,7 +81,7 @@ export function generateICS(event: CalendarEvent): string {
   }
 
   if (event.organizer) {
-    const organizerEmail = event.organizer.email || 'noreply@sellio.app';
+    const organizerEmail = event.organizer.email || 'noreply@trysellio.com';
     icsContent.push(`ORGANIZER;CN=${escapeICS(event.organizer.name)}:mailto:${organizerEmail}`);
   }
 
