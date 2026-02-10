@@ -67,7 +67,7 @@ export function SignupForm() {
       <div className="space-y-2">
         <Label htmlFor="username" required>{t('username')}</Label>
         <div className="flex items-center">
-          <span className="text-muted-foreground text-sm mr-1">sellio.me/u/</span>
+          <span className="text-muted-foreground text-sm mr-1">trysellio.com/u/</span>
           <Input
             id="username"
             placeholder="yourname"

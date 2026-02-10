@@ -223,8 +223,8 @@ export function Pricing() {
           </div>
           <p className="text-gray-500">
             {t('bottomQuestion')}{' '}
-            <a href="mailto:support@sellio.me" className="text-black font-medium hover:underline">
-              support@sellio.me
+            <a href="mailto:support@trysellio.com" className="text-black font-medium hover:underline">
+              support@trysellio.com
             </a>
           </p>
         </div>

@@ -16,7 +16,7 @@ export default function TermsPage() {
         <div className="prose prose-gray max-w-none space-y-6">
           <section>
             <h2 className="text-xl font-semibold mt-8 mb-3">1. คำจำกัดความ</h2>
-            <p>&quot;แพลตฟอร์ม&quot; หมายถึง Sellio (sellio.me) ซึ่งเป็นแพลตฟอร์มสำหรับ Creator ขายสินค้าและบริการดิจิทัล</p>
+            <p>&quot;แพลตฟอร์ม&quot; หมายถึง Sellio (trysellio.com) ซึ่งเป็นแพลตฟอร์มสำหรับ Creator ขายสินค้าและบริการดิจิทัล</p>
             <p>&quot;ผู้ใช้งาน&quot; หมายถึง Creator ที่สมัครใช้งานแพลตฟอร์ม และลูกค้าที่ซื้อสินค้า/บริการผ่านแพลตฟอร์ม</p>
             <p>&quot;Creator&quot; หมายถึง ผู้ที่สมัครบัญชีเพื่อขายสินค้าหรือบริการผ่านแพลตฟอร์ม</p>
           </section>
@@ -102,7 +102,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mt-8 mb-3">12. ติดต่อเรา</h2>
             <p>หากมีคำถามเกี่ยวกับข้อกำหนดการใช้งาน กรุณาติดต่อ:</p>
-            <p className="mt-2"><strong>Email:</strong> support@sellio.me</p>
+            <p className="mt-2"><strong>Email:</strong> support@trysellio.com</p>
           </section>
         </div>
       </main>

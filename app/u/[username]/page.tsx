@@ -272,7 +272,7 @@ export default async function StorePage({ params }: PageProps) {
         {/* Footer - hidden for Pro users */}
         {creator.plan !== 'pro' && (
           <footer className="text-center py-6 text-sm text-muted-foreground border-t">
-            <a href="https://sellio.me" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+            <a href="https://trysellio.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
               Powered by Sellio
             </a>
           </footer>

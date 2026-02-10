@@ -6,8 +6,8 @@ import { Facebook, Instagram, Twitter, Mail } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 const socialLinks = [
-  { icon: Facebook, href: 'https://facebook.com/sellio.me', label: 'Facebook' },
-  { icon: Instagram, href: 'https://instagram.com/sellio.me', label: 'Instagram' },
+  { icon: Facebook, href: 'https://facebook.com/trysellio', label: 'Facebook' },
+  { icon: Instagram, href: 'https://instagram.com/trysellio', label: 'Instagram' },
   { icon: Twitter, href: 'https://x.com/sellio_me', label: 'X (Twitter)' },
 ];
 
@@ -26,7 +26,7 @@ export function Footer() {
     support: {
       title: t('support'),
       links: [
-        { label: t('contactUs'), href: 'mailto:support@sellio.me' },
+        { label: t('contactUs'), href: 'mailto:support@trysellio.com' },
         { label: t('getStarted'), href: '/signup' },
       ]
     },

@@ -15,7 +15,7 @@ export default function PrivacyPage() {
 
         <div className="prose prose-gray max-w-none space-y-6">
           <section>
-            <p>นโยบายนี้อธิบายวิธีที่ Sellio (sellio.me) เก็บรวบรวม ใช้ และคุ้มครองข้อมูลส่วนบุคคลของท่าน ตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)</p>
+            <p>นโยบายนี้อธิบายวิธีที่ Sellio (trysellio.com) เก็บรวบรวม ใช้ และคุ้มครองข้อมูลส่วนบุคคลของท่าน ตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)</p>
           </section>
 
           <section>
@@ -128,7 +128,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold mt-8 mb-3">11. ติดต่อเจ้าหน้าที่คุ้มครองข้อมูล</h2>
             <p>หากท่านต้องการใช้สิทธิตาม PDPA หรือมีคำถามเกี่ยวกับนโยบายนี้:</p>
-            <p className="mt-2"><strong>Email:</strong> support@sellio.me</p>
+            <p className="mt-2"><strong>Email:</strong> support@trysellio.com</p>
             <p className="text-sm text-muted-foreground mt-2">เราจะตอบกลับภายใน 30 วันทำการ</p>
           </section>
         </div>
