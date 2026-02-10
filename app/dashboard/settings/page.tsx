@@ -45,12 +45,14 @@ async function getBillingInfo(creator: any) {
     try {
       const subscription = await stripe.subscriptions.retrieve(creator.stripe_subscription_id);
       cancelAtPeriodEnd = subscription.cancel_at_period_end === true;
-      // Get billing interval from subscription items
-      const interval = subscription.items?.data?.[0]?.price?.recurring?.interval;
+      // Get billing interval and period end from subscription items
+      // Note: Since Stripe API 2025-03-31 (basil), current_period_end is on item level, not subscription level
+      const firstItem = subscription.items?.data?.[0];
+      const interval = firstItem?.price?.recurring?.interval;
       if (interval === 'year') subscriptionInterval = 'year';
-      // Get period end directly from Stripe (more reliable than DB)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const periodEnd = (subscription as any).current_period_end as number;
+      // Get period end from subscription item (new Stripe API location)
+      const itemAny = firstItem as Record<string, unknown> | undefined;
+      const periodEnd = itemAny?.current_period_end as number | undefined;
       if (periodEnd) {
         planExpiresAt = new Date(periodEnd * 1000).toISOString();
       }

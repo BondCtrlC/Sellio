@@ -249,9 +249,10 @@ async function handleSubscriptionCheckout(session: Stripe.Checkout.Session) {
   }
 
   // Get subscription details for period end
+  // Note: Since Stripe API 2025-03-31 (basil), current_period_end is on item level
   const subscriptionResponse = await stripe.subscriptions.retrieve(subscriptionId);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const periodEnd = (subscriptionResponse as any).current_period_end as number;
+  const firstItem = subscriptionResponse.items?.data?.[0] as Record<string, unknown> | undefined;
+  const periodEnd = firstItem?.current_period_end as number | undefined;
 
   const supabase = createAdminClient();
 
@@ -315,7 +316,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   // Check if subscription is active or past_due
   const isActive = ['active', 'trialing'].includes(sub.status);
-  const periodEnd = sub.current_period_end as number;
+  // Note: Since Stripe API 2025-03-31 (basil), current_period_end is on item level
+  const subFirstItem = sub.items?.data?.[0] as Record<string, unknown> | undefined;
+  const periodEnd = subFirstItem?.current_period_end as number | undefined;
   
   const { error } = await supabase
     .from('creators')
