@@ -166,13 +166,13 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
         {/* Monthly / Yearly Toggle */}
         {!isPro && (
           <div className="flex items-center justify-center gap-3 mt-4">
-            <span className={`text-sm font-medium ${!isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
+            <span className={`text-sm font-medium transition-colors duration-300 ${!isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
               {t('toggleMonthly')}
             </span>
             <button
               type="button"
               onClick={() => setIsYearly(!isYearly)}
-              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none ${
+              className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-300 focus:outline-none ${
                 isYearly ? 'bg-green-500' : 'bg-gray-300'
               }`}
             >
@@ -182,10 +182,12 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
                 }`}
               />
             </button>
-            <span className={`text-sm font-medium ${isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
+            <span className={`text-sm font-medium transition-colors duration-300 ${isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
               {t('toggleYearly')}
             </span>
-            
+            <span className="inline-flex items-center px-2 py-0.5 bg-green-500 rounded-full text-white text-xs font-bold">
+              {t('yearlySave')}
+            </span>
           </div>
         )}
       </div>

@@ -77,13 +77,13 @@ export function Pricing() {
 
           {/* Monthly / Yearly Toggle */}
           <div className="flex items-center justify-center gap-3 mt-8">
-            <span className={`text-sm font-medium ${!isYearly ? 'text-gray-900' : 'text-gray-400'}`}>
+            <span className={`text-sm font-medium transition-colors duration-300 ${!isYearly ? 'text-gray-900' : 'text-gray-400'}`}>
               {t('toggleMonthly')}
             </span>
             <button
               type="button"
               onClick={() => setIsYearly(!isYearly)}
-              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none ${
+              className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-300 focus:outline-none ${
                 isYearly ? 'bg-green-500' : 'bg-gray-300'
               }`}
             >
@@ -93,10 +93,12 @@ export function Pricing() {
                 }`}
               />
             </button>
-            <span className={`text-sm font-medium ${isYearly ? 'text-gray-900' : 'text-gray-400'}`}>
+            <span className={`text-sm font-medium transition-colors duration-300 ${isYearly ? 'text-gray-900' : 'text-gray-400'}`}>
               {t('toggleYearly')}
             </span>
-            
+            <span className="inline-flex items-center px-2 py-0.5 bg-green-500 rounded-full text-white text-xs font-bold">
+              {t('proYearlySave')}
+            </span>
           </div>
         </div>
 
