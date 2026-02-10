@@ -47,7 +47,7 @@ async function getCreatorSubscriptionInfo() {
       const interval = firstItem?.price?.recurring?.interval;
       if (interval === 'year') subscriptionInterval = 'year';
       // Get period end from subscription item (new Stripe API location)
-      const itemAny = firstItem as Record<string, unknown> | undefined;
+      const itemAny = firstItem as unknown as Record<string, unknown> | undefined;
       const periodEnd = itemAny?.current_period_end as number | undefined;
       if (periodEnd) {
         planExpiresAt = new Date(periodEnd * 1000).toISOString();
