@@ -68,19 +68,22 @@ export async function verifySlip(
     }
 
     console.log('[Slip2GO] Verifying slip:', imageUrl, 'expected:', expectedAmount);
+    console.log('[Slip2GO] Request payload:', JSON.stringify({ payload }));
 
     const response = await fetch(`${SLIP2GO_API_URL}/api/verify-slip/qr-image-link/info`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SLIP2GO_SECRET_KEY}`,
+        'Authorization': SLIP2GO_SECRET_KEY,
       },
       body: JSON.stringify({ payload }),
     });
 
     const result = await response.json();
 
+    console.log('[Slip2GO] Response status:', response.status);
     console.log('[Slip2GO] Response code:', result.code, 'message:', result.message);
+    console.log('[Slip2GO] Full response:', JSON.stringify(result));
 
     // code "200000" = Slip found and valid
     if (result.code === '200000' && result.data) {
