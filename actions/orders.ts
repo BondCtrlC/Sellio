@@ -505,7 +505,12 @@ export async function uploadSlip(
   // === Slip2GO Auto-Verification ===
   let autoConfirmed = false;
   try {
-    const verifyResult = await verifySlip(publicUrl, orderTotal);
+    // Use proxy URL (trysellio.com domain) instead of Supabase URL
+    // Slip2GO rejects Supabase storage URLs with "Image url format is not Valid"
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://trysellio.com';
+    const proxyImageUrl = `${baseUrl}/api/slip-image/${orderId}`;
+    
+    const verifyResult = await verifySlip(proxyImageUrl, orderTotal);
     console.log('[AutoVerify] Result:', verifyResult.verified, verifyResult.message);
 
     if (verifyResult.success && verifyResult.verified && orderInfo) {

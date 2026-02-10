@@ -4,19 +4,26 @@ import { verifySlip } from '@/lib/slip2go';
 // DEBUG ENDPOINT - remove after testing
 export async function POST(request: NextRequest) {
   try {
-    const { imageUrl, amount } = await request.json();
+    const { imageUrl, amount, orderId } = await request.json();
 
-    if (!imageUrl) {
-      return NextResponse.json({ error: 'imageUrl required' }, { status: 400 });
+    // If orderId is provided, use proxy URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://trysellio.com';
+    const urlToVerify = orderId 
+      ? `${baseUrl}/api/slip-image/${orderId}`
+      : imageUrl;
+
+    if (!urlToVerify) {
+      return NextResponse.json({ error: 'imageUrl or orderId required' }, { status: 400 });
     }
 
-    console.log('[TestSlip2GO] Testing with:', { imageUrl, amount });
+    console.log('[TestSlip2GO] Testing with:', { urlToVerify, amount });
 
-    const result = await verifySlip(imageUrl, amount || undefined, false);
+    const result = await verifySlip(urlToVerify, amount || undefined, false);
 
     console.log('[TestSlip2GO] Result:', JSON.stringify(result));
 
     return NextResponse.json({
+      urlUsed: urlToVerify,
       result,
       env: {
         hasApiUrl: !!process.env.SLIP2GO_API_URL,
