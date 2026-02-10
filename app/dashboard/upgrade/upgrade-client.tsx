@@ -355,21 +355,26 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
             </ul>
 
             {!isPro && (
-              <Button 
-                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
-                size="lg"
-                onClick={handleUpgrade}
-                disabled={loading}
-              >
-                {loading ? (
-                  t('openingPayment')
-                ) : (
-                  <>
-                    <Zap className="h-4 w-4 mr-2" />
-                    {t('upgradeNow')}
-                  </>
-                )}
-              </Button>
+              <div className="space-y-2">
+                <Button 
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                  size="lg"
+                  onClick={handleUpgrade}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    t('openingPayment')
+                  ) : (
+                    <>
+                      <Zap className="h-4 w-4 mr-2" />
+                      {t('upgradeNow')}
+                    </>
+                  )}
+                </Button>
+                <p className="text-sm font-medium text-center text-muted-foreground">
+                  {t('upgradeNote')}
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>

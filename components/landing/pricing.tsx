@@ -12,7 +12,7 @@ export function Pricing() {
 
   const proPrice = isYearly ? t('proYearlyPrice') : '3.3';
   const proMonthlyLabel = isYearly ? t('proYearlyMonthly') : t('proMonthly');
-  const proCtaNote = isYearly ? t('ctaNotePro', { price: '2.4' }) : t('ctaNotePro', { price: '3.3' });
+  const proCtaNote = t('ctaNotePro');
 
   const plans = [
     {
@@ -200,7 +200,7 @@ export function Pricing() {
                   </Button>
                 </Link>
                 {plan.ctaNote && (
-                  <p className={`text-xs text-center ${plan.highlight ? 'text-gray-400' : 'text-gray-400'}`}>
+                  <p className={`text-center ${plan.highlight ? 'text-sm font-medium text-gray-300' : 'text-xs text-gray-400'}`}>
                     {plan.ctaNote}
                   </p>
                 )}
