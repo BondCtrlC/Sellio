@@ -1,5 +1,5 @@
 // ============================================
-// Slip2GO - Verify Slip API Client
+// Slip2GO - Verify Slip API Client (Base64)
 // https://slip2go.com
 // ============================================
 
@@ -19,13 +19,13 @@ export interface Slip2GoVerifyResult {
 }
 
 /**
- * Verify a bank transfer slip using Slip2GO Image URL API
- * @param imageUrl - Public URL of the slip image
+ * Verify a bank transfer slip using Slip2GO Base64 API
+ * @param base64Image - Base64 encoded slip image (without data:image prefix)
  * @param expectedAmount - Expected payment amount to verify against
  * @param checkDuplicate - Whether to check for duplicate slips (default: true)
  */
-export async function verifySlip(
-  imageUrl: string,
+export async function verifySlipBase64(
+  base64Image: string,
   expectedAmount?: number,
   checkDuplicate: boolean = true
 ): Promise<Slip2GoVerifyResult> {
@@ -44,9 +44,9 @@ export async function verifySlip(
   }
 
   try {
-    // Build request body
+    // Build request body for Base64 endpoint
     const payload: Record<string, unknown> = {
-      imageUrl,
+      base64Image,
     };
 
     // Add optional check conditions
@@ -67,10 +67,9 @@ export async function verifySlip(
       payload.checkCondition = checkCondition;
     }
 
-    console.log('[Slip2GO] Verifying slip:', imageUrl, 'expected:', expectedAmount);
-    console.log('[Slip2GO] Request payload:', JSON.stringify({ payload }));
+    console.log('[Slip2GO] Verifying slip (Base64), expected:', expectedAmount, 'base64 length:', base64Image.length);
 
-    const response = await fetch(`${SLIP2GO_API_URL}/api/verify-slip/qr-image-link/info`, {
+    const response = await fetch(`${SLIP2GO_API_URL}/api/verify-slip/base64/info`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -83,7 +82,6 @@ export async function verifySlip(
 
     console.log('[Slip2GO] Response status:', response.status);
     console.log('[Slip2GO] Response code:', result.code, 'message:', result.message);
-    console.log('[Slip2GO] Full response:', JSON.stringify(result));
 
     // code "200000" = Slip found and valid
     if (result.code === '200000' && result.data) {

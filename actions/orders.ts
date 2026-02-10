@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
 import { checkoutSchema, type CheckoutInput } from '@/lib/validations/checkout';
-import { verifySlip } from '@/lib/slip2go';
+import { verifySlipBase64 } from '@/lib/slip2go';
 import { 
   sendOrderConfirmationEmail, 
   sendPaymentRejectionEmail,
@@ -504,18 +504,15 @@ export async function uploadSlip(
 
   const orderTotal = orderInfo ? Number(orderInfo.total) : 0;
 
-  // === Slip2GO Auto-Verification ===
+  // === Slip2GO Auto-Verification (Base64) ===
   let autoConfirmed = false;
   let verifyFailed = false;
   let verifyMessage = '';
   try {
-    // Use proxy URL (trysellio.com domain) instead of Supabase URL
-    // Slip2GO rejects Supabase storage URLs with "Image url format is not Valid"
-    // URL must end with image extension (.jpg) for Slip2GO validation
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://trysellio.com';
-    const proxyImageUrl = `${baseUrl}/api/slip-image/${orderId}.jpg`;
+    // Convert uploaded file to Base64 for Slip2GO verification
+    const base64Image = Buffer.from(buffer).toString('base64');
     
-    const verifyResult = await verifySlip(proxyImageUrl, orderTotal);
+    const verifyResult = await verifySlipBase64(base64Image, orderTotal);
     console.log('[AutoVerify] Result:', verifyResult.verified, verifyResult.message);
 
     if (verifyResult.success && verifyResult.verified && orderInfo) {
