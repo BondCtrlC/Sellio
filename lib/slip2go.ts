@@ -45,8 +45,13 @@ export async function verifySlipBase64(
 
   try {
     // Build request body for Base64 endpoint
+    // Slip2GO requires data URI prefix: "data:image/jpeg;base64,..."
+    const imageBase64 = base64Image.startsWith('data:')
+      ? base64Image
+      : `data:image/jpeg;base64,${base64Image}`;
+
     const payload: Record<string, unknown> = {
-      base64Image,
+      imageBase64,
     };
 
     // Add optional check conditions
@@ -69,7 +74,7 @@ export async function verifySlipBase64(
 
     console.log('[Slip2GO] Verifying slip (Base64), expected:', expectedAmount, 'base64 length:', base64Image.length);
 
-    const response = await fetch(`${SLIP2GO_API_URL}/api/verify-slip/base64/info`, {
+    const response = await fetch(`${SLIP2GO_API_URL}/api/verify-slip/qr-base64/info`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
