@@ -176,35 +176,50 @@ export function PaymentPage({ order }: PaymentPageProps) {
         {/* Status Badge */}
         {isPendingConfirmation && (
           <div className="space-y-3 mb-6">
-            {/* Verify Failed Warning */}
-            {verifyFailed && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-center gap-3">
-                <Clock className="h-5 w-5 text-orange-600 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-orange-800">{t('slipVerifyFailed')}</p>
-                  <p className="text-sm text-orange-700">{t('slipVerifyFailedDesc')}</p>
+            {verifyFailed ? (
+              <>
+                {/* Verify Failed Warning */}
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                  <Clock className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-red-800">{t('slipVerifyFailed')}</p>
+                    <p className="text-sm text-red-700 mt-1">{t('slipVerifyFailedDesc')}</p>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center gap-3">
-              <Clock className="h-5 w-5 text-yellow-600 flex-shrink-0" />
-              <div>
-                <p className="font-medium text-yellow-800">{t('pendingConfirm')}</p>
-                <p className="text-sm text-yellow-700">{t('pendingConfirmDesc')}</p>
-              </div>
-            </div>
-            
-            {/* Info: Can close tab */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800">
-                <span className="font-medium">📧 {t('canCloseTab')}</span>
-                <br />
-                <span className="text-blue-700">
-                  {t('canCloseTabDesc', { email: order.buyer_email })}
-                </span>
-              </p>
-            </div>
+                {/* Info: Can close tab */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-medium">📧 {t('canCloseTab')}</span>
+                    <br />
+                    <span className="text-blue-700">
+                      {t('canCloseTabDesc', { email: order.buyer_email })}
+                    </span>
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-yellow-800">{t('pendingConfirm')}</p>
+                    <p className="text-sm text-yellow-700">{t('pendingConfirmDesc')}</p>
+                  </div>
+                </div>
+                
+                {/* Info: Can close tab */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-medium">📧 {t('canCloseTab')}</span>
+                    <br />
+                    <span className="text-blue-700">
+                      {t('canCloseTabDesc', { email: order.buyer_email })}
+                    </span>
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         )}
 
