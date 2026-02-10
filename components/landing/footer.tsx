@@ -26,7 +26,7 @@ export function Footer() {
     support: {
       title: t('support'),
       links: [
-        { label: t('contactUs'), href: 'mailto:support@trysellio.com' },
+        { label: t('contactUs'), href: 'mailto:sellio.team@gmail.com' },
         { label: t('getStarted'), href: '/signup' },
       ]
     },

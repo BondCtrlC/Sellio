@@ -102,7 +102,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mt-8 mb-3">12. ติดต่อเรา</h2>
             <p>หากมีคำถามเกี่ยวกับข้อกำหนดการใช้งาน กรุณาติดต่อ:</p>
-            <p className="mt-2"><strong>Email:</strong> support@trysellio.com</p>
+            <p className="mt-2"><strong>Email:</strong> sellio.team@gmail.com</p>
           </section>
         </div>
       </main>
