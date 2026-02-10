@@ -33,15 +33,22 @@ async function getCreatorSubscriptionInfo() {
     .select('*', { count: 'exact', head: true })
     .eq('creator_id', creator.id);
 
-  // Check if subscription is scheduled for cancellation + get interval
+  // Check if subscription is scheduled for cancellation + get interval + period end
   let cancelAtPeriodEnd = false;
   let subscriptionInterval: 'month' | 'year' = 'month';
+  let planExpiresAt: string | null = creator.plan_expires_at;
   if (creator.stripe_subscription_id) {
     try {
       const subscription = await stripe.subscriptions.retrieve(creator.stripe_subscription_id);
       cancelAtPeriodEnd = subscription.cancel_at_period_end === true;
       const interval = subscription.items?.data?.[0]?.price?.recurring?.interval;
       if (interval === 'year') subscriptionInterval = 'year';
+      // Get period end directly from Stripe (more reliable than DB)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const periodEnd = (subscription as any).current_period_end as number;
+      if (periodEnd) {
+        planExpiresAt = new Date(periodEnd * 1000).toISOString();
+      }
     } catch {
       // Subscription might not exist in Stripe anymore
     }
@@ -51,7 +58,7 @@ async function getCreatorSubscriptionInfo() {
     plan: (creator.plan || 'free') as PlanType,
     productCount: count || 0,
     hasSubscription: !!creator.stripe_subscription_id,
-    planExpiresAt: creator.plan_expires_at,
+    planExpiresAt,
     cancelAtPeriodEnd,
     subscriptionInterval,
   };

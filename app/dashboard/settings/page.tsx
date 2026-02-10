@@ -37,9 +37,10 @@ async function getCreator() {
 async function getBillingInfo(creator: any) {
   const invoices = await getCreatorInvoices();
   
-  // Check if subscription is scheduled for cancellation + get interval
+  // Check if subscription is scheduled for cancellation + get interval + period end
   let cancelAtPeriodEnd = false;
   let subscriptionInterval: 'month' | 'year' = 'month';
+  let planExpiresAt: string | null = creator.plan_expires_at as string | null;
   if (creator.stripe_subscription_id) {
     try {
       const subscription = await stripe.subscriptions.retrieve(creator.stripe_subscription_id);
@@ -47,6 +48,12 @@ async function getBillingInfo(creator: any) {
       // Get billing interval from subscription items
       const interval = subscription.items?.data?.[0]?.price?.recurring?.interval;
       if (interval === 'year') subscriptionInterval = 'year';
+      // Get period end directly from Stripe (more reliable than DB)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const periodEnd = (subscription as any).current_period_end as number;
+      if (periodEnd) {
+        planExpiresAt = new Date(periodEnd * 1000).toISOString();
+      }
     } catch {
       // Subscription might not exist in Stripe anymore
     }
@@ -55,7 +62,7 @@ async function getBillingInfo(creator: any) {
   return {
     plan: (creator.plan || 'free') as PlanType,
     hasSubscription: !!creator.stripe_subscription_id,
-    planExpiresAt: creator.plan_expires_at as string | null,
+    planExpiresAt,
     cancelAtPeriodEnd,
     subscriptionInterval,
     invoices,
