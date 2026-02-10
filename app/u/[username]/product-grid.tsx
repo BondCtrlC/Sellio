@@ -42,7 +42,7 @@ export function ProductGrid({ products, creatorUsername, design }: ProductGridPr
   // Compact (List) Layout
   if (productLayout === 'compact') {
     return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-5">
         {products.map((product) => (
           <CompactProductCard 
             key={product.id} 
@@ -57,7 +57,7 @@ export function ProductGrid({ products, creatorUsername, design }: ProductGridPr
 
   // Default: Horizontal Layout
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-5">
       {products.map((product) => (
         <ProductCard 
           key={product.id} 
