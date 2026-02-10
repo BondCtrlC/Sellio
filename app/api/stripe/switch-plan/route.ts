@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         amount_off: formatAmountForStripe(99, 'thb'), // 99 THB
         currency: 'thb',
         duration: 'once',
-        name: 'เครดิตจากแพลนรายเดือน (Monthly Plan Credit)',
+        name: 'Monthly Plan Credit',
       });
     }
 
