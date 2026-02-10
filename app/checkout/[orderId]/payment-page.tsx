@@ -32,6 +32,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
   
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verifyWarning, setVerifyWarning] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const isPendingPayment = order.status === 'pending_payment';
@@ -126,6 +127,7 @@ export function PaymentPage({ order }: PaymentPageProps) {
 
     setUploading(true);
     setError(null);
+    setVerifyWarning(null);
 
     try {
       const formData = new FormData();
@@ -143,6 +145,11 @@ export function PaymentPage({ order }: PaymentPageProps) {
         // Slip verified automatically — go directly to success page
         router.push(`/checkout/${order.id}/success`);
         return;
+      }
+
+      // Show warning if verification failed
+      if (result.verifyFailed) {
+        setVerifyWarning(t('slipVerifyFailed'));
       }
 
       // Refresh page to show updated status (pending_confirmation)
@@ -164,6 +171,17 @@ export function PaymentPage({ order }: PaymentPageProps) {
             {t('orderNumber', { id: order.id.slice(0, 8).toUpperCase() })}
           </p>
         </div>
+
+        {/* Verify Warning (shown immediately after upload if verification failed) */}
+        {verifyWarning && !isPendingConfirmation && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6 flex items-center gap-3">
+            <Clock className="h-5 w-5 text-orange-600 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-orange-800">{verifyWarning}</p>
+              <p className="text-sm text-orange-700">{t('slipVerifyFailedDesc')}</p>
+            </div>
+          </div>
+        )}
 
         {/* Status Badge */}
         {isPendingConfirmation && (

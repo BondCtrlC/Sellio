@@ -29,6 +29,8 @@ interface UploadSlipResult {
   success: boolean;
   error?: string;
   autoConfirmed?: boolean;
+  verifyFailed?: boolean;
+  verifyMessage?: string;
 }
 
 export interface OrderDetails {
@@ -504,6 +506,8 @@ export async function uploadSlip(
 
   // === Slip2GO Auto-Verification ===
   let autoConfirmed = false;
+  let verifyFailed = false;
+  let verifyMessage = '';
   try {
     // Use proxy URL (trysellio.com domain) instead of Supabase URL
     // Slip2GO rejects Supabase storage URLs with "Image url format is not Valid"
@@ -529,6 +533,8 @@ export async function uploadSlip(
         .eq('order_id', orderId);
     } else {
       // Verification failed or amount mismatch — save result for creator reference
+      verifyFailed = true;
+      verifyMessage = verifyResult.message;
       await supabase
         .from('payments')
         .update({ 
@@ -571,7 +577,7 @@ export async function uploadSlip(
 
   revalidatePath(`/checkout/${orderId}`);
   
-  return { success: true, autoConfirmed };
+  return { success: true, autoConfirmed, verifyFailed, verifyMessage };
 }
 
 // ============================================

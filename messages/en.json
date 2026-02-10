@@ -1154,6 +1154,8 @@
     "backHome": "Back to Home",
     "pendingConfirm": "Pending Payment Verification",
     "pendingConfirmDesc": "We've received your slip. Please wait for seller confirmation.",
+    "slipVerifyFailed": "Slip auto-verification failed",
+    "slipVerifyFailedDesc": "Your slip could not be verified automatically. Please wait for the seller to review and confirm manually.",
     "canCloseTab": "You can close this page",
     "canCloseTabDesc": "Once the seller confirms payment, we'll send an email to {email} with your product/service access link.",
     "bankTransfer": "Bank Transfer",
