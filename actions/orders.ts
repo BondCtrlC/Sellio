@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
 import { checkoutSchema, type CheckoutInput } from '@/lib/validations/checkout';
+import { verifySlip } from '@/lib/slip2go';
 import { 
   sendOrderConfirmationEmail, 
   sendPaymentRejectionEmail,
@@ -27,6 +28,7 @@ interface CreateOrderResult {
 interface UploadSlipResult {
   success: boolean;
   error?: string;
+  autoConfirmed?: boolean;
 }
 
 export interface OrderDetails {
@@ -487,44 +489,193 @@ export async function uploadSlip(
     return { success: false, error: t('cannotSaveSlip') };
   }
 
-  // Update order status to pending_confirmation (always require manual confirmation)
-  await supabase
+  // Get order details for verification
+  const { data: orderInfo } = await supabase
     .from('orders')
-    .update({ status: 'pending_confirmation' })
-    .eq('id', orderId);
+    .select(`
+      id, total, buyer_name, buyer_email, creator_id, booking_date, booking_time,
+      product:products(id, title, type, type_config),
+      creator:creators(id, display_name, notification_email, contact_line, contact_ig)
+    `)
+    .eq('id', orderId)
+    .single();
 
-  // Send email notification to creator about slip upload
+  const orderTotal = orderInfo ? Number(orderInfo.total) : 0;
+
+  // === Slip2GO Auto-Verification ===
+  let autoConfirmed = false;
   try {
-    const { data: orderInfo } = await supabase
-      .from('orders')
-      .select(`
-        id, total, buyer_name, creator_id,
-        product:products(title),
-        creator:creators(notification_email)
-      `)
-      .eq('id', orderId)
-      .single();
+    const verifyResult = await verifySlip(publicUrl, orderTotal);
+    console.log('[AutoVerify] Result:', verifyResult.verified, verifyResult.message);
 
-    if (orderInfo) {
-      const creator = Array.isArray(orderInfo.creator) ? orderInfo.creator[0] : orderInfo.creator;
-      const product = Array.isArray(orderInfo.product) ? orderInfo.product[0] : orderInfo.product;
-      
-      if (creator?.notification_email) {
-        sendSlipUploadedNotificationEmail(creator.notification_email, {
-          buyerName: orderInfo.buyer_name,
-          productTitle: product?.title || t('productDefault'),
-          amount: Number(orderInfo.total),
-          orderId: orderInfo.id,
-        }).catch(err => console.error('Slip notification email error:', err));
-      }
+    if (verifyResult.success && verifyResult.verified && orderInfo) {
+      // Slip is valid and amount matches → Auto-confirm
+      autoConfirmed = await _autoConfirmOrder(supabase, orderId, orderInfo, t);
+
+      // Mark slip as verified
+      await supabase
+        .from('payments')
+        .update({ 
+          slip_verified: true,
+          slip_verified_at: new Date().toISOString(),
+          slip_verify_ref: verifyResult.transRef,
+        })
+        .eq('order_id', orderId);
+    } else {
+      // Verification failed or amount mismatch — save result for creator reference
+      await supabase
+        .from('payments')
+        .update({ 
+          slip_verified: false,
+          slip_verify_message: verifyResult.message,
+        })
+        .eq('order_id', orderId);
     }
-  } catch (e) {
-    console.error('Slip notification email lookup error:', e);
+  } catch (verifyError) {
+    console.error('[AutoVerify] Error:', verifyError);
+    // Continue with manual flow if verification fails
+  }
+
+  if (!autoConfirmed) {
+    // Fallback: manual confirmation by creator
+    await supabase
+      .from('orders')
+      .update({ status: 'pending_confirmation' })
+      .eq('id', orderId);
+
+    // Send email notification to creator about slip upload
+    try {
+      if (orderInfo) {
+        const creator = Array.isArray(orderInfo.creator) ? orderInfo.creator[0] : orderInfo.creator;
+        const product = Array.isArray(orderInfo.product) ? orderInfo.product[0] : orderInfo.product;
+        
+        if (creator?.notification_email) {
+          sendSlipUploadedNotificationEmail(creator.notification_email, {
+            buyerName: orderInfo.buyer_name,
+            productTitle: product?.title || t('productDefault'),
+            amount: Number(orderInfo.total),
+            orderId: orderInfo.id,
+          }).catch(err => console.error('Slip notification email error:', err));
+        }
+      }
+    } catch (e) {
+      console.error('Slip notification email lookup error:', e);
+    }
   }
 
   revalidatePath(`/checkout/${orderId}`);
   
-  return { success: true };
+  return { success: true, autoConfirmed };
+}
+
+// ============================================
+// INTERNAL: Auto-confirm order (called by slip verification)
+// ============================================
+async function _autoConfirmOrder(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orderId: string,
+  orderInfo: {
+    id: string;
+    total: number;
+    buyer_name: string;
+    buyer_email: string;
+    creator_id: string;
+    booking_date?: string | null;
+    booking_time?: string | null;
+    product: unknown;
+    creator: unknown;
+  },
+  t: Awaited<ReturnType<typeof getTranslations>>
+): Promise<boolean> {
+  try {
+    const product = Array.isArray(orderInfo.product) ? orderInfo.product[0] : orderInfo.product;
+    const creator = Array.isArray(orderInfo.creator) ? orderInfo.creator[0] : orderInfo.creator;
+    const productData = product as { id: string; title: string; type: string; type_config: Record<string, unknown> } | null;
+    const creatorData = creator as { id: string; display_name: string; notification_email: string; contact_line: string; contact_ig: string } | null;
+
+    // For booking products, skip auto-confirm (creator needs to provide meeting details)
+    if (productData?.type === 'booking' || productData?.type === 'live') {
+      console.log('[AutoConfirm] Skipping auto-confirm for booking product');
+      return false;
+    }
+
+    // Update order status to confirmed
+    const { error: updateOrderError } = await supabase
+      .from('orders')
+      .update({ status: 'confirmed' })
+      .eq('id', orderId);
+
+    if (updateOrderError) {
+      console.error('[AutoConfirm] Update order error:', updateOrderError);
+      return false;
+    }
+
+    // Update payment status
+    await supabase
+      .from('payments')
+      .update({
+        status: 'confirmed',
+        confirmed_at: new Date().toISOString(),
+        confirmed_by: 'auto_slip2go',
+      })
+      .eq('order_id', orderId);
+
+    // Handle fulfillment for digital products
+    if (productData?.type === 'digital') {
+      const typeConfig = productData.type_config || {};
+      let fulfillmentContent: Record<string, unknown>;
+
+      if (typeConfig.delivery_type === 'redirect') {
+        fulfillmentContent = {
+          delivery_type: 'redirect',
+          redirect_url: typeConfig.redirect_url || '',
+          redirect_name: typeConfig.redirect_name || '',
+        };
+      } else {
+        fulfillmentContent = {
+          delivery_type: 'file',
+          file_url: typeConfig.digital_file_url || '',
+          file_name: typeConfig.digital_file_name || 'file',
+          download_count: 0,
+          max_downloads: 5,
+        };
+      }
+
+      await supabase
+        .from('fulfillments')
+        .insert({
+          order_id: orderId,
+          type: 'download',
+          content: fulfillmentContent,
+          access_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        });
+    }
+
+    // Send confirmation email to buyer
+    try {
+      await sendOrderConfirmationEmail({
+        orderId: orderInfo.id,
+        buyerName: orderInfo.buyer_name,
+        buyerEmail: orderInfo.buyer_email,
+        productTitle: productData?.title || t('productDefault'),
+        amount: orderInfo.total,
+        creatorName: creatorData?.display_name || t('sellerDefault'),
+        creatorContact: {
+          line: creatorData?.contact_line || undefined,
+          ig: creatorData?.contact_ig || undefined,
+        },
+      });
+      console.log('[AutoConfirm] Confirmation email sent to:', orderInfo.buyer_email);
+    } catch (emailError) {
+      console.error('[AutoConfirm] Email error:', emailError);
+    }
+
+    console.log('[AutoConfirm] Order auto-confirmed:', orderId);
+    return true;
+  } catch (error) {
+    console.error('[AutoConfirm] Error:', error);
+    return false;
+  }
 }
 
 // ============================================
@@ -578,7 +729,9 @@ export async function getCreatorOrders(status?: string) {
         status,
         slip_url,
         slip_uploaded_at,
-        refund_slip_url
+        refund_slip_url,
+        slip_verified,
+        slip_verify_ref
       )
     `)
     .eq('creator_id', creator.id);

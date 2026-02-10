@@ -139,7 +139,13 @@ export function PaymentPage({ order }: PaymentPageProps) {
         return;
       }
 
-      // Refresh page to show updated status
+      if (result.autoConfirmed) {
+        // Slip verified automatically — go directly to success page
+        router.push(`/checkout/${order.id}/success`);
+        return;
+      }
+
+      // Refresh page to show updated status (pending_confirmation)
       router.refresh();
     } catch (err) {
       console.error(err);

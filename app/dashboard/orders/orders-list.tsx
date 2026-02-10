@@ -44,6 +44,8 @@ interface Order {
     slip_url: string | null;
     slip_uploaded_at: string | null;
     refund_slip_url: string | null;
+    slip_verified: boolean | null;
+    slip_verify_ref: string | null;
   } | null;
 }
 

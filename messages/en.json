@@ -525,6 +525,8 @@
     "buyerInfo": "Buyer Information",
     "promptPayRefund": "PromptPay (Refund): {number}",
     "paymentSlip": "Payment Slip",
+    "slipVerified": "Auto-verified",
+    "slipUnverified": "Pending review",
     "refundSlip": "Refund Slip",
     "error": "An error occurred",
     "rejectReasonTitle": "Rejection Reason",

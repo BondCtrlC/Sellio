@@ -525,6 +525,8 @@
     "buyerInfo": "ข้อมูลผู้ซื้อ",
     "promptPayRefund": "PromptPay (คืนเงิน): {number}",
     "paymentSlip": "สลิปการโอนเงิน",
+    "slipVerified": "ยืนยันอัตโนมัติแล้ว",
+    "slipUnverified": "รอตรวจสอบ",
     "refundSlip": "สลิปการคืนเงิน",
     "error": "เกิดข้อผิดพลาด",
     "rejectReasonTitle": "เหตุผลในการปฏิเสธ",

@@ -52,6 +52,8 @@ interface Order {
     slip_url: string | null;
     slip_uploaded_at: string | null;
     refund_slip_url: string | null;
+    slip_verified: boolean | null;
+    slip_verify_ref: string | null;
   } | null;
 }
 
@@ -305,7 +307,20 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-sm">{t('paymentSlip')}</h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold text-sm">{t('paymentSlip')}</h4>
+                    {order.payment.slip_verified && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                        <CheckCircle className="h-3 w-3" />
+                        {t('slipVerified')}
+                      </span>
+                    )}
+                    {order.payment.slip_verified === false && order.payment.slip_url && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                        {t('slipUnverified')}
+                      </span>
+                    )}
+                  </div>
                   {order.payment.slip_uploaded_at && (
                     <span className="text-xs text-muted-foreground">
                       {new Date(order.payment.slip_uploaded_at).toLocaleString('th-TH')}
