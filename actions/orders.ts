@@ -507,8 +507,9 @@ export async function uploadSlip(
   try {
     // Use proxy URL (trysellio.com domain) instead of Supabase URL
     // Slip2GO rejects Supabase storage URLs with "Image url format is not Valid"
+    // URL must end with image extension (.jpg) for Slip2GO validation
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://trysellio.com';
-    const proxyImageUrl = `${baseUrl}/api/slip-image/${orderId}`;
+    const proxyImageUrl = `${baseUrl}/api/slip-image/${orderId}.jpg`;
     
     const verifyResult = await verifySlip(proxyImageUrl, orderTotal);
     console.log('[AutoVerify] Result:', verifyResult.verified, verifyResult.message);

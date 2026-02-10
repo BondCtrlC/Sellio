@@ -7,7 +7,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
 ) {
-  const { orderId } = await params;
+  const rawOrderId = (await params).orderId;
+  // Strip .jpg/.png extension if present (Slip2GO requires image extension in URL)
+  const orderId = rawOrderId.replace(/\.(jpg|jpeg|png|webp)$/i, '');
 
   if (!orderId) {
     return NextResponse.json({ error: 'Order ID required' }, { status: 400 });

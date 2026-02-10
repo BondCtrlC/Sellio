@@ -6,10 +6,10 @@ export async function POST(request: NextRequest) {
   try {
     const { imageUrl, amount, orderId } = await request.json();
 
-    // If orderId is provided, use proxy URL
+    // If orderId is provided, use proxy URL with .jpg extension
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://trysellio.com';
     const urlToVerify = orderId 
-      ? `${baseUrl}/api/slip-image/${orderId}`
+      ? `${baseUrl}/api/slip-image/${orderId}.jpg`
       : imageUrl;
 
     if (!urlToVerify) {
