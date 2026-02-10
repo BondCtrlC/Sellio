@@ -3,7 +3,7 @@
 ## Overview
 แพลตฟอร์มขายสินค้าดิจิทัลสำหรับ Creator ชาวไทย คล้าย Stan Store แต่ปรับให้เหมาะกับตลาดไทย
 
-**URL:** sellio.me  
+**URL:** trysellio.com  
 **Pricing:** Free + Pro (99 THB/เดือน)  
 **Deployment:** Vercel  
 **Status:** MVP Ready (MUST + SHOULD + NICE TO HAVE เสร็จหมดแล้ว, เหลือ M2 Resend Domain) | ✅ i18n Complete + Polished | ✅ Yearly Subscription  

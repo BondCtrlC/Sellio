@@ -6,8 +6,8 @@ import { getTranslations } from 'next-intl/server';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Default from email (must be verified in Resend)
-// After domain verification, set RESEND_FROM_EMAIL=Sellio <noreply@sellio.me> in Vercel env
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Sellio <noreply@sellio.me>';
+// Set RESEND_FROM_EMAIL=Sellio <noreply@trysellio.com> in Vercel env
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Sellio <noreply@trysellio.com>';
 
 interface OrderEmailData {
   orderId: string;
