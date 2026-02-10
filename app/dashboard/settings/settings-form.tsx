@@ -745,12 +745,31 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
 // ============================================
 function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProps['billingInfo']> }) {
   const [cancelling, setCancelling] = useState(false);
+  const [switchingPlan, setSwitchingPlan] = useState(false);
   const [cancelStatus, setCancelStatus] = useState<'none' | 'scheduled' | 'cancelled'>(
     billingInfo.cancelAtPeriodEnd ? 'scheduled' : 'none'
   );
   const router = useRouter();
   const isPro = billingInfo.plan === 'pro';
+  const isMonthly = billingInfo.subscriptionInterval === 'month';
   const t = useTranslations('Settings');
+
+  const handleSwitchToYearly = async () => {
+    setSwitchingPlan(true);
+    try {
+      const res = await fetch('/api/stripe/switch-plan', { method: 'POST' });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || t('switchError'));
+        setSwitchingPlan(false);
+      }
+    } catch {
+      alert(t('switchError'));
+      setSwitchingPlan(false);
+    }
+  };
 
   const handleCancel = async (immediate: boolean) => {
     const msg = immediate ? t('billingConfirmImmediate') : t('billingConfirmEnd');
@@ -875,6 +894,27 @@ function BillingTab({ billingInfo }: { billingInfo: NonNullable<SettingsFormProp
           </div>
         </div>
       </div>
+
+      {/* Switch to Yearly (only for monthly Pro users) */}
+      {isPro && isMonthly && cancelStatus === 'none' && (
+        <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="font-semibold text-green-800">{t('switchToYearly')}</p>
+              <p className="text-sm text-green-700 mt-1">{t('switchToYearlyDesc')}</p>
+              <p className="text-xs text-green-600 mt-1">{t('switchToYearlyNote')}</p>
+            </div>
+            <Button
+              size="sm"
+              onClick={handleSwitchToYearly}
+              disabled={switchingPlan}
+              className="bg-green-600 hover:bg-green-700 text-white whitespace-nowrap shrink-0"
+            >
+              {switchingPlan ? t('switchingPlan') : t('switchToYearlyBtn')}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Cancel Status Messages */}
       {cancelStatus === 'scheduled' && (

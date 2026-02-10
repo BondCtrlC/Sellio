@@ -270,7 +270,19 @@ async function handleSubscriptionCheckout(session: Stripe.Checkout.Session) {
     return;
   }
 
-  console.log('Creator upgraded to Pro:', creatorId);
+  // If this is a plan switch (monthly→yearly), cancel the old subscription
+  const oldSubscriptionId = session.metadata?.old_subscription_id;
+  if (oldSubscriptionId) {
+    try {
+      await stripe.subscriptions.cancel(oldSubscriptionId);
+      console.log('Cancelled old subscription after plan switch:', oldSubscriptionId);
+    } catch (cancelErr) {
+      console.error('Failed to cancel old subscription:', oldSubscriptionId, cancelErr);
+      // Not critical — the old subscription will eventually expire or can be cleaned up
+    }
+  }
+
+  console.log('Creator upgraded to Pro:', creatorId, oldSubscriptionId ? '(switched from monthly)' : '');
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {

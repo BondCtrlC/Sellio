@@ -31,6 +31,7 @@ interface UpgradeClientProps {
 export function UpgradeClient({ plan, productCount, hasSubscription, planExpiresAt, cancelAtPeriodEnd, subscriptionInterval }: UpgradeClientProps) {
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [switchingPlan, setSwitchingPlan] = useState(false);
   const [isScheduledCancel, setIsScheduledCancel] = useState(cancelAtPeriodEnd);
   const [isYearly, setIsYearly] = useState(false);
   const searchParams = useSearchParams();
@@ -39,6 +40,24 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
   const t = useTranslations('Upgrade');
 
   const isPro = plan === 'pro';
+  const isMonthly = subscriptionInterval === 'month';
+
+  const handleSwitchToYearly = async () => {
+    setSwitchingPlan(true);
+    try {
+      const res = await fetch('/api/stripe/switch-plan', { method: 'POST' });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || t('switchError'));
+        setSwitchingPlan(false);
+      }
+    } catch {
+      alert(t('switchError'));
+      setSwitchingPlan(false);
+    }
+  };
 
   const PRO_FEATURES = [
     { icon: Package, label: t('proUnlimitedProducts'), description: t('proUnlimitedProductsDesc') },
@@ -229,6 +248,28 @@ export function UpgradeClient({ plan, productCount, hasSubscription, planExpires
                   {t('viewBillingHistory')}
                 </Link>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Switch to Yearly (for monthly Pro users) */}
+      {isPro && isMonthly && !isScheduledCancel && (
+        <Card className="mb-8 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-semibold text-lg text-green-800">{t('switchToYearly')}</p>
+                <p className="text-sm text-green-700 mt-1">{t('switchToYearlyDesc')}</p>
+                <p className="text-xs text-green-600 mt-1">{t('switchToYearlyNote')}</p>
+              </div>
+              <Button
+                onClick={handleSwitchToYearly}
+                disabled={switchingPlan}
+                className="bg-green-600 hover:bg-green-700 text-white whitespace-nowrap shrink-0"
+              >
+                {switchingPlan ? t('switchingPlan') : t('switchToYearlyBtn')}
+              </Button>
             </div>
           </CardContent>
         </Card>
