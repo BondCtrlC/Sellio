@@ -6,7 +6,8 @@ import { getTranslations } from 'next-intl/server';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Default from email (must be verified in Resend)
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Sellio <noreply@resend.dev>';
+// After domain verification, set RESEND_FROM_EMAIL=Sellio <noreply@sellio.me> in Vercel env
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Sellio <noreply@sellio.me>';
 
 interface OrderEmailData {
   orderId: string;
@@ -752,7 +753,7 @@ export async function sendBookingCancellationEmail(data: {
     const formattedTime = data.bookingTime?.slice(0, 5) || '';
 
     const { error } = await resend.emails.send({
-      from: 'Sellio <noreply@sellio.app>',
+      from: FROM_EMAIL,
       to: data.creatorEmail,
       subject: t('cancellationSubject', { product: data.productTitle }),
       html: `
@@ -838,7 +839,7 @@ export async function sendBookingRescheduleEmail(data: {
     const newFormattedTime = data.newTime?.slice(0, 5) || '';
 
     const { error } = await resend.emails.send({
-      from: 'Sellio <noreply@sellio.app>',
+      from: FROM_EMAIL,
       to: data.creatorEmail,
       subject: t('rescheduleSubject', { product: data.productTitle }),
       html: `
