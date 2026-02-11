@@ -43,6 +43,7 @@ export interface Creator extends BaseEntity {
   // Payment (PromptPay)
   promptpay_id: string | null;  // เบอร์โทร PromptPay
   promptpay_name: string | null;
+  promptpay_qr_url: string | null; // URL of uploaded QR image
   
   // Payment (Bank Transfer)
   bank_name: string | null;

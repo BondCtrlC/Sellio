@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Label, Textarea } from '@/components/ui';
-import { updateSettings } from '@/actions/settings';
+import { updateSettings, uploadPromptPayQR } from '@/actions/settings';
 import { settingsSchema, type SettingsInput } from '@/lib/validations/settings';
 import { AvatarUpload } from './avatar-upload';
 import type { Creator, PlanType } from '@/types';
@@ -28,7 +28,11 @@ import {
   Crown,
   Download,
   ExternalLink,
-  Bell
+  Bell,
+  Upload,
+  CheckCircle,
+  Loader2,
+  ChevronDown
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { setLocale } from '@/actions/locale';
@@ -69,6 +73,14 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  // QR Upload state
+  const [qrUploading, setQrUploading] = useState(false);
+  const [qrError, setQrError] = useState<string | null>(null);
+  const [qrSuccess, setQrSuccess] = useState<string | null>(null);
+  const [qrPreview, setQrPreview] = useState<string | null>(creator.promptpay_qr_url || null);
+  const [showManualInput, setShowManualInput] = useState(!creator.promptpay_qr_url);
+  const qrFileInputRef = useRef<HTMLInputElement>(null);
+
   // Sync activeTab when URL search params change (e.g. from onboarding overlay)
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab') as SettingsTab;
@@ -81,6 +93,7 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<SettingsInput>({
     resolver: zodResolver(settingsSchema),
@@ -131,6 +144,39 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
         setTimeout(() => setSuccess(false), 3000);
       }
     }
+  };
+
+  // Handle QR code upload
+  const handleQRUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Preview
+    const reader = new FileReader();
+    reader.onload = (ev) => setQrPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+
+    setQrUploading(true);
+    setQrError(null);
+    setQrSuccess(null);
+
+    const formData = new FormData();
+    formData.append('qr_image', file);
+
+    const result = await uploadPromptPayQR(formData);
+
+    if (result.success && result.promptpayId) {
+      setQrSuccess(t('qrDecoded', { id: result.promptpayId }));
+      setValue('promptpay_phone', result.promptpayId);
+      setShowManualInput(false);
+    } else {
+      setQrError(result.error || t('qrDecodeFailed'));
+      setQrPreview(creator.promptpay_qr_url || null);
+    }
+
+    setQrUploading(false);
+    // Reset file input
+    if (qrFileInputRef.current) qrFileInputRef.current.value = '';
   };
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -317,35 +363,120 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
               </div>
               
               <div className="ml-0 space-y-4 p-4 bg-gray-50 rounded-xl">
-                <div className="space-y-2">
-                  <Label htmlFor="promptpay_phone">{t('promptpayPhone')}</Label>
-                  <Input
-                    id="promptpay_phone"
-                    placeholder="0812345678"
-                    maxLength={10}
-                    error={!!errors.promptpay_phone}
-                    {...register('promptpay_phone')}
-                  />
-                  {errors.promptpay_phone && (
-                    <p className="text-sm text-destructive">{errors.promptpay_phone.message}</p>
+                {/* QR Upload Section */}
+                <div className="space-y-3">
+                  <Label>{t('uploadQR')}</Label>
+                  <p className="text-xs text-muted-foreground">{t('uploadQRDesc')}</p>
+
+                  {/* Current QR Preview */}
+                  {qrPreview && (
+                    <div className="flex flex-col items-center gap-2 p-4 bg-white rounded-lg border">
+                      <p className="text-xs text-muted-foreground font-medium">{t('currentQR')}</p>
+                      <img
+                        src={qrPreview}
+                        alt="PromptPay QR"
+                        className="w-40 h-40 object-contain rounded-lg"
+                      />
+                    </div>
                   )}
-                  <p className="text-xs text-muted-foreground">
-                    {t('promptpayPhoneHint')}
-                  </p>
+
+                  {/* Upload Button */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => qrFileInputRef.current?.click()}
+                    disabled={qrUploading}
+                    className="w-full"
+                  >
+                    {qrUploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {t('uploadingQR')}
+                      </>
+                    ) : qrPreview ? (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {t('changeQR')}
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {t('uploadQRButton')}
+                      </>
+                    )}
+                  </Button>
+
+                  <input
+                    ref={qrFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleQRUpload}
+                    className="hidden"
+                  />
+
+                  {/* QR Success */}
+                  {qrSuccess && (
+                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                      <p className="text-sm text-green-700">{qrSuccess}</p>
+                    </div>
+                  )}
+
+                  {/* QR Error */}
+                  {qrError && (
+                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0" />
+                      <p className="text-sm text-red-700">{qrError}</p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="promptpay_name">{t('accountName')}</Label>
-                  <Input
-                    id="promptpay_name"
-                    placeholder={t('accountNameOnQR')}
-                    error={!!errors.promptpay_name}
-                    {...register('promptpay_name')}
-                  />
-                  {errors.promptpay_name && (
-                    <p className="text-sm text-destructive">{errors.promptpay_name.message}</p>
-                  )}
+                {/* Manual Input Toggle */}
+                <div className="border-t pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowManualInput(!showManualInput)}
+                    className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                  >
+                    <ChevronDown className={`h-3 w-3 transition-transform ${showManualInput ? 'rotate-180' : ''}`} />
+                    {t('orEnterManually')}
+                  </button>
                 </div>
+
+                {/* Manual Phone Input (collapsed by default if QR uploaded) */}
+                {showManualInput && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="promptpay_phone">{t('promptpayPhone')}</Label>
+                      <Input
+                        id="promptpay_phone"
+                        placeholder="0812345678"
+                        maxLength={10}
+                        error={!!errors.promptpay_phone}
+                        {...register('promptpay_phone')}
+                      />
+                      {errors.promptpay_phone && (
+                        <p className="text-sm text-destructive">{errors.promptpay_phone.message}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {t('promptpayPhoneHint')}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="promptpay_name">{t('accountName')}</Label>
+                      <Input
+                        id="promptpay_name"
+                        placeholder={t('accountNameOnQR')}
+                        error={!!errors.promptpay_name}
+                        {...register('promptpay_name')}
+                      />
+                      {errors.promptpay_name && (
+                        <p className="text-sm text-destructive">{errors.promptpay_name.message}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

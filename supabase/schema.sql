@@ -34,6 +34,7 @@ CREATE TABLE creators (
   -- Payment
   promptpay_id VARCHAR(20),
   promptpay_name VARCHAR(100),
+  promptpay_qr_url TEXT,
   
   -- Bank Transfer
   bank_name VARCHAR(100),
