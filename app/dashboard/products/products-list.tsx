@@ -189,6 +189,14 @@ export function ProductsList({ initialProducts, plan }: ProductsListProps) {
   );
 }
 
+function isBookingMeetingComplete(product: Product): boolean {
+  if (product.type !== 'booking') return true;
+  const config = product.type_config as unknown as Record<string, unknown>;
+  const locationType = (config?.location_type as string) || 'online';
+  if (locationType === 'online') return !!(config?.meeting_link as string)?.trim();
+  return !!(config?.location_address as string)?.trim();
+}
+
 function ProductRow({ product }: { product: Product }) {
   const t = useTranslations('Products');
   const typeInfo = PRODUCT_TYPES[product.type as keyof typeof PRODUCT_TYPES] || PRODUCT_TYPES.booking;
@@ -199,9 +207,10 @@ function ProductRow({ product }: { product: Product }) {
     link: LinkIcon,
   };
   const TypeIcon = TYPE_ICONS[product.type as keyof typeof TYPE_ICONS] || Package;
+  const missingMeetingInfo = !isBookingMeetingComplete(product);
 
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
+    <Card className={`overflow-hidden hover:shadow-md transition-shadow ${missingMeetingInfo ? 'border-amber-300' : ''}`}>
       <div className="flex items-center gap-4 p-4">
         {/* Image */}
         <div className="w-20 h-20 rounded-lg bg-muted flex-shrink-0 overflow-hidden">
@@ -237,6 +246,16 @@ function ProductRow({ product }: { product: Product }) {
               </span>
             )}
           </div>
+          {/* Warning for incomplete booking products */}
+          {missingMeetingInfo && (
+            <Link
+              href={`/dashboard/products/${product.id}/edit`}
+              className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded mt-1.5 hover:bg-amber-100 transition-colors"
+            >
+              <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+              {t('bookingMissingMeetingInfo')}
+            </Link>
+          )}
         </div>
 
         {/* Price */}

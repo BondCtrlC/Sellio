@@ -309,7 +309,8 @@
     "hideProduct": "ซ่อนสินค้า",
     "publishProduct": "เผยแพร่สินค้า",
     "deleteProduct": "ลบสินค้า",
-    "confirmDelete": "ต้องการลบ \"{title}\" ใช่หรือไม่?\n\nหากสินค้านี้มีคำสั่งซื้อแล้ว จะไม่สามารถลบได้"
+    "confirmDelete": "ต้องการลบ \"{title}\" ใช่หรือไม่?\n\nหากสินค้านี้มีคำสั่งซื้อแล้ว จะไม่สามารถลบได้",
+    "bookingMissingMeetingInfo": "ยังไม่ได้ใส่ Meeting Link / สถานที่"
   },
   "ProductForm": {
     "productType": "ประเภทสินค้า",
@@ -912,6 +913,8 @@
     "added": "เพิ่มแล้ว",
     "adding": "กำลังเพิ่ม...",
     "add": "เพิ่ม",
+    "setupFirst": "ตั้งค่าก่อน",
+    "bookingMissingMeetingInfo": "ยังไม่ได้ใส่ Meeting Link / สถานที่",
     "hidden": "(ซ่อนอยู่)",
     "hideProduct": "ซ่อนสินค้า",
     "showProduct": "แสดงสินค้า",
@@ -1415,6 +1418,8 @@
     "cannotDeleteSection": "ไม่สามารถลบ section ได้",
     "productAlreadyInStore": "สินค้านี้อยู่ในร้านแล้ว",
     "cannotAddProduct": "ไม่สามารถเพิ่มสินค้าได้",
+    "bookingNeedsMeetingLink": "กรุณากรอก Meeting Link ก่อนเพิ่มสินค้าเข้าร้าน",
+    "bookingNeedsLocation": "กรุณากรอกสถานที่นัดหมายก่อนเพิ่มสินค้าเข้าร้าน",
     "cannotRemoveProduct": "ไม่สามารถลบสินค้าได้",
     "cannotReorderProducts": "ไม่สามารถจัดลำดับได้",
     "cannotReorderSections": "ไม่สามารถจัดลำดับ section ได้",

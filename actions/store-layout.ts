@@ -258,6 +258,27 @@ export async function addProductToStore(productId: string, sectionId?: string | 
     return { success: false, error: t('productAlreadyInStore') };
   }
 
+  // SECURITY: Booking/live products must have meeting link or location before selling
+  const { data: productCheck } = await supabase
+    .from('products')
+    .select('type, type_config')
+    .eq('id', productId)
+    .single();
+
+  if (productCheck && (productCheck.type === 'booking' || productCheck.type === 'live')) {
+    const typeConfig = (productCheck.type_config as Record<string, unknown>) || {};
+    const locationType = (typeConfig.location_type as string) || 'online';
+    const hasMeetingLink = !!(typeConfig.meeting_link as string)?.trim();
+    const hasLocationAddress = !!(typeConfig.location_address as string)?.trim();
+
+    if (locationType === 'online' && !hasMeetingLink) {
+      return { success: false, error: t('bookingNeedsMeetingLink') };
+    }
+    if (locationType === 'offline' && !hasLocationAddress) {
+      return { success: false, error: t('bookingNeedsLocation') };
+    }
+  }
+
   // Get max sort order
   const { data: maxOrderResult } = await supabase
     .from('store_items')

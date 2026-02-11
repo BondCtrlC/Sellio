@@ -2,11 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { Button, Card, Input } from '@/components/ui';
-import { X, Search, Package, FileDown, Calendar, Video, ExternalLink, Plus, Check } from 'lucide-react';
+import { X, Search, Package, FileDown, Calendar, Video, ExternalLink, Plus, Check, AlertTriangle } from 'lucide-react';
 import { getAllProducts, addProductToStore } from '@/actions/store-layout';
 import { formatPrice } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import type { Product, StoreItemWithProduct } from '@/types';
+
+/** Check if a booking/live product has required meeting info */
+function isBookingMeetingInfoComplete(product: Product): boolean {
+  if (product.type !== 'booking') return true;
+  const config = product.type_config as unknown as Record<string, unknown>;
+  const locationType = (config?.location_type as string) || 'online';
+  if (locationType === 'online') {
+    return !!(config?.meeting_link as string)?.trim();
+  }
+  return !!(config?.location_address as string)?.trim();
+}
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -61,7 +73,10 @@ export function AddProductModal({ isOpen, onClose, onProductAdded, targetSection
     setLoading(false);
   };
 
+  const [addError, setAddError] = useState<string | null>(null);
+
   const handleAddProduct = async (product: Product) => {
+    setAddError(null);
     setAddingId(product.id);
     const result = await addProductToStore(product.id, targetSectionId);
     if (result.success && result.data) {
@@ -69,6 +84,8 @@ export function AddProductModal({ isOpen, onClose, onProductAdded, targetSection
         ...result.data,
         product,
       });
+    } else if (result.error) {
+      setAddError(result.error);
     }
     setAddingId(null);
   };
@@ -116,6 +133,13 @@ export function AddProductModal({ isOpen, onClose, onProductAdded, targetSection
           </div>
         </div>
 
+        {/* Error Banner */}
+        {addError && (
+          <div className="mx-4 mt-2 p-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            {addError}
+          </div>
+        )}
+
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
@@ -145,6 +169,7 @@ export function AddProductModal({ isOpen, onClose, onProductAdded, targetSection
                   isAdded={false}
                   isAdding={addingId === product.id}
                   onAdd={() => handleAddProduct(product)}
+                  missingMeetingInfo={!isBookingMeetingInfoComplete(product)}
                 />
               ))}
 
@@ -178,15 +203,16 @@ interface ProductRowProps {
   isAdded: boolean;
   isAdding: boolean;
   onAdd: () => void;
+  missingMeetingInfo?: boolean;
 }
 
-function ProductRow({ product, isAdded, isAdding, onAdd }: ProductRowProps) {
+function ProductRow({ product, isAdded, isAdding, onAdd, missingMeetingInfo }: ProductRowProps) {
   const t = useTranslations('MyStore');
   const config = typeConfig[product.type as keyof typeof typeConfig];
   const Icon = config?.icon || Package;
 
   return (
-    <Card className={`${isAdded ? 'opacity-50' : ''}`}>
+    <Card className={`${isAdded ? 'opacity-50' : ''} ${missingMeetingInfo ? 'border-amber-300 bg-amber-50/50' : ''}`}>
       <div className="flex items-center gap-3 p-3">
         {/* Image */}
         <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
@@ -215,6 +241,16 @@ function ProductRow({ product, isAdded, isAdding, onAdd }: ProductRowProps) {
           <p className="text-xs text-muted-foreground">
             {product.price > 0 ? formatPrice(product.price) : t('free')}
           </p>
+          {/* Warning for incomplete booking products */}
+          {missingMeetingInfo && (
+            <Link
+              href={`/dashboard/products/${product.id}/edit`}
+              className="flex items-center gap-1 text-xs text-amber-700 mt-1 hover:underline"
+            >
+              <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+              {t('bookingMissingMeetingInfo')}
+            </Link>
+          )}
         </div>
 
         {/* Action */}
@@ -223,6 +259,13 @@ function ProductRow({ product, isAdded, isAdding, onAdd }: ProductRowProps) {
             <Check className="h-4 w-4" />
             {t('added')}
           </span>
+        ) : missingMeetingInfo ? (
+          <Link
+            href={`/dashboard/products/${product.id}/edit`}
+            className="text-xs px-3 py-1.5 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors"
+          >
+            {t('setupFirst')}
+          </Link>
         ) : (
           <Button
             size="sm"

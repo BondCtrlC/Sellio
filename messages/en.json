@@ -309,7 +309,8 @@
     "hideProduct": "Hide product",
     "publishProduct": "Publish product",
     "deleteProduct": "Delete product",
-    "confirmDelete": "Delete \"{title}\"?\n\nProducts with existing orders cannot be deleted."
+    "confirmDelete": "Delete \"{title}\"?\n\nProducts with existing orders cannot be deleted.",
+    "bookingMissingMeetingInfo": "Missing Meeting Link / Location"
   },
   "ProductForm": {
     "productType": "Product Type",
@@ -912,6 +913,8 @@
     "added": "Added",
     "adding": "Adding...",
     "add": "Add",
+    "setupFirst": "Set up",
+    "bookingMissingMeetingInfo": "Missing Meeting Link / Location",
     "hidden": "(Hidden)",
     "hideProduct": "Hide Product",
     "showProduct": "Show Product",
@@ -1415,6 +1418,8 @@
     "cannotDeleteSection": "Cannot delete section",
     "productAlreadyInStore": "This product is already in the store",
     "cannotAddProduct": "Cannot add product",
+    "bookingNeedsMeetingLink": "Please add a Meeting Link before adding this product to your store",
+    "bookingNeedsLocation": "Please add a meeting location before adding this product to your store",
     "cannotRemoveProduct": "Cannot remove product",
     "cannotReorderProducts": "Cannot reorder",
     "cannotReorderSections": "Cannot reorder sections",

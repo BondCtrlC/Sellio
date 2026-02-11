@@ -829,11 +829,9 @@ async function _autoConfirmOrder(
     const productData = product as { id: string; title: string; type: string; type_config: Record<string, unknown> } | null;
     const creatorData = creator as { id: string; display_name: string; notification_email: string; contact_line: string; contact_ig: string } | null;
 
-    // For booking products, skip auto-confirm (creator needs to provide meeting details)
-    if (productData?.type === 'booking' || productData?.type === 'live') {
-      console.log('[AutoConfirm] Skipping auto-confirm for booking product');
-      return false;
-    }
+    // Booking/live products: auto-confirm is allowed because we enforce
+    // meeting link/location at product setup (before it can be added to store).
+    // The fulfillment record was already created at order time with pre-filled details.
 
     // Update order status to confirmed
     const { error: updateOrderError } = await supabase
@@ -885,6 +883,21 @@ async function _autoConfirmOrder(
           content: fulfillmentContent,
           access_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         });
+    }
+
+    // For booking/live products, fulfillment was already created at order time
+    // (pre-filled from product type_config). Just mark it as accessed.
+    if (productData?.type === 'booking' || productData?.type === 'live') {
+      await supabase
+        .from('fulfillments')
+        .update({
+          is_accessed: true,
+          accessed_at: new Date().toISOString(),
+        })
+        .eq('order_id', orderId)
+        .eq('type', 'booking_details');
+      
+      console.log('[AutoConfirm] Booking fulfillment marked as accessed');
     }
 
     // Send confirmation email to buyer
