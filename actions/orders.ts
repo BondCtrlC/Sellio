@@ -22,17 +22,17 @@ import {
 // ============================================
 
 /**
- * Normalize a PromptPay ID / phone number / e-wallet ID for comparison.
+ * Normalize a PromptPay ID / phone number for comparison.
  * Strips dashes, spaces, leading +66 / 66 → convert to 0-prefix 10-digit format.
- * E-wallet (15-digit) and National ID (13-digit) are kept as-is after cleaning.
- * Examples: "+66918830892" → "0918830892", "091-883-0892" → "0918830892", "004999022445661" → "004999022445661"
+ * National ID (13 digits) is kept as-is after cleaning.
+ * Examples: "+66918830892" → "0918830892", "091-883-0892" → "0918830892"
  */
 function normalizePromptPayId(id: string): string {
   // Remove dashes, spaces, dots
   let cleaned = id.replace(/[-\s.]/g, '');
   
-  // If it's an e-wallet ID (15 digits) or national ID (13 digits), just return cleaned
-  if (/^\d{15}$/.test(cleaned) || /^\d{13}$/.test(cleaned)) {
+  // National ID (13 digits), just return cleaned
+  if (/^\d{13}$/.test(cleaned)) {
     return cleaned;
   }
   
@@ -90,11 +90,6 @@ export interface OrderDetails {
     display_name: string | null;
     promptpay_id: string | null;
     promptpay_name: string | null;
-    promptpay_qr_url: string | null;
-    promptpay_qr_data: string | null;
-    bank_name: string | null;
-    bank_account_number: string | null;
-    bank_account_name: string | null;
     contact_line: string | null;
     contact_ig: string | null;
   };
@@ -421,11 +416,6 @@ export async function getOrderById(orderId: string): Promise<OrderDetails | null
         display_name,
         promptpay_id,
         promptpay_name,
-        promptpay_qr_url,
-        promptpay_qr_data,
-        bank_name,
-        bank_account_number,
-        bank_account_name,
         contact_line,
         contact_ig
       ),
@@ -557,7 +547,7 @@ export async function uploadSlip(
     .select(`
       id, total, buyer_name, buyer_email, creator_id, booking_date, booking_time,
       product:products(id, title, type, type_config),
-      creator:creators(id, display_name, notification_email, contact_line, contact_ig, promptpay_id, promptpay_name, promptpay_qr_data)
+      creator:creators(id, display_name, notification_email, contact_line, contact_ig, promptpay_id, promptpay_name)
     `)
     .eq('id', orderId)
     .single();
@@ -589,16 +579,12 @@ export async function uploadSlip(
       console.log('[AutoVerify] Result:', verifyResult.verified, verifyResult.apiCode);
 
       if (verifyResult.success && verifyResult.verified && orderInfo) {
-        // === Manual Receiver Check ===
+        // === Receiver Check ===
         // Compare receiver info from Slip2GO response with creator's PromptPay ID
         // This prevents attack: transfer to friend → use that slip → money didn't go to creator
         let receiverMatch = false; // default: DENY — require manual review if no receiver data
-        const isEwalletId = creatorPromptPayId ? /^\d{15}$/.test(creatorPromptPayId.replace(/[-\s.]/g, '')) : false;
-        const isMatchableId = creatorPromptPayId && !isEwalletId; // phone (10) or national ID (13) can be matched
-        const hasUploadedQrData = !!(creatorData as Record<string, unknown>)?.promptpay_qr_data;
         
-        // Step 1: Try standard proxy/account matching (works for phone & national IDs)
-        if (isMatchableId && (verifyResult.receiverProxy || verifyResult.receiverAccount)) {
+        if (creatorPromptPayId && (verifyResult.receiverProxy || verifyResult.receiverAccount)) {
           const normalizedCreatorId = normalizePromptPayId(creatorPromptPayId);
           const normalizedProxy = verifyResult.receiverProxy ? normalizePromptPayId(verifyResult.receiverProxy) : null;
           const normalizedAccount = verifyResult.receiverAccount ? normalizePromptPayId(verifyResult.receiverAccount) : null;
@@ -608,21 +594,11 @@ export async function uploadSlip(
             (normalizedAccount !== null && normalizedAccount === normalizedCreatorId)
           );
 
-          console.log('[AutoVerify] Receiver check (standard): match =', receiverMatch);
+          console.log('[AutoVerify] Receiver check: match =', receiverMatch);
         }
         
-        // Step 2: If standard match failed or impossible, check if e-wallet / uploaded QR mode
-        // E-wallet IDs (15 digits) can't be matched against Slip2GO proxy/account (different format).
-        // For creators with uploaded QR but NO matchable phone/national ID, trust Slip2GO verification.
-        if (!receiverMatch && (isEwalletId || (hasUploadedQrData && !isMatchableId))) {
-          // We generated the QR with amount from creator's uploaded QR data.
-          // Slip2GO already verified: (1) slip is real, (2) amount matches, (3) no duplicate.
-          receiverMatch = true;
-          console.log('[AutoVerify] Receiver check (e-wallet/uploaded QR): trusting Slip2GO verification', { isEwalletId, hasUploadedQrData });
-        }
-        
-        if (!receiverMatch && !isMatchableId && !hasUploadedQrData) {
-          console.log('[AutoVerify] Receiver check: no proxy/account data available — falling back to manual review');
+        if (!receiverMatch && !creatorPromptPayId) {
+          console.log('[AutoVerify] Receiver check: no PromptPay ID set — falling back to manual review');
         }
 
         if (receiverMatch) {

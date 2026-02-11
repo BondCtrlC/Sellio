@@ -42,9 +42,6 @@ interface Creator {
   username: string;
   avatar_url: string | null;
   promptpay_id: string | null;
-  bank_name: string | null;
-  bank_account_number: string | null;
-  bank_account_name: string | null;
 }
 
 interface Slot {

@@ -17,25 +17,10 @@ export const settingsSchema = z.object({
     .or(z.literal('')),
   promptpay_phone: z
     .string()
-    .regex(/^[0-9]{10}$/, 'เบอร์โทรต้องเป็นตัวเลข 10 หลัก')
+    .regex(/^(0[0-9]{9}|[0-9]{13})$/, 'กรุณากรอกเบอร์โทร 10 หลัก หรือเลขบัตรประชาชน 13 หลัก')
     .optional()
     .or(z.literal('')),
   promptpay_name: z
-    .string()
-    .max(100, 'ชื่อบัญชีต้องไม่เกิน 100 ตัวอักษร')
-    .optional()
-    .or(z.literal('')),
-  bank_name: z
-    .string()
-    .max(100, 'ชื่อธนาคารต้องไม่เกิน 100 ตัวอักษร')
-    .optional()
-    .or(z.literal('')),
-  bank_account_number: z
-    .string()
-    .max(20, 'เลขบัญชีต้องไม่เกิน 20 ตัวอักษร')
-    .optional()
-    .or(z.literal('')),
-  bank_account_name: z
     .string()
     .max(100, 'ชื่อบัญชีต้องไม่เกิน 100 ตัวอักษร')
     .optional()

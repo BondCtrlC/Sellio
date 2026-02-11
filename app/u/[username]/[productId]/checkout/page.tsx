@@ -26,10 +26,7 @@ async function getProductAndCreator(username: string, productId: string) {
       display_name,
       avatar_url,
       promptpay_id,
-      promptpay_name,
-      bank_name,
-      bank_account_number,
-      bank_account_name
+      promptpay_name
     `)
     .eq('username', username)
     .eq('is_published', true)
@@ -88,8 +85,8 @@ export default async function CheckoutPage({ params, searchParams }: PageProps) 
 
   const { creator, product } = data;
 
-  // Check if creator has any payment method setup (PromptPay or Bank Transfer)
-  const hasPaymentMethod = creator.promptpay_id || (creator.bank_name && creator.bank_account_number && creator.bank_account_name);
+  // Check if creator has PromptPay setup
+  const hasPaymentMethod = !!creator.promptpay_id;
   if (!hasPaymentMethod) {
     // Redirect back with error
     redirect(`/u/${username}/${productId}?error=payment_not_setup`);

@@ -13,12 +13,10 @@ import {
   Image as ImageIcon,
   X,
   Download,
-  Building2,
-  QrCode
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { uploadSlip, type OrderDetails } from '@/actions/orders';
-import { generatePromptPayQR, canGeneratePromptPayQR } from '@/lib/promptpay';
+import { generatePromptPayQR } from '@/lib/promptpay';
 import { useTranslations } from 'next-intl';
 import jsQR from 'jsqr';
 
@@ -81,10 +79,9 @@ async function extractQrCodeFromFile(file: File): Promise<string | null> {
 
 interface PaymentPageProps {
   order: OrderDetails;
-  emvcoQrDataUrl?: string | null;
 }
 
-export function PaymentPage({ order, emvcoQrDataUrl }: PaymentPageProps) {
+export function PaymentPage({ order }: PaymentPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations('Payment');
@@ -99,25 +96,14 @@ export function PaymentPage({ order, emvcoQrDataUrl }: PaymentPageProps) {
   const isPendingConfirmation = order.status === 'pending_confirmation';
   const hasSlip = order.payment?.slip_url;
 
-  // Payment method availability
-  const hasUploadedQR = !!order.creator.promptpay_qr_url;
-  const hasPromptPay = !!order.creator.promptpay_id || hasUploadedQR || !!emvcoQrDataUrl;
-  const hasBank = !!(order.creator.bank_name && order.creator.bank_account_number && order.creator.bank_account_name);
-  const hasAnyPayment = hasPromptPay || hasBank;
-  
-  // Default to PromptPay if available, otherwise bank
-  const [paymentTab, setPaymentTab] = useState<'promptpay' | 'bank'>(hasPromptPay ? 'promptpay' : 'bank');
+  // Payment method availability — PromptPay only (phone/national ID)
+  const hasPromptPay = !!order.creator.promptpay_id;
+  const hasAnyPayment = hasPromptPay;
 
-  // QR code priority:
-  // 1. EMVCo-generated QR (from uploaded QR data + amount injected) — best: has amount embedded
-  // 2. Generated from phone/national ID via promptpay.io — good: has amount embedded
-  // 3. Uploaded QR image as-is — fallback: no amount, customer enters manually
-  const promptpayIoQrUrl = order.creator.promptpay_id && canGeneratePromptPayQR(order.creator.promptpay_id)
-    ? generatePromptPayQR(order.creator.promptpay_id, order.total)
+  // Generate QR code from PromptPay ID via promptpay.io (with amount embedded)
+  const qrCodeUrl = hasPromptPay
+    ? generatePromptPayQR(order.creator.promptpay_id!, order.total)
     : null;
-  const qrCodeUrl = emvcoQrDataUrl || promptpayIoQrUrl || (hasUploadedQR ? order.creator.promptpay_qr_url : null);
-  // Only show "enter amount manually" if using the raw uploaded image (no amount embedded)
-  const isUploadedQR = !emvcoQrDataUrl && !promptpayIoQrUrl && hasUploadedQR;
 
   // Download QR code
   const handleDownloadQR = async () => {
@@ -125,21 +111,12 @@ export function PaymentPage({ order, emvcoQrDataUrl }: PaymentPageProps) {
     
     const filename = `promptpay-${order.id.slice(0, 8)}.png`;
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-    // For data URLs (EMVCo-generated QR), download directly
-    const isDataUrl = qrCodeUrl.startsWith('data:');
     
     if (isMobile && navigator.share) {
       try {
-        let blob: Blob;
-        if (isDataUrl) {
-          const res = await fetch(qrCodeUrl);
-          blob = await res.blob();
-        } else {
-          const downloadUrl = `/api/download-qr?url=${encodeURIComponent(qrCodeUrl)}&filename=${encodeURIComponent(filename)}`;
-          const res = await fetch(downloadUrl);
-          blob = await res.blob();
-        }
+        const downloadUrl = `/api/download-qr?url=${encodeURIComponent(qrCodeUrl)}&filename=${encodeURIComponent(filename)}`;
+        const res = await fetch(downloadUrl);
+        const blob = await res.blob();
         const file = new File([blob], filename, { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: 'PromptPay QR Code' });
@@ -152,11 +129,7 @@ export function PaymentPage({ order, emvcoQrDataUrl }: PaymentPageProps) {
     
     // Desktop or share not available - direct download
     const link = document.createElement('a');
-    if (isDataUrl) {
-      link.href = qrCodeUrl;
-    } else {
-      link.href = `/api/download-qr?url=${encodeURIComponent(qrCodeUrl)}&filename=${encodeURIComponent(filename)}`;
-    }
+    link.href = `/api/download-qr?url=${encodeURIComponent(qrCodeUrl)}&filename=${encodeURIComponent(filename)}`;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
@@ -349,120 +322,44 @@ export function PaymentPage({ order, emvcoQrDataUrl }: PaymentPageProps) {
         {/* Payment Section */}
         {isPendingPayment && (
           <>
-            {/* Payment Method Tabs (only show if both are available) */}
-            {hasPromptPay && hasBank && (
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => setPaymentTab('promptpay')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 transition-colors text-sm font-medium ${
-                    paymentTab === 'promptpay'
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-gray-200 bg-white text-muted-foreground hover:border-gray-300'
-                  }`}
-                >
-                  <QrCode className="h-4 w-4" />
-                  PromptPay
-                </button>
-                <button
-                  onClick={() => setPaymentTab('bank')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 transition-colors text-sm font-medium ${
-                    paymentTab === 'bank'
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-gray-200 bg-white text-muted-foreground hover:border-gray-300'
-                  }`}
-                >
-                  <Building2 className="h-4 w-4" />
-                  {t('bankTransfer')}
-                </button>
-              </div>
-            )}
-
             {/* PromptPay QR Code */}
-            {hasPromptPay && paymentTab === 'promptpay' && qrCodeUrl && (
+            {hasPromptPay && qrCodeUrl && (
               <Card className="mb-6">
                 <CardContent className="p-6">
                   <h3 className="font-semibold text-center mb-4">{t('scanPromptPay')}</h3>
                   
                   <div className="flex flex-col items-center">
-                    {/* Amount (show prominently BEFORE QR when using uploaded QR) */}
-                    {isUploadedQR && (
-                      <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-6 py-3 text-center">
-                        <p className="text-sm text-amber-700 font-medium">{t('amountToPay')}</p>
-                        <p className="text-2xl font-bold text-amber-800">{formatPrice(order.total)}</p>
-                      </div>
-                    )}
-
                     {/* QR Code */}
                     <div className="bg-white p-4 rounded-xl border-2 border-dashed mb-3">
                       <img
                         src={qrCodeUrl}
                         alt="PromptPay QR Code"
-                        className={isUploadedQR ? "w-56 h-auto max-h-72 object-contain" : "w-48 h-48"}
+                        className="w-48 h-48"
                       />
                     </div>
 
-                    {/* Save QR Button (only for generated QR, not uploaded) */}
-                    {!isUploadedQR && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDownloadQR}
-                        className="mb-4"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        {t('saveQR')}
-                      </Button>
-                    )}
+                    {/* Save QR Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadQR}
+                      className="mb-4"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      {t('saveQR')}
+                    </Button>
 
                     {/* Account Info */}
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground">{t('transferTo')}</p>
                       <p className="font-semibold">{order.creator.promptpay_name || 'PromptPay'}</p>
-                      {/* Show PromptPay ID only if it's a phone/national ID (not e-wallet 15 digits) */}
-                      {order.creator.promptpay_id && order.creator.promptpay_id.replace(/[-\s]/g, '').length <= 13 && (
+                      {order.creator.promptpay_id && (
                         <p className="text-muted-foreground">{order.creator.promptpay_id}</p>
                       )}
                     </div>
 
-                    {/* Amount (below QR for generated QR) */}
-                    {!isUploadedQR && (
-                      <div className="mt-4 bg-primary/5 rounded-lg px-6 py-3 text-center">
-                        <p className="text-sm text-muted-foreground">{t('amountToPay')}</p>
-                        <p className="text-2xl font-bold text-primary">{formatPrice(order.total)}</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Bank Transfer */}
-            {hasBank && paymentTab === 'bank' && (
-              <Card className="mb-6">
-                <CardContent className="p-6">
-                  <h3 className="font-semibold text-center mb-4">{t('bankTransferTitle')}</h3>
-                  
-                  <div className="space-y-4">
-                    {/* Bank Info */}
-                    <div className="bg-gray-50 rounded-xl p-5 space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">{t('bank')}</span>
-                        <span className="font-semibold">{order.creator.bank_name}</span>
-                      </div>
-                      <div className="border-t border-gray-200" />
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">{t('accountNumber')}</span>
-                        <span className="font-semibold font-mono tracking-wider">{order.creator.bank_account_number}</span>
-                      </div>
-                      <div className="border-t border-gray-200" />
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">{t('accountName')}</span>
-                        <span className="font-semibold">{order.creator.bank_account_name}</span>
-                      </div>
-                    </div>
-
                     {/* Amount */}
-                    <div className="bg-primary/5 rounded-lg px-6 py-3 text-center">
+                    <div className="mt-4 bg-primary/5 rounded-lg px-6 py-3 text-center">
                       <p className="text-sm text-muted-foreground">{t('amountToPay')}</p>
                       <p className="text-2xl font-bold text-primary">{formatPrice(order.total)}</p>
                     </div>
