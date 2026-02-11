@@ -89,26 +89,36 @@ export async function verifySlipByQrCode(
       }
     }
 
-    payload.checkCondition = checkCondition;
-
-    const requestBody = { payload };
     const apiUrl = `${SLIP2GO_API_URL}/api/verify-slip/qr-code/info`;
 
-    console.log('[Slip2GO] POST', apiUrl);
-    console.log('[Slip2GO] checkCondition:', JSON.stringify(checkCondition));
-
     // Retry logic: 200404 ("Slip not found") often means the bank hasn't
-    // propagated the transaction yet. Retry up to 2 more times with 3s delay.
+    // propagated the transaction yet. Retry up to 2 more times with delay.
+    // IMPORTANT: On retry, we MUST disable checkDuplicate because Slip2GO
+    // registers the QR on first call — retrying with checkDuplicate would
+    // trigger 200501 (duplicate) even though the first call returned 200404.
     const MAX_RETRIES = 2;
-    const RETRY_DELAY_MS = 3000;
+    const RETRY_DELAYS = [5000, 5000]; // 5s between each retry
     let result: Record<string, unknown> = {};
     let code = '';
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      // On retry: disable checkDuplicate (Slip2GO already recorded QR from attempt 1)
+      // and also retry on 200501 since it's a false positive from our own retry
+      const attemptCondition = { ...checkCondition };
       if (attempt > 0) {
-        console.log(`[Slip2GO] Retry ${attempt}/${MAX_RETRIES} after ${RETRY_DELAY_MS}ms (previous: ${code})`);
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+        delete attemptCondition.checkDuplicate;
+        const delayMs = RETRY_DELAYS[attempt - 1] || 5000;
+        console.log(`[Slip2GO] Retry ${attempt}/${MAX_RETRIES} after ${delayMs}ms (previous: ${code}) — checkDuplicate disabled`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
       }
+
+      const attemptPayload = { ...payload, checkCondition: attemptCondition };
+      const requestBody = { payload: attemptPayload };
+
+      if (attempt === 0) {
+        console.log('[Slip2GO] POST', apiUrl);
+      }
+      console.log(`[Slip2GO] checkCondition (attempt ${attempt + 1}):`, JSON.stringify(attemptCondition));
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -128,8 +138,8 @@ export async function verifySlipByQrCode(
         console.log('[Slip2GO] Data amount:', data.amount, '| transRef:', data.transRef);
       }
 
-      // Only retry on 200404 (Slip not found) — bank may need time to propagate
-      if (code !== '200404') break;
+      // Only retry on 200404 (Slip not found) or 200501 (false duplicate from our retry)
+      if (code !== '200404' && code !== '200501') break;
     }
 
     // Response codes:
