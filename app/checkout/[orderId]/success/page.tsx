@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
-import { getOrderById } from '@/actions/orders';
+import { getOrderForSuccessPage } from '@/actions/orders';
 import { getFulfillmentByOrderId } from '@/actions/fulfillments';
 import { CheckCircle, Package, Calendar, Mail, MessageCircle, Download, Video, MapPin, ExternalLink, Clock, XCircle } from 'lucide-react';
 import { Card, CardContent, Button } from '@/components/ui';
@@ -28,7 +28,7 @@ export default async function SuccessPage({ params }: PageProps) {
   const t = await getTranslations('OrderSuccess');
 
   const [order, fulfillment] = await Promise.all([
-    getOrderById(orderId),
+    getOrderForSuccessPage(orderId),
     getFulfillmentByOrderId(orderId),
   ]);
 

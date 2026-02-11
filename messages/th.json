@@ -1333,6 +1333,7 @@
     "fileSizeMax5MB": "ไฟล์ต้องมีขนาดไม่เกิน 5MB",
     "orderExpired": "คำสั่งซื้อนี้หมดอายุแล้ว กรุณาสั่งซื้อใหม่",
     "orderCannotUploadSlip": "คำสั่งซื้อนี้ไม่สามารถอัพโหลดสลิปได้",
+    "tooManyUploadAttempts": "อัพโหลดสลิปเกินจำนวนครั้งที่กำหนด กรุณาติดต่อผู้ขาย",
     "storageNotConfigured": "ยังไม่ได้ตั้งค่า Storage กรุณารัน migration 006_payment_storage.sql",
     "cannotUploadSlip": "ไม่สามารถอัพโหลดสลิปได้: {error}",
     "cannotSaveSlip": "ไม่สามารถบันทึกสลิปได้",

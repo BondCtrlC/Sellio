@@ -95,6 +95,12 @@ export async function createFulfillment(
 // ============================================
 // GET FULFILLMENT BY ORDER ID
 // ============================================
+/**
+ * Get fulfillment by order ID.
+ * SECURITY: Strips direct file_url from content to force downloads through
+ * the recordDownload flow (which enforces download limits).
+ * The order UUID acts as the auth token.
+ */
 export async function getFulfillmentByOrderId(orderId: string): Promise<Fulfillment | null> {
   const supabase = await createClient();
 
@@ -106,6 +112,19 @@ export async function getFulfillmentByOrderId(orderId: string): Promise<Fulfillm
 
   if (error || !data) {
     return null;
+  }
+
+  // Strip direct file_url from response — downloads must go through recordDownload
+  // which enforces limits. Only keep file_name and other display metadata.
+  if (data.content && typeof data.content === 'object') {
+    const content = data.content as Record<string, unknown>;
+    if (content.delivery_type === 'file' && content.file_url) {
+      // Keep file_name for display but remove the direct URL
+      data.content = {
+        ...content,
+        file_url: '***protected***', // Marker that file exists but URL is not exposed
+      };
+    }
   }
 
   return data;
@@ -273,25 +292,43 @@ export async function recordDownload(token: string): Promise<{ success: boolean;
   }
 
   // For file type, check max downloads
-  if (content.max_downloads && (content.download_count || 0) >= content.max_downloads) {
+  const currentCount = content.download_count || 0;
+  const maxDownloads = content.max_downloads || 5;
+  
+  if (currentCount >= maxDownloads) {
     return { success: false, error: t('downloadLimitReached') };
   }
 
-  // Update download count
-  const { error: updateError } = await supabase
+  // SECURITY: Atomic increment — use conditional update to prevent race conditions.
+  // Two concurrent requests will both try to set download_count = currentCount + 1,
+  // but only one can match the WHERE condition with the current count value.
+  // The second request will see count mismatch and fail gracefully.
+  const newCount = currentCount + 1;
+  const { data: updated, error: updateError } = await supabase
     .from('fulfillments')
     .update({
       content: {
         ...content,
-        download_count: (content.download_count || 0) + 1,
+        download_count: newCount,
       },
       is_accessed: true,
       accessed_at: fulfillment.accessed_at || new Date().toISOString(),
     })
-    .eq('id', fulfillment.id);
+    .eq('id', fulfillment.id)
+    // Optimistic lock: only update if download_count hasn't changed since we read it
+    .filter('content->>download_count', 'eq', String(currentCount))
+    .select('id')
+    .maybeSingle();
 
   if (updateError) {
     console.error('Update download count error:', updateError);
+    return { success: false, error: t('downloadLimitReached') };
+  }
+
+  // If no row was updated, another request incremented first — race condition prevented
+  if (!updated) {
+    // Re-check: maybe limit is reached now, or retry
+    return { success: false, error: t('downloadLimitReached') };
   }
 
   return { success: true, url: content.file_url };

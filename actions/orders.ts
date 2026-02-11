@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
 import { checkoutSchema, type CheckoutInput } from '@/lib/validations/checkout';
 import { verifySlipByQrCode } from '@/lib/slip2go';
+import { extractQrFromImage } from '@/lib/qr-extract';
 import { validateCoupon } from '@/actions/coupons';
 import { 
   sendOrderConfirmationEmail, 
@@ -72,24 +73,26 @@ export interface OrderDetails {
   total: number;
   buyer_name: string;
   buyer_email: string;
-  buyer_phone: string | null;
-  buyer_note: string | null;
+  buyer_phone?: string | null;
+  buyer_note?: string | null;
   booking_date: string | null;
   booking_time: string | null;
   expires_at: string | null;
   created_at: string;
+  reschedule_count?: number;
   product: {
     id: string;
     title: string;
     type: string;
+    type_config?: Record<string, unknown> | null;
     image_url: string | null;
   };
   creator: {
     id: string;
     username: string;
     display_name: string | null;
-    promptpay_id: string | null;
-    promptpay_name: string | null;
+    promptpay_id?: string | null;
+    promptpay_name?: string | null;
     contact_line: string | null;
     contact_ig: string | null;
   };
@@ -300,11 +303,27 @@ export async function createOrder(
         buyer_email: parsed.data.buyer_email.toLowerCase(),
         discount_amount: discountAmount,
       });
+
+    // SECURITY: Increment coupon usage_count for global limit enforcement
+    // Without this, the usage_limit check in validateCoupon would never trigger
+    const { data: currentCoupon } = await supabase
+      .from('coupons')
+      .select('usage_count')
+      .eq('id', validatedCouponId)
+      .single();
+    
+    if (currentCoupon) {
+      await supabase
+        .from('coupons')
+        .update({ usage_count: (currentCoupon.usage_count || 0) + 1 })
+        .eq('id', validatedCouponId)
+        .eq('usage_count', currentCoupon.usage_count || 0); // Optimistic lock
+    }
   }
 
-  // Update booking slot - increment current_bookings
+  // Update booking slot - atomic increment to prevent double-booking race condition
+  // SECURITY: Use conditional update — only increment if current_bookings < max_bookings
   if (data.slot_id) {
-    // Get current bookings count and increment
     const { data: slotData } = await supabase
       .from('booking_slots')
       .select('current_bookings, max_bookings')
@@ -312,15 +331,28 @@ export async function createOrder(
       .single();
     
     if (slotData) {
-      const newCount = (slotData.current_bookings || 0) + 1;
-      await supabase
+      const currentCount = slotData.current_bookings || 0;
+      const maxCount = slotData.max_bookings || 1;
+      const newCount = currentCount + 1;
+
+      // Atomic: only update if current_bookings hasn't changed (optimistic lock)
+      const { data: updated } = await supabase
         .from('booking_slots')
         .update({ 
           current_bookings: newCount,
-          // Set is_booked to true if full
-          is_booked: newCount >= (slotData.max_bookings || 1)
+          is_booked: newCount >= maxCount,
         })
-        .eq('id', data.slot_id);
+        .eq('id', data.slot_id)
+        .eq('current_bookings', currentCount) // Optimistic lock
+        .lt('current_bookings', maxCount)     // Must still have room
+        .select('id')
+        .maybeSingle();
+
+      if (!updated) {
+        // Race condition: another request booked the last slot. Cancel this order.
+        await supabase.from('orders').delete().eq('id', order.id);
+        return { success: false, error: t('slotFull') };
+      }
     }
   }
 
@@ -387,6 +419,11 @@ export async function createOrder(
 // ============================================
 // GET ORDER BY ID (for checkout/payment page)
 // ============================================
+/**
+ * Get order details for the PAYMENT page (includes promptpay_id for QR generation).
+ * SECURITY: Excludes buyer_phone, buyer_note (not needed for display).
+ * The order UUID acts as the auth token — only the buyer has it.
+ */
 export async function getOrderById(orderId: string): Promise<OrderDetails | null> {
   const supabase = await createClient();
 
@@ -398,8 +435,6 @@ export async function getOrderById(orderId: string): Promise<OrderDetails | null
       total,
       buyer_name,
       buyer_email,
-      buyer_phone,
-      buyer_note,
       booking_date,
       booking_time,
       expires_at,
@@ -430,11 +465,66 @@ export async function getOrderById(orderId: string): Promise<OrderDetails | null
     .single();
 
   if (error || !order) {
-    console.error('Get order error:', error);
     return null;
   }
 
   // Transform the result
+  return {
+    ...order,
+    product: Array.isArray(order.product) ? order.product[0] : order.product,
+    creator: Array.isArray(order.creator) ? order.creator[0] : order.creator,
+    payment: Array.isArray(order.payment) ? order.payment[0] : order.payment,
+  } as OrderDetails;
+}
+
+/**
+ * Get order details for the SUCCESS page (excludes sensitive financial data).
+ * SECURITY: Does NOT return promptpay_id, promptpay_name, buyer_phone, buyer_note.
+ */
+export async function getOrderForSuccessPage(orderId: string): Promise<OrderDetails | null> {
+  const supabase = await createClient();
+
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select(`
+      id,
+      status,
+      total,
+      buyer_name,
+      buyer_email,
+      booking_date,
+      booking_time,
+      expires_at,
+      created_at,
+      reschedule_count,
+      product:products(
+        id,
+        title,
+        type,
+        type_config,
+        image_url
+      ),
+      creator:creators(
+        id,
+        username,
+        display_name,
+        contact_line,
+        contact_ig
+      ),
+      payment:payments(
+        id,
+        status,
+        slip_url,
+        slip_uploaded_at
+      )
+    `)
+    .eq('id', orderId)
+    .single();
+
+  if (error || !order) {
+    return null;
+  }
+
   return {
     ...order,
     product: Array.isArray(order.product) ? order.product[0] : order.product,
@@ -454,12 +544,13 @@ export async function uploadSlip(
   const supabase = await createClient();
 
   const file = formData.get('slip') as File;
-  const clientQrCode = formData.get('qrCode') as string | null;
+  // SECURITY: buyer_email must match the order's buyer_email
+  const buyerEmail = formData.get('buyerEmail') as string | null;
   if (!file || file.size === 0) {
     return { success: false, error: t('pleaseUploadSlip') };
   }
 
-  // Validate file type
+  // Validate file type (don't trust client MIME type alone)
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
   if (!allowedTypes.includes(file.type)) {
     return { success: false, error: t('imageFilesOnly') };
@@ -470,15 +561,45 @@ export async function uploadSlip(
     return { success: false, error: t('fileSizeMax5MB') };
   }
 
+  // SECURITY: Validate file magic bytes (don't trust client-supplied MIME type)
+  const headerBytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  const isJpeg = headerBytes[0] === 0xFF && headerBytes[1] === 0xD8 && headerBytes[2] === 0xFF;
+  const isPng = headerBytes[0] === 0x89 && headerBytes[1] === 0x50 && headerBytes[2] === 0x4E && headerBytes[3] === 0x47;
+  const isWebp = headerBytes[0] === 0x52 && headerBytes[1] === 0x49 && headerBytes[2] === 0x46 && headerBytes[3] === 0x46
+    && headerBytes[8] === 0x57 && headerBytes[9] === 0x45 && headerBytes[10] === 0x42 && headerBytes[11] === 0x50;
+  
+  if (!isJpeg && !isPng && !isWebp) {
+    return { success: false, error: t('imageFilesOnly') };
+  }
+
   // Get order to verify it exists and is pending payment
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('id, status, expires_at')
+    .select('id, status, expires_at, buyer_email')
     .eq('id', orderId)
     .single();
 
   if (orderError || !order) {
     return { success: false, error: t('orderNotFound') };
+  }
+
+  // SECURITY: Verify the uploader is the actual buyer
+  // This prevents anyone with just the order ID from uploading slips
+  if (!buyerEmail || buyerEmail.toLowerCase() !== order.buyer_email?.toLowerCase()) {
+    console.warn('[uploadSlip] Buyer email mismatch for order:', orderId);
+    return { success: false, error: t('orderNotFound') };
+  }
+
+  // SECURITY: Rate limit — max 5 slip uploads per order to prevent API credit burning
+  const { count: uploadCount } = await supabase
+    .from('payments')
+    .select('*', { count: 'exact', head: true })
+    .eq('order_id', orderId)
+    .not('slip_url', 'is', null);
+  
+  if (uploadCount && uploadCount >= 5) {
+    console.warn('[uploadSlip] Rate limit exceeded for order:', orderId, 'count:', uploadCount);
+    return { success: false, error: t('tooManyUploadAttempts') };
   }
 
   // Check if order has expired
@@ -500,8 +621,9 @@ export async function uploadSlip(
   const arrayBuffer = await file.arrayBuffer();
   const buffer = new Uint8Array(arrayBuffer);
 
-  // Upload to Supabase Storage
-  const fileExt = file.name.split('.').pop() || 'jpg';
+  // Upload to Supabase Storage — whitelist extension (don't trust client filename)
+  const rawExt = (file.name.split('.').pop() || '').toLowerCase();
+  const fileExt = ['jpg', 'jpeg', 'png', 'webp'].includes(rawExt) ? rawExt : 'jpg';
   const fileName = `${orderId}-${Date.now()}.${fileExt}`;
   const filePath = `slips/${fileName}`;
 
@@ -557,15 +679,24 @@ export async function uploadSlip(
   const creatorPromptPayId = creatorData?.promptpay_id || null;
 
   // === Slip2GO Auto-Verification (QR Code) ===
+  // SECURITY: QR code is extracted SERVER-SIDE from the uploaded image.
+  // Never trust client-sent QR data — a malicious client could inject
+  // a valid QR from someone else's slip while uploading a fake image.
   let autoConfirmed = false;
   let verifyFailed = false;
   let verifyMessage = '';
   try {
-    // QR code was extracted on the client side (browser Canvas + jsQR)
-    const qrCode = clientQrCode || null;
+    // Extract QR code from the uploaded slip image (server-side)
+    let qrCode: string | null = null;
+    try {
+      qrCode = await extractQrFromImage(buffer);
+      console.log('[AutoVerify] Server-side QR extraction:', qrCode ? `found (${qrCode.length} chars)` : 'not found');
+    } catch (qrErr) {
+      console.warn('[AutoVerify] QR extraction error:', qrErr);
+    }
     
     if (!qrCode) {
-      console.log('[AutoVerify] No QR code from client, skipping auto-verify');
+      console.log('[AutoVerify] No QR code found in slip image, skipping auto-verify');
       verifyFailed = true;
       verifyMessage = 'No QR code found in slip';
     }

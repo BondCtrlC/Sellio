@@ -18,64 +18,8 @@ import { formatPrice, formatDate } from '@/lib/utils';
 import { uploadSlip, type OrderDetails } from '@/actions/orders';
 import { generatePromptPayQR } from '@/lib/promptpay';
 import { useTranslations } from 'next-intl';
-import jsQR from 'jsqr';
-
-/**
- * Extract QR code text from an image file using browser Canvas API + jsQR
- */
-async function extractQrCodeFromFile(file: File): Promise<string | null> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { resolve(null); return; }
-
-      // Strategy 1: Full image
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-      let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      let qr = jsQR(imageData.data, imageData.width, imageData.height);
-      if (qr) { resolve(qr.data); return; }
-
-      // Strategy 2: Bottom-right 50% (QR is usually bottom-right on Thai slips)
-      const cropW = Math.floor(img.width * 0.5);
-      const cropH = Math.floor(img.height * 0.5);
-      canvas.width = cropW;
-      canvas.height = cropH;
-      ctx.drawImage(img, img.width - cropW, img.height - cropH, cropW, cropH, 0, 0, cropW, cropH);
-      imageData = ctx.getImageData(0, 0, cropW, cropH);
-      qr = jsQR(imageData.data, imageData.width, imageData.height);
-      if (qr) { resolve(qr.data); return; }
-
-      // Strategy 3: Bottom-right 35% scaled up
-      const cropW2 = Math.floor(img.width * 0.35);
-      const cropH2 = Math.floor(img.height * 0.35);
-      const scaleUp = 600;
-      canvas.width = scaleUp;
-      canvas.height = scaleUp;
-      ctx.drawImage(img, img.width - cropW2, img.height - cropH2, cropW2, cropH2, 0, 0, scaleUp, scaleUp);
-      imageData = ctx.getImageData(0, 0, scaleUp, scaleUp);
-      qr = jsQR(imageData.data, imageData.width, imageData.height);
-      if (qr) { resolve(qr.data); return; }
-
-      // Strategy 4: Bottom half
-      const halfH = Math.floor(img.height * 0.5);
-      canvas.width = img.width;
-      canvas.height = halfH;
-      ctx.drawImage(img, 0, img.height - halfH, img.width, halfH, 0, 0, img.width, halfH);
-      imageData = ctx.getImageData(0, 0, img.width, halfH);
-      qr = jsQR(imageData.data, imageData.width, imageData.height);
-      if (qr) { resolve(qr.data); return; }
-
-      console.log('[QR] No QR code found in slip image');
-      resolve(null);
-    };
-    img.onerror = () => resolve(null);
-    img.src = URL.createObjectURL(file);
-  });
-}
+// QR code extraction is done server-side for security.
+// See lib/qr-extract.ts
 
 interface PaymentPageProps {
   order: OrderDetails;
@@ -175,19 +119,11 @@ export function PaymentPage({ order }: PaymentPageProps) {
     setError(null);
 
     try {
-      // Extract QR code from slip image on client side (browser Canvas + jsQR)
-      let qrCode: string | null = null;
-      try {
-        qrCode = await extractQrCodeFromFile(selectedFile);
-      } catch (qrErr) {
-        // QR extraction failed — will fall back to manual verification
-      }
-
+      // QR code extraction is now done SERVER-SIDE for security.
+      // Client only sends the slip image + buyer email for identity verification.
       const formData = new FormData();
       formData.append('slip', selectedFile);
-      if (qrCode) {
-        formData.append('qrCode', qrCode);
-      }
+      formData.append('buyerEmail', order.buyer_email);
 
       const result = await uploadSlip(order.id, formData);
 

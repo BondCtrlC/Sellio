@@ -61,7 +61,7 @@ export async function verifySlipByQrCode(
     if (expectedAmount && expectedAmount > 0) {
       checkCondition.checkAmount = {
         type: 'eq',
-        amount: String(expectedAmount),
+        amount: expectedAmount,
       };
     }
 

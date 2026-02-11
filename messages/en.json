@@ -1333,6 +1333,7 @@
     "fileSizeMax5MB": "File size must not exceed 5MB",
     "orderExpired": "This order has expired. Please place a new order",
     "orderCannotUploadSlip": "Cannot upload slip for this order",
+    "tooManyUploadAttempts": "Too many upload attempts. Please contact the seller.",
     "storageNotConfigured": "Storage not configured. Please run migration 006_payment_storage.sql",
     "cannotUploadSlip": "Cannot upload slip: {error}",
     "cannotSaveSlip": "Cannot save slip",
