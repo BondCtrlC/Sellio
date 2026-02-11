@@ -19,7 +19,9 @@ import {
   RefreshCcw,
   Upload,
   Image as ImageIcon,
-  CreditCard
+  CreditCard,
+  AlertTriangle,
+  ShieldAlert
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { confirmPayment, rejectPayment, refundOrder } from '@/actions/orders';
@@ -54,12 +56,38 @@ interface Order {
     refund_slip_url: string | null;
     slip_verified: boolean | null;
     slip_verify_ref: string | null;
+    slip_verify_message: string | null;
   } | null;
 }
 
 interface OrderDetailModalProps {
   order: Order;
   onClose: () => void;
+}
+
+// Translate Slip2GO verify message codes into human-readable Thai/English
+function translateVerifyMessage(message: string, t: ReturnType<typeof useTranslations<'Orders'>>) {
+  // Match API code patterns like [200501], [200402], etc.
+  if (message.includes('200501') || message.toLowerCase().includes('duplicate')) {
+    return t('slipReasonDuplicate');
+  }
+  if (message.includes('200402') || message.toLowerCase().includes('amount')) {
+    return t('slipReasonAmountMismatch');
+  }
+  if (message.includes('200401') || message.toLowerCase().includes('recipient') || message.toLowerCase().includes('receiver')) {
+    return t('slipReasonReceiverMismatch');
+  }
+  if (message.includes('200500') || message.toLowerCase().includes('fraud')) {
+    return t('slipReasonFraud');
+  }
+  if (message.includes('200404') || message.toLowerCase().includes('not found')) {
+    return t('slipReasonNotFound');
+  }
+  if (message.toLowerCase().includes('no qr')) {
+    return t('slipReasonNoQr');
+  }
+  // Fallback: show raw message
+  return message;
 }
 
 export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
@@ -339,6 +367,33 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center">
                     <ExternalLink className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Slip Verification Failed Warning */}
+          {order.payment?.slip_verified === false && order.payment?.slip_verify_message && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <ShieldAlert className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-sm text-red-800 mb-1">
+                      {t('slipVerifyFailedTitle')}
+                    </h4>
+                    <p className="text-sm text-red-700 mb-2">
+                      {t('slipVerifyFailedDesc')}
+                    </p>
+                    <div className="bg-red-100 rounded-lg px-3 py-2">
+                      <p className="text-xs font-medium text-red-800">
+                        {t('slipVerifyFailedReason')}
+                      </p>
+                      <p className="text-sm text-red-700 mt-0.5">
+                        {translateVerifyMessage(order.payment.slip_verify_message, t)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>

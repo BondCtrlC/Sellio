@@ -792,6 +792,8 @@ export async function uploadSlip(
             productTitle: product?.title || t('productDefault'),
             amount: Number(orderInfo.total),
             orderId: orderInfo.id,
+            verifyFailed,
+            verifyMessage: verifyMessage || undefined,
           }).catch(err => console.error('Slip notification email error:', err));
         }
       }
@@ -981,7 +983,8 @@ export async function getCreatorOrders(status?: string) {
         slip_uploaded_at,
         refund_slip_url,
         slip_verified,
-        slip_verify_ref
+        slip_verify_ref,
+        slip_verify_message
       )
     `)
     .eq('creator_id', creator.id);

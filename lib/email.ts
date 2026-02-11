@@ -514,14 +514,58 @@ export async function sendSlipUploadedNotificationEmail(
     buyerName: string;
     productTitle: string;
     amount: number;
+    verifyFailed?: boolean;
+    verifyMessage?: string;
   }
 ) {
   try {
     const t = await getTranslations('Emails');
+
+    // Build verification warning section if slip failed auto-verify
+    let verifyWarningSection = '';
+    if (data.verifyFailed && data.verifyMessage) {
+      // Translate verify message to human-readable Thai
+      let reasonThai = data.verifyMessage;
+      if (data.verifyMessage.includes('200501') || data.verifyMessage.toLowerCase().includes('duplicate')) {
+        reasonThai = t('slipReasonDuplicate');
+      } else if (data.verifyMessage.includes('200402') || data.verifyMessage.toLowerCase().includes('amount')) {
+        reasonThai = t('slipReasonAmountMismatch');
+      } else if (data.verifyMessage.includes('200401') || data.verifyMessage.toLowerCase().includes('recipient') || data.verifyMessage.toLowerCase().includes('receiver')) {
+        reasonThai = t('slipReasonReceiverMismatch');
+      } else if (data.verifyMessage.includes('200500') || data.verifyMessage.toLowerCase().includes('fraud')) {
+        reasonThai = t('slipReasonFraud');
+      } else if (data.verifyMessage.includes('200404') || data.verifyMessage.toLowerCase().includes('not found')) {
+        reasonThai = t('slipReasonNotFound');
+      } else if (data.verifyMessage.toLowerCase().includes('no qr')) {
+        reasonThai = t('slipReasonNoQr');
+      }
+
+      verifyWarningSection = `
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+          <p style="margin: 0 0 8px; font-weight: bold; color: #991b1b; font-size: 15px;">⚠️ ${t('slipVerifyFailedTitle')}</p>
+          <p style="margin: 0 0 10px; color: #7f1d1d; font-size: 14px;">${t('slipVerifyFailedEmailDesc')}</p>
+          <div style="background: #fee2e2; border-radius: 8px; padding: 12px;">
+            <p style="margin: 0 0 4px; font-weight: bold; color: #991b1b; font-size: 13px;">${t('slipVerifyFailedReason')}</p>
+            <p style="margin: 0; color: #dc2626; font-size: 14px;">${reasonThai}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    const headerColor = data.verifyFailed 
+      ? '#ef4444, #dc2626'  // Red for failed verification
+      : '#f59e0b, #d97706'; // Amber for normal
+    const headerEmoji = data.verifyFailed ? '⚠️' : '💳';
+    const headerTitle = data.verifyFailed 
+      ? t('slipUploadedVerifyFailedTitle')
+      : t('slipUploadedTitle');
+
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: creatorEmail,
-      subject: t('slipUploadedSubject', { product: data.productTitle }),
+      subject: data.verifyFailed 
+        ? t('slipUploadedVerifyFailedSubject', { product: data.productTitle })
+        : t('slipUploadedSubject', { product: data.productTitle }),
       html: `
         <!DOCTYPE html>
         <html>
@@ -532,9 +576,9 @@ export async function sendSlipUploadedNotificationEmail(
         <body style="font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
           <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <!-- Header -->
-            <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
-              <div style="font-size: 48px; margin-bottom: 10px;">💳</div>
-              <h1 style="color: white; margin: 0; font-size: 24px;">${t('slipUploadedTitle')}</h1>
+            <div style="background: linear-gradient(135deg, ${headerColor}); padding: 30px; text-align: center;">
+              <div style="font-size: 48px; margin-bottom: 10px;">${headerEmoji}</div>
+              <h1 style="color: white; margin: 0; font-size: 24px;">${headerTitle}</h1>
             </div>
             
             <!-- Content -->
@@ -542,15 +586,17 @@ export async function sendSlipUploadedNotificationEmail(
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                 <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${data.productTitle}</p>
                 <p style="margin: 0 0 10px; color: #6b7280;">${t('buyer', { name: data.buyerName })}</p>
-                <p style="margin: 0; font-size: 24px; font-weight: bold; color: #f59e0b;">฿${data.amount.toLocaleString()}</p>
+                <p style="margin: 0; font-size: 24px; font-weight: bold; color: ${data.verifyFailed ? '#ef4444' : '#f59e0b'};">฿${data.amount.toLocaleString()}</p>
               </div>
               
+              ${verifyWarningSection}
+              
               <p style="color: #374151; margin: 0 0 20px;">
-                ${t('slipUploadedBody')}
+                ${data.verifyFailed ? t('slipUploadedVerifyFailedBody') : t('slipUploadedBody')}
               </p>
               
               <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/orders" 
-                 style="display: block; background: #f59e0b; color: white; text-decoration: none; padding: 15px 30px; border-radius: 10px; text-align: center; font-weight: bold;">
+                 style="display: block; background: ${data.verifyFailed ? '#ef4444' : '#f59e0b'}; color: white; text-decoration: none; padding: 15px 30px; border-radius: 10px; text-align: center; font-weight: bold;">
                 ${t('checkSlip')}
               </a>
             </div>
