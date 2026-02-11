@@ -87,6 +87,16 @@ function crc16ccitt(data: string): string {
  * @returns             New EMVCo payload string with amount embedded
  */
 export function injectAmount(emvcoPayload: string, amount: number): string {
+  // Validate amount
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 999999.99) {
+    throw new Error(`Invalid amount for QR generation: ${amount}`);
+  }
+
+  // Validate payload size (EMVCo payloads are typically < 500 chars)
+  if (!emvcoPayload || emvcoPayload.length > 1000) {
+    throw new Error('Invalid EMVCo payload size');
+  }
+
   const entries = parseTLV(emvcoPayload);
   if (entries.length === 0) return emvcoPayload;
 

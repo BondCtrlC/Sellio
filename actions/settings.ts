@@ -236,7 +236,8 @@ export async function uploadPromptPayQR(formData: FormData): Promise<QRUploadRes
 
       if (qrResult?.data) {
         // Store raw EMVCo data for QR generation with amount at checkout
-        if (isValidEmvcoPayload(qrResult.data)) {
+        // Limit to 500 chars (typical EMVCo payloads are ~80-200 chars)
+        if (isValidEmvcoPayload(qrResult.data) && qrResult.data.length <= 500) {
           rawQrData = qrResult.data;
           console.log('[QR Upload] Valid EMVCo payload stored, length:', rawQrData.length);
         }
