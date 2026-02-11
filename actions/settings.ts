@@ -237,6 +237,15 @@ export async function uploadPromptPayQR(formData: FormData): Promise<QRUploadRes
     const promptpayId = extractPromptPayId(qrResult.data);
 
     if (!promptpayId) {
+      console.log('[QR Upload] Failed to extract PromptPay ID from QR data (first 100 chars):', qrResult.data.substring(0, 100));
+      return { success: false, error: t('qrNotPromptPay') };
+    }
+
+    // Double-check: must be 10-digit phone or 13-digit national ID
+    const isValidPhone = /^0\d{9}$/.test(promptpayId);
+    const isValidNationalId = /^\d{13}$/.test(promptpayId) && !promptpayId.startsWith('0066');
+    if (!isValidPhone && !isValidNationalId) {
+      console.log('[QR Upload] Extracted ID is not a valid PromptPay format:', promptpayId);
       return { success: false, error: t('qrNotPromptPay') };
     }
 

@@ -7,17 +7,25 @@
  *   - Length: 2 chars (e.g. "37" = 37 chars of value)
  *   - Value: {length} chars (may contain nested TLV)
  *
- * PromptPay data lives in tag 29 or 30, identified by
- * AID sub-tag 00 = "A000000677010111".
+ * PromptPay Credit Transfer uses:
+ *   - AID: A000000677010111
+ *   - Sub-tag 01: Phone (0066XXXXXXXXX, 13 chars)
+ *   - Sub-tag 02: National ID (13 digits)
+ *   - Sub-tag 03: E-Wallet (15 digits)
  *
- * The account identifier is in sub-tag 01 (phone), 02 (national ID),
- * or 03 (e-wallet).
+ * Bill Payment uses:
+ *   - AID: A000000677010112
+ *   - Sub-tag 01: Biller ID (15 digits — NOT a PromptPay phone!)
+ *   - Sub-tag 02: Reference 1
+ *   - Sub-tag 03: Reference 2
  *
- * Phone format in QR: 0066XXXXXXXXX (13 chars)
- * Converted to Thai format: 0XXXXXXXXX (10 chars)
+ * We only extract phone numbers (10-digit) and national IDs (13-digit)
+ * since those are the only formats usable with promptpay.io QR generation.
  */
 
-const PROMPTPAY_AID = 'A000000677010111';
+const PROMPTPAY_CREDIT_AID = 'A000000677010111';
+// Bill payment AID — we detect but reject these
+const BILL_PAYMENT_AID = 'A000000677010112';
 
 interface TLVEntry {
   tag: string;
@@ -68,54 +76,78 @@ function convertPhoneToThai(phone: string): string {
 }
 
 /**
+ * Check if a value looks like a valid PromptPay phone number.
+ * QR format: 0066XXXXXXXXX (13 chars) → converts to 0XXXXXXXXX (10 digits)
+ * Thai format: 0XXXXXXXXX (10 digits starting with 0)
+ */
+function isPhoneNumber(value: string): boolean {
+  // QR format: 0066 + 9 digits = 13 chars
+  if (value.startsWith('0066') && value.length === 13 && /^\d+$/.test(value)) {
+    return true;
+  }
+  // Thai format: 0 + 9 digits = 10 chars
+  if (value.startsWith('0') && value.length === 10 && /^\d+$/.test(value)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Check if a value looks like a Thai national ID (13 digits, not starting with 0066).
+ */
+function isNationalId(value: string): boolean {
+  return /^\d{13}$/.test(value) && !value.startsWith('0066');
+}
+
+/**
  * Extract the PromptPay ID from an EMVCo QR code string.
  *
+ * Only returns phone numbers (10-digit Thai format) or national IDs (13-digit).
+ * Rejects bill payment QRs and e-wallet/biller IDs.
+ *
  * @param qrText The decoded text from a PromptPay QR code
- * @returns The PromptPay ID (phone in 0XXXXXXXXX format, or 13-digit national ID),
- *          or null if not a valid PromptPay QR.
+ * @returns The PromptPay ID, or null if not found/invalid.
  */
 export function extractPromptPayId(qrText: string): string | null {
   if (!qrText || qrText.length < 20) return null;
 
   const topLevel = parseTLV(qrText);
 
-  // Search tags 29 and 30 for PromptPay merchant data
+  // Search through all merchant account tags (29-31)
+  // Some banks put PromptPay in tag 29, others in tag 30
   for (const entry of topLevel) {
-    if (entry.tag !== '29' && entry.tag !== '30') continue;
+    const tagNum = parseInt(entry.tag, 10);
+    if (tagNum < 26 || tagNum > 51) continue; // Merchant account range per EMVCo spec
 
     const subEntries = parseTLV(entry.value);
-    
-    // Check if this merchant block contains the PromptPay AID
     const aidEntry = subEntries.find(e => e.tag === '00');
-    if (!aidEntry || aidEntry.value !== PROMPTPAY_AID) continue;
+    if (!aidEntry) continue;
 
-    // Found PromptPay block — extract account identifier
-    // Sub-tag 01 = phone/national ID, 02 = national ID, 03 = e-wallet
+    // Skip bill payment AIDs — they contain biller IDs, not PromptPay numbers
+    if (aidEntry.value === BILL_PAYMENT_AID) continue;
+
+    // Only process PromptPay credit transfer blocks
+    if (aidEntry.value !== PROMPTPAY_CREDIT_AID) continue;
+
+    // Search sub-tags for phone number or national ID
+    // Priority: phone number first (sub-tag 01), then national ID (sub-tag 02)
     for (const subTag of ['01', '02', '03']) {
       const accountEntry = subEntries.find(e => e.tag === subTag);
-      if (accountEntry && accountEntry.value) {
-        const raw = accountEntry.value;
+      if (!accountEntry || !accountEntry.value) continue;
 
-        // Phone number (13 chars starting with 0066)
-        if (raw.startsWith('0066') && raw.length === 13) {
-          return convertPhoneToThai(raw);
-        }
+      const raw = accountEntry.value;
 
-        // National ID (13 digits)
-        if (/^\d{13}$/.test(raw)) {
-          return raw;
-        }
-
-        // E-wallet (15 digits)
-        if (/^\d{15}$/.test(raw)) {
-          return raw;
-        }
-
-        // Fallback: return as-is if it looks numeric
-        if (/^\d+$/.test(raw)) {
-          return raw;
-        }
+      // Phone number: 0066XXXXXXXXX (13 chars) or 0XXXXXXXXX (10 chars)
+      if (isPhoneNumber(raw)) {
+        return convertPhoneToThai(raw);
       }
+
+      // National ID: 13 digits (not starting with 0066)
+      if (isNationalId(raw)) {
+        return raw;
+      }
+
+      // Skip anything else (15-digit biller IDs, reference numbers, etc.)
     }
   }
 

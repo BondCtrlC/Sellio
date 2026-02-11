@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { uploadSlip, type OrderDetails } from '@/actions/orders';
-import { generatePromptPayQR } from '@/lib/promptpay';
+import { generatePromptPayQR, isValidPromptPayId } from '@/lib/promptpay';
 import { useTranslations } from 'next-intl';
 import jsQR from 'jsqr';
 
@@ -106,8 +106,8 @@ export function PaymentPage({ order }: PaymentPageProps) {
   // Default to PromptPay if available, otherwise bank
   const [paymentTab, setPaymentTab] = useState<'promptpay' | 'bank'>(hasPromptPay ? 'promptpay' : 'bank');
 
-  // Generate QR code URL
-  const qrCodeUrl = order.creator.promptpay_id 
+  // Generate QR code URL (only if valid PromptPay ID)
+  const qrCodeUrl = order.creator.promptpay_id && isValidPromptPayId(order.creator.promptpay_id)
     ? generatePromptPayQR(order.creator.promptpay_id, order.total)
     : null;
 
