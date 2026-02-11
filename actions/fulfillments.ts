@@ -236,12 +236,18 @@ export async function recordDownload(token: string): Promise<{ success: boolean;
 
   const { data: fulfillment, error: fetchError } = await supabase
     .from('fulfillments')
-    .select('*')
+    .select('*, order:orders(status)')
     .eq('access_token', token)
     .eq('type', 'download')
     .single();
 
   if (fetchError || !fulfillment) {
+    return { success: false, error: t('downloadLinkNotFound') };
+  }
+
+  // Verify order is confirmed before allowing download
+  const orderStatus = (fulfillment as any).order?.status;
+  if (orderStatus && orderStatus !== 'confirmed') {
     return { success: false, error: t('downloadLinkNotFound') };
   }
 

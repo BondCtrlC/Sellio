@@ -19,9 +19,7 @@ export interface Slip2GoVerifyResult {
   receiverName: string | null;
   receiverProxy: string | null;   // PromptPay number from slip (e.g. "0918830892")
   receiverAccount: string | null; // Bank account number from slip
-  qrCode?: string;
   apiCode?: string;
-  raw?: unknown;
 }
 
 /**
@@ -72,7 +70,6 @@ export async function verifySlipByQrCode(
     const apiUrl = `${SLIP2GO_API_URL}/api/verify-slip/qr-code/info`;
 
     console.log('[Slip2GO] POST', apiUrl);
-    console.log('[Slip2GO] QR:', qrCode.substring(0, 60) + '...');
     console.log('[Slip2GO] checkCondition:', JSON.stringify(checkCondition));
 
     const response = await fetch(apiUrl, {
@@ -106,10 +103,6 @@ export async function verifySlipByQrCode(
       // ONLY 200200 = fully verified with conditions
       const data = result.data;
 
-      // Log full receiver data to understand Slip2GO response structure
-      console.log('[Slip2GO] Receiver data:', JSON.stringify(data.receiver));
-      console.log('[Slip2GO] Sender data:', JSON.stringify(data.sender));
-
       // Extract receiver proxy (PromptPay number) and account number
       const receiverProxy = data.receiver?.account?.proxy?.value
         || data.receiver?.proxy?.value
@@ -129,9 +122,7 @@ export async function verifySlipByQrCode(
         receiverName: data.receiver?.account?.name || null,
         receiverProxy,
         receiverAccount,
-        qrCode,
         apiCode: code,
-        raw: data,
       };
     }
 
@@ -144,7 +135,7 @@ export async function verifySlipByQrCode(
     switch (code) {
       case '200000': msg = 'Slip found but conditions not verified'; break;
       case '200401': msg = 'Recipient account does not match'; break;
-      case '200402': msg = `Amount mismatch (slip: ${slipAmount}, expected: ${expectedAmount})`; break;
+      case '200402': msg = `Amount mismatch`; break;
       case '200403': msg = 'Transfer date does not match'; break;
       case '200404': msg = 'Slip not found in bank system'; break;
       case '200500': msg = 'Slip is fraud/fake'; break;
@@ -161,9 +152,7 @@ export async function verifySlipByQrCode(
       dateTime: result.data?.dateTime || null,
       senderName: null, receiverName: null,
       receiverProxy: null, receiverAccount: null,
-      qrCode,
       apiCode: code,
-      raw: result,
     };
   } catch (error) {
     console.error('[Slip2GO] Error:', error);

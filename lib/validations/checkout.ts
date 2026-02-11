@@ -29,7 +29,7 @@ export const checkoutSchema = z.object({
   // For coupons
   coupon_id: z.string().uuid().optional(),
   coupon_code: z.string().max(50).optional(),
-  discount_amount: z.number().min(0).optional(),
+  discount_amount: z.number().min(0).max(1000000).optional(), // Client hint only — server recalculates from coupon
 });
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;

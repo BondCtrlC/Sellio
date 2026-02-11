@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
 import { checkoutSchema, type CheckoutInput } from '@/lib/validations/checkout';
 import { verifySlipByQrCode } from '@/lib/slip2go';
+import { validateCoupon } from '@/actions/coupons';
 import { 
   sendOrderConfirmationEmail, 
   sendPaymentRejectionEmail,
@@ -208,8 +209,30 @@ export async function createOrder(
     return { success: false, error: t('pleaseSelectSlot') };
   }
 
-  // Calculate final amount with coupon
-  const discountAmount = parsed.data.discount_amount || 0;
+  // Calculate final amount with coupon — ALWAYS validate server-side, never trust client
+  let discountAmount = 0;
+  let validatedCouponId: string | null = null;
+  let validatedCouponCode: string | null = null;
+
+  if (parsed.data.coupon_code && parsed.data.coupon_code.trim()) {
+    const couponResult = await validateCoupon(
+      parsed.data.coupon_code,
+      creatorId,
+      productId,
+      product.type,
+      product.price,
+      parsed.data.buyer_email
+    );
+
+    if (couponResult.success && couponResult.discount_amount) {
+      discountAmount = couponResult.discount_amount;
+      validatedCouponId = couponResult.coupon?.id || null;
+      validatedCouponCode = couponResult.coupon?.code || null;
+    }
+    // If coupon validation fails, silently ignore (order proceeds at full price)
+    // The client already validated and showed the discount, so this is a safety net
+  }
+
   const finalTotal = Math.max(0, product.price - discountAmount);
 
   // Create order
@@ -228,8 +251,8 @@ export async function createOrder(
       unit_price: product.price,
       total: finalTotal,
       discount_amount: discountAmount,
-      coupon_id: parsed.data.coupon_id || null,
-      coupon_code: parsed.data.coupon_code || null,
+      coupon_id: validatedCouponId,
+      coupon_code: validatedCouponCode,
       booking_date: bookingDate,
       booking_time: bookingTime,
       // Order expires in 24 hours if not paid
@@ -259,12 +282,12 @@ export async function createOrder(
     return { success: false, error: t('cannotCreatePayment') };
   }
 
-  // Record coupon usage if applicable
-  if (parsed.data.coupon_id && discountAmount > 0) {
+  // Record coupon usage if applicable (using server-validated coupon)
+  if (validatedCouponId && discountAmount > 0) {
     await supabase
       .from('coupon_usages')
       .insert({
-        coupon_id: parsed.data.coupon_id,
+        coupon_id: validatedCouponId,
         order_id: order.id,
         buyer_email: parsed.data.buyer_email.toLowerCase(),
         discount_amount: discountAmount,
@@ -548,14 +571,13 @@ export async function uploadSlip(
     if (!verifyResult) {
       // No QR code found — skip to manual flow
     } else {
-      console.log('[AutoVerify] Result:', verifyResult.verified, verifyResult.message);
-      console.log('[AutoVerify] Receiver proxy:', verifyResult.receiverProxy, '| account:', verifyResult.receiverAccount);
+      console.log('[AutoVerify] Result:', verifyResult.verified, verifyResult.apiCode);
 
       if (verifyResult.success && verifyResult.verified && orderInfo) {
         // === Manual Receiver Check ===
         // Compare receiver info from Slip2GO response with creator's PromptPay ID
         // This prevents attack: transfer to friend → use that slip → money didn't go to creator
-        let receiverMatch = true; // default: allow if no receiver data available
+        let receiverMatch = false; // default: DENY — require manual review if no receiver data
         
         if (creatorPromptPayId && (verifyResult.receiverProxy || verifyResult.receiverAccount)) {
           const normalizedCreatorId = normalizePromptPayId(creatorPromptPayId);
@@ -567,14 +589,9 @@ export async function uploadSlip(
             (normalizedAccount !== null && normalizedAccount === normalizedCreatorId)
           );
 
-          console.log('[AutoVerify] Receiver check:', {
-            creatorId: normalizedCreatorId,
-            slipProxy: normalizedProxy,
-            slipAccount: normalizedAccount,
-            match: receiverMatch,
-          });
+          console.log('[AutoVerify] Receiver check: match =', receiverMatch);
         } else {
-          console.log('[AutoVerify] Receiver check skipped — no proxy/account data from Slip2GO or no creator PromptPay ID');
+          console.log('[AutoVerify] Receiver check: no proxy/account data available — falling back to manual review');
         }
 
         if (receiverMatch) {
@@ -594,7 +611,7 @@ export async function uploadSlip(
           // Receiver doesn't match — potential fraud, require manual check
           verifyFailed = true;
           verifyMessage = 'Receiver account does not match creator PromptPay';
-          console.warn('[AutoVerify] RECEIVER MISMATCH! Slip receiver does not match creator PromptPay.');
+          console.warn('[AutoVerify] Receiver mismatch — falling to manual review');
           await supabase
             .from('payments')
             .update({ 
@@ -1316,6 +1333,7 @@ export async function refundOrder(
 // ============================================
 export async function cancelBooking(
   orderId: string,
+  buyerEmail: string,
   reason?: string
 ): Promise<{ success: boolean; error?: string; errorCode?: string }> {
   const t = await getTranslations('ServerActions');
@@ -1334,7 +1352,11 @@ export async function cancelBooking(
     return { success: false, error: t('orderNotFound') };
   }
 
-  console.log('Cancel booking - order found:', order);
+  // Verify buyer identity — prevent unauthorized cancellation
+  if (!buyerEmail || buyerEmail.toLowerCase() !== order.buyer_email.toLowerCase()) {
+    console.warn('Cancel booking - buyer email mismatch for order:', orderId);
+    return { success: false, error: t('orderNotFound') };
+  }
 
   // Check if can cancel (only confirmed or pending_confirmation)
   if (!['confirmed', 'pending_confirmation'].includes(order.status)) {
@@ -1436,7 +1458,8 @@ export async function cancelBooking(
 // ============================================
 export async function rescheduleBooking(
   orderId: string,
-  newSlotId: string
+  newSlotId: string,
+  buyerEmail: string
 ): Promise<{ success: boolean; error?: string; errorCode?: string }> {
   const t = await getTranslations('ServerActions');
   // Use admin client to bypass RLS (customer not logged in)
@@ -1449,10 +1472,14 @@ export async function rescheduleBooking(
     .eq('id', orderId)
     .single();
 
-  console.log('Reschedule booking - order:', order, 'error:', orderError);
-
   if (orderError || !order) {
     console.error('Reschedule booking - order query error:', orderError);
+    return { success: false, error: t('orderNotFound') };
+  }
+
+  // Verify buyer identity — prevent unauthorized rescheduling
+  if (!buyerEmail || buyerEmail.toLowerCase() !== order.buyer_email.toLowerCase()) {
+    console.warn('Reschedule booking - buyer email mismatch for order:', orderId);
     return { success: false, error: t('orderNotFound') };
   }
 

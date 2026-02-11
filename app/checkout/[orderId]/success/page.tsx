@@ -406,6 +406,7 @@ export default async function SuccessPage({ params }: PageProps) {
                   {/* Manage Booking (Cancel/Reschedule) */}
                   <ManageBooking
                     orderId={orderId}
+                    buyerEmail={order.buyer_email}
                     canManage={isConfirmed || isPendingConfirmation}
                     currentDate={order.booking_date}
                     currentTime={order.booking_time}

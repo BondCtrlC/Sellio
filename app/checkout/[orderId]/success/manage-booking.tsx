@@ -9,6 +9,7 @@ import { formatDate } from '@/lib/utils';
 
 interface ManageBookingProps {
   orderId: string;
+  buyerEmail: string; // Required for identity verification
   canManage: boolean; // Only if status is confirmed or pending_confirmation
   currentDate: string;
   currentTime: string;
@@ -25,7 +26,7 @@ type Slot = {
 
 const MAX_RESCHEDULES = 1;
 
-export function ManageBooking({ orderId, canManage, currentDate, currentTime, rescheduleCount = 0 }: ManageBookingProps) {
+export function ManageBooking({ orderId, buyerEmail, canManage, currentDate, currentTime, rescheduleCount = 0 }: ManageBookingProps) {
   const t = useTranslations('ManageBooking');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
@@ -61,9 +62,7 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
     setIsLoading(true);
     setError(null);
     
-    console.log('Calling cancelBooking with orderId:', orderId);
-    const result = await cancelBooking(orderId, cancelReason || undefined);
-    console.log('cancelBooking result:', result);
+    const result = await cancelBooking(orderId, buyerEmail, cancelReason || undefined);
     
     if (result.success) {
       setSuccess(t('cancelSuccess'));
@@ -88,7 +87,7 @@ export function ManageBooking({ orderId, canManage, currentDate, currentTime, re
     setIsLoading(true);
     setError(null);
     
-    const result = await rescheduleBooking(orderId, selectedSlot);
+    const result = await rescheduleBooking(orderId, selectedSlot, buyerEmail);
     
     if (result.success) {
       setSuccess(t('rescheduleSuccess'));
