@@ -97,21 +97,39 @@ export async function verifySlipByQrCode(
     console.log('[Slip2GO] POST', apiUrl);
     console.log('[Slip2GO] checkCondition:', JSON.stringify(checkCondition));
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SLIP2GO_SECRET_KEY}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
+    // Retry logic: 200404 ("Slip not found") often means the bank hasn't
+    // propagated the transaction yet. Retry up to 2 more times with 3s delay.
+    const MAX_RETRIES = 2;
+    const RETRY_DELAY_MS = 3000;
+    let result: Record<string, unknown> = {};
+    let code = '';
 
-    const result = await response.json();
-    const code = String(result.code || '');
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      if (attempt > 0) {
+        console.log(`[Slip2GO] Retry ${attempt}/${MAX_RETRIES} after ${RETRY_DELAY_MS}ms (previous: ${code})`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      }
 
-    console.log('[Slip2GO] HTTP:', response.status, '| Code:', code, '| Message:', result.message);
-    if (result.data) {
-      console.log('[Slip2GO] Data amount:', result.data.amount, '| transRef:', result.data.transRef);
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SLIP2GO_SECRET_KEY}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      result = await response.json();
+      code = String(result.code || '');
+
+      console.log(`[Slip2GO] HTTP: ${response.status} | Code: ${code} | Message: ${result.message} (attempt ${attempt + 1})`);
+      if (result.data) {
+        const data = result.data as Record<string, unknown>;
+        console.log('[Slip2GO] Data amount:', data.amount, '| transRef:', data.transRef);
+      }
+
+      // Only retry on 200404 (Slip not found) — bank may need time to propagate
+      if (code !== '200404') break;
     }
 
     // Response codes:
@@ -126,24 +144,23 @@ export async function verifySlipByQrCode(
 
     if (code === '200200' && result.data) {
       // ONLY 200200 = fully verified with conditions
-      const data = result.data;
+      const data = result.data as Record<string, unknown>;
 
       // Log full receiver object for debugging
-      console.log('[Slip2GO] Full receiver data:', JSON.stringify(data.receiver));
+      const receiver = data.receiver as Record<string, unknown> | undefined;
+      console.log('[Slip2GO] Full receiver data:', JSON.stringify(receiver));
 
       // Extract receiver proxy (PromptPay number) — try all possible paths
-      // Different banks/APIs may structure this differently
-      const rawProxy = data.receiver?.account?.proxy?.value  // Pattern A: nested
-        || data.receiver?.proxy?.value                       // Pattern B: direct proxy object
-        || data.receiver?.account?.proxy                     // Pattern C: proxy as string directly
-        || data.receiver?.proxy                              // Pattern D: proxy as string on receiver
+      const recAccount = (receiver?.account as Record<string, unknown>) || {};
+      const recProxy = (recAccount?.proxy as Record<string, unknown>) || (receiver?.proxy as Record<string, unknown>) || {};
+      const rawProxy = (recProxy as Record<string, unknown>)?.value
+        || (receiver?.proxy as Record<string, unknown>)?.value
+        || recAccount?.proxy
+        || receiver?.proxy
         || null;
       
       // Extract receiver account number — try all possible paths
-      const rawAccount = data.receiver?.account?.value       // Pattern A: value field
-        || data.receiver?.account?.number                    // Pattern B: number field
-        || data.receiver?.account?.id                        // Pattern C: id field
-        || null;
+      const rawAccount = recAccount?.value || recAccount?.number || recAccount?.id || null;
 
       // Ensure we only use string values (not objects)
       const receiverProxy = (typeof rawProxy === 'string' && rawProxy.length > 0) ? rawProxy : null;
@@ -151,15 +168,18 @@ export async function verifySlipByQrCode(
 
       console.log('[Slip2GO] Extracted receiverProxy:', receiverProxy, '| receiverAccount:', receiverAccount);
 
+      const sender = data.sender as Record<string, unknown> | undefined;
+      const senderAccount = (sender?.account as Record<string, unknown>) || {};
+
       return {
         success: true,
         verified: true,
         amount: Number(data.amount) || 0,
         message: 'Slip verified successfully',
-        transRef: data.transRef || null,
-        dateTime: data.dateTime || null,
-        senderName: data.sender?.account?.name || data.sender?.name || null,
-        receiverName: data.receiver?.account?.name || data.receiver?.name || null,
+        transRef: (data.transRef as string) || null,
+        dateTime: (data.dateTime as string) || null,
+        senderName: (senderAccount?.name as string) || (sender?.name as string) || null,
+        receiverName: (recAccount?.name as string) || (receiver?.name as string) || null,
         receiverProxy: typeof receiverProxy === 'string' ? receiverProxy : null,
         receiverAccount: typeof receiverAccount === 'string' ? receiverAccount : null,
         apiCode: code,
@@ -168,7 +188,8 @@ export async function verifySlipByQrCode(
 
     // 200000 = Found but not validated, or condition mismatch codes
     // Extract amount from data if available
-    const slipAmount = result.data ? Number(result.data.amount) || null : null;
+    const resultData = result.data as Record<string, unknown> | undefined;
+    const slipAmount = resultData ? Number(resultData.amount) || null : null;
 
     // Build readable message
     let msg = '';
@@ -180,7 +201,7 @@ export async function verifySlipByQrCode(
       case '200404': msg = 'Slip not found in bank system'; break;
       case '200500': msg = 'Slip is fraud/fake'; break;
       case '200501': msg = 'Slip already used (duplicate)'; break;
-      default: msg = result.message || 'Verification failed';
+      default: msg = (result.message as string) || 'Verification failed';
     }
 
     return {
@@ -188,8 +209,8 @@ export async function verifySlipByQrCode(
       verified: false,
       amount: slipAmount,
       message: `[${code}] ${msg}`,
-      transRef: result.data?.transRef || null,
-      dateTime: result.data?.dateTime || null,
+      transRef: (resultData?.transRef as string) || null,
+      dateTime: (resultData?.dateTime as string) || null,
       senderName: null, receiverName: null,
       receiverProxy: null, receiverAccount: null,
       apiCode: code,
