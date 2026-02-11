@@ -492,18 +492,20 @@ export async function uploadSlip(
     return { success: false, error: t('cannotSaveSlip') };
   }
 
-  // Get order details for verification
+  // Get order details for verification (include promptpay_id for receiver check)
   const { data: orderInfo } = await supabase
     .from('orders')
     .select(`
       id, total, buyer_name, buyer_email, creator_id, booking_date, booking_time,
       product:products(id, title, type, type_config),
-      creator:creators(id, display_name, notification_email, contact_line, contact_ig)
+      creator:creators(id, display_name, notification_email, contact_line, contact_ig, promptpay_id)
     `)
     .eq('id', orderId)
     .single();
 
   const orderTotal = orderInfo ? Number(orderInfo.total) : 0;
+  const creatorData = orderInfo ? (Array.isArray(orderInfo.creator) ? orderInfo.creator[0] : orderInfo.creator) : null;
+  const creatorPromptPayId = creatorData?.promptpay_id || undefined;
 
   // === Slip2GO Auto-Verification (QR Code) ===
   let autoConfirmed = false;
@@ -519,8 +521,8 @@ export async function uploadSlip(
       verifyMessage = 'No QR code found in slip';
     }
 
-    // Verify QR code with Slip2GO
-    const verifyResult = qrCode ? await verifySlipByQrCode(qrCode, orderTotal) : null;
+    // Verify QR code with Slip2GO (includes receiver account check)
+    const verifyResult = qrCode ? await verifySlipByQrCode(qrCode, orderTotal, creatorPromptPayId) : null;
     
     if (!verifyResult) {
       // No QR code found — skip to manual flow

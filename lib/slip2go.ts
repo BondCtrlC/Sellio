@@ -24,12 +24,13 @@ export interface Slip2GoVerifyResult {
 
 /**
  * Verify a bank transfer slip using Slip2GO QR Code API
- * Uses checkCondition to validate amount + duplicate check.
+ * Uses checkCondition to validate amount + duplicate + receiver check.
  * Only code "200200" (Slip is Valid) means the slip passes all conditions.
  */
 export async function verifySlipByQrCode(
   qrCode: string,
   expectedAmount?: number,
+  receiverAccount?: string,
 ): Promise<Slip2GoVerifyResult> {
   if (!SLIP2GO_SECRET_KEY) {
     console.warn('SLIP2GO_SECRET_KEY not configured');
@@ -47,7 +48,7 @@ export async function verifySlipByQrCode(
       qrCode,
     };
 
-    // Add conditions: duplicate check + amount match
+    // Add conditions: duplicate check + amount match + receiver match
     const checkCondition: Record<string, unknown> = {
       checkDuplicate: true,
     };
@@ -56,6 +57,14 @@ export async function verifySlipByQrCode(
       checkCondition.checkAmount = {
         type: 'eq',
         amount: String(expectedAmount),
+      };
+    }
+
+    // Check receiver account (PromptPay) — ensures money went to the right creator
+    if (receiverAccount) {
+      checkCondition.checkReceiver = {
+        type: 'account',
+        account: receiverAccount,
       };
     }
 

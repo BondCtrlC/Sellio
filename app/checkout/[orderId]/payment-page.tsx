@@ -192,14 +192,8 @@ export function PaymentPage({ order }: PaymentPageProps) {
       let qrCode: string | null = null;
       try {
         qrCode = await extractQrCodeFromFile(selectedFile);
-        console.log('[Upload] QR extracted:', qrCode ? qrCode.substring(0, 60) + '...' : 'NONE');
       } catch (qrErr) {
-        console.error('[Upload] QR extraction error:', qrErr);
-      }
-
-      // DEBUG: Show QR extraction result (remove after testing)
-      if (qrCode) {
-        console.log('[Upload] Full QR data length:', qrCode.length);
+        // QR extraction failed — will fall back to manual verification
       }
 
       const formData = new FormData();
@@ -223,10 +217,8 @@ export function PaymentPage({ order }: PaymentPageProps) {
       }
 
       if (result.verifyFailed) {
-        // Redirect with verify=failed param and debug info
-        const debugParam = qrCode ? `&qr=found` : `&qr=none`;
-        const msgParam = result.verifyMessage ? `&msg=${encodeURIComponent(result.verifyMessage)}` : '';
-        router.push(`/checkout/${order.id}?verify=failed${debugParam}${msgParam}`);
+        // Redirect with verify=failed param so UI shows warning
+        router.push(`/checkout/${order.id}?verify=failed`);
         return;
       }
 
@@ -261,10 +253,6 @@ export function PaymentPage({ order }: PaymentPageProps) {
                   <div>
                     <p className="font-medium text-red-800">{t('slipVerifyFailed')}</p>
                     <p className="text-sm text-red-700 mt-1">{t('slipVerifyFailedDesc')}</p>
-                    {/* DEBUG: Show verification details - remove after testing */}
-                    <p className="text-xs text-red-500 mt-2 font-mono break-all">
-                      [DEBUG] QR: {searchParams.get('qr') || 'unknown'} | API: {searchParams.get('msg') ? decodeURIComponent(searchParams.get('msg')!) : 'no message'}
-                    </p>
                   </div>
                 </div>
 

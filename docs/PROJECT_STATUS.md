@@ -6,8 +6,8 @@
 **URL:** trysellio.com  
 **Pricing:** Free + Pro (99 THB/เดือน)  
 **Deployment:** Vercel  
-**Status:** MVP Ready (MUST + SHOULD + NICE TO HAVE เสร็จหมดแล้ว, เหลือ M2 Resend Domain) | ✅ i18n Complete + Polished | ✅ Yearly Subscription  
-**Last Updated:** February 8, 2026 (Session 10)
+**Status:** MVP Ready | ✅ i18n Complete | ✅ Yearly Subscription | ✅ Auto Slip Verification (Slip2GO)  
+**Last Updated:** February 11, 2026 (Session 11)
 
 ---
 
@@ -24,6 +24,7 @@
 - **i18n:** next-intl (cookie-based locale, Thai default)
 - **Email:** Resend
 - **Payments:** PromptPay QR + Bank Transfer (Stripe card ถูกลบแล้ว, รอ Stripe Connect)
+- **Slip Verification:** Slip2GO API (QR Code scanning) + jsQR (client-side QR extraction)
 - **Deployment:** Vercel (Hobby plan)
 
 ---
@@ -135,6 +136,25 @@ new/
 - **Upload Slip** - อัพโหลดสลิปการโอนเงิน
 - **Download QR** - บันทึกรูป QR Code ได้
 - **Stripe Card Payment** - ถูกลบแล้ว (รอ Stripe Connect เพื่อให้เงินเข้า creator โดยตรง)
+
+### 24. Auto Slip Verification (Slip2GO) ✅
+- **ระบบตรวจสอบสลิปอัตโนมัติ** — ลูกค้าอัปสลิป → ระบบตรวจ QR ในสลิปกับธนาคารจริง → auto-confirm ทันที
+- **Client-side QR Extraction** — ใช้ `jsQR` + Canvas API ใน browser อ่าน QR จากรูปสลิป (4 strategies: full image, bottom-right 50%, bottom-right 35%+scale, bottom half)
+- **Slip2GO QR Code API** — ส่ง QR text ไปตรวจสอบที่ `/api/verify-slip/qr-code/info` ด้วย Bearer token
+- **checkCondition** — ตรวจยอดเงิน (`checkAmount: eq`) + ตรวจสลิปซ้ำ (`checkDuplicate: true`) + ตรวจผู้รับเงิน (`checkReceiver: account`)
+- **Response Code Handling:**
+  - `200200` (Slip is Valid) → **Auto-confirm order** ทันที ไม่ต้องรอ creator
+  - `200000` (Slip Found but not validated) → ไม่ผ่าน
+  - `200402` (Amount mismatch) → ไม่ผ่าน
+  - `200501` (Duplicate slip) → ไม่ผ่าน
+  - `200500` (Fraud) → ไม่ผ่าน
+  - `200404` (Not found) → ไม่ผ่าน
+- **Auto-confirm flow:** อัปเดต order status, payment status, ส่งอีเมลยืนยันถึงลูกค้า, fulfill สินค้าดิจิทัลอัตโนมัติ
+- **Verification Failed UI:** กล่องแดงแจ้งลูกค้าว่าสลิปไม่ผ่าน + แนะนำให้ตรวจสอบและลองใหม่
+- **Creator Dashboard:** แสดง badge "ยืนยันอัตโนมัติแล้ว" (เขียว) หรือ "รอตรวจสอบ" (เหลือง) ในหน้าจัดการ order
+- **Database:** เพิ่ม columns `slip_verified`, `slip_verified_at`, `slip_verify_ref`, `slip_verify_message` ใน payments table
+- **Fallback:** ถ้าตรวจสลิปไม่ผ่าน ยังสามารถรอ creator ยืนยันด้วยตนเองได้ (manual flow เหมือนเดิม)
+- **Skip auto-verify:** สินค้าประเภท booking/live ข้าม auto-confirm (ต้องให้ creator จัดการ slot)
 
 ### 11. Social Sharing
 - Share buttons (Facebook, X, Line, Copy link)
@@ -304,12 +324,43 @@ new/
 | F4 | i18n: Zod Validation Messages | แปล validation messages ใน `lib/validations/*.ts` (ต้องใช้ custom Zod error map) |
 | F5 | i18n: Constants & Calendar | แปล `lib/constants.ts` labels + `lib/ics.ts` calendar descriptions |
 | F6 | i18n: Time Format | แก้ hardcoded "น." suffix ให้ใช้ locale-aware time formatting |
+| F7 | Remove Debug UI | ✅ Done — ลบ `[DEBUG]` text จากหน้าชำระเงิน + ลบ `/api/test-slip2go` endpoint |
+| F8 | Slip2GO Receiver Check | ✅ Done — เพิ่ม `checkReceiver` ใน checkCondition เพื่อตรวจว่าเงินเข้าบัญชี PromptPay ของ creator ถูกคน |
+| F9 | M2: Resend Domain Verification | Verify domain เพื่อส่ง email จริง (ไม่ใช่ sandbox) |
 
 ---
 
 ## Recent Changes Log
 
-### Session 10 (Feb 8, 2026) - Current Session
+### Session 11 (Feb 11, 2026) - Current Session
+
+| # | Change | Files Modified |
+|---|--------|----------------|
+| 1 | **Slip2GO Integration (Image URL)** - เริ่มต้นเชื่อมต่อ Slip2GO API ด้วยวิธี verify-slip/qr-image-link/info แต่ fail เพราะ Slip2GO ไม่รับ Supabase URL | `lib/slip2go.ts`, `actions/orders.ts`, `.env.example` |
+| 2 | **Proxy Image URL** - สร้าง proxy endpoint `/api/slip-image/[orderId]` ให้ serve รูปจาก domain trysellio.com แต่ก็ยัง fail | `app/api/slip-image/[orderId]/route.ts` |
+| 3 | **Switch to Base64** - เปลี่ยนเป็น `/api/verify-slip/qr-base64/info` ส่งรูปเป็น Base64 แต่ format ผิดหลายรอบ | `lib/slip2go.ts`, `actions/orders.ts` |
+| 4 | **Fix Base64 format** - แก้ endpoint URL, field name (`imageBase64`), data URI prefix (`data:image/<mime>;base64,...`) | `lib/slip2go.ts`, `actions/orders.ts` |
+| 5 | **Verification Failed UI** - เพิ่มกล่องแดงแจ้งลูกค้าเมื่อสลิปไม่ผ่าน + URL param `?verify=failed` เพื่อ persist state | `app/checkout/[orderId]/payment-page.tsx`, `messages/*.json` |
+| 6 | **Creator Dashboard badges** - แสดง "ยืนยันอัตโนมัติแล้ว" / "รอตรวจสอบ" ในหน้าจัดการ order | `app/dashboard/orders/order-detail-modal.tsx`, `orders-list.tsx` |
+| 7 | **DB Migration 017** - เพิ่ม `slip_verified`, `slip_verified_at`, `slip_verify_ref`, `slip_verify_message` ใน payments table | `supabase/migrations/017_slip_verification.sql` |
+| 8 | **Switch to QR Code (server-side)** - เปลี่ยนมาใช้ `/api/verify-slip/qr-code/info` + ติดตั้ง `jsqr` + `sharp` เพื่ออ่าน QR จากรูปฝั่ง server | `lib/slip2go.ts`, `actions/orders.ts`, `package.json` |
+| 9 | **Multi-strategy QR extraction** - ลอง 5 วิธี (full, bottom-right 50%, bottom-right 35%, bottom half, grayscale+sharpen) | `lib/slip2go.ts` |
+| 10 | **sharp on Vercel fix** - เพิ่ม `sharp` ใน `serverExternalPackages` แต่ยังไม่ทำงาน | `next.config.ts` |
+| 11 | **🔑 Switch to Client-side QR extraction** - ย้ายการอ่าน QR ไป browser (Canvas API + jsQR) เพราะ sharp ทำงานไม่ได้บน Vercel serverless | `app/checkout/[orderId]/payment-page.tsx`, `actions/orders.ts`, `lib/slip2go.ts` |
+| 12 | **Debug UI** - เพิ่ม `[DEBUG] QR: found/none | API: [code] message` บนหน้าชำระเงินเพื่อ troubleshoot | `app/checkout/[orderId]/payment-page.tsx` |
+| 13 | **Fix: 200000 vs 200200** - เปลี่ยนจาก auto-confirm ทุก `200000` (แค่พบสลิป) เป็นเฉพาะ `200200` (สลิปถูกต้อง+เงื่อนไขผ่าน) เพื่อป้องกันสลิปปลอมผ่าน | `lib/slip2go.ts` |
+| 14 | **Add checkCondition** - ใส่ `checkDuplicate: true` + `checkAmount: { type: "eq", amount }` กลับคืนเพื่อให้ Slip2GO ตรวจเงื่อนไขด้วย | `lib/slip2go.ts` |
+| 15 | **F7: Remove Debug UI** - ลบ `[DEBUG]` text จากหน้าชำระเงิน, ลบ debug URL params (`qr`, `msg`), ลบ debug console.logs, ลบ `/api/test-slip2go` test endpoint | `app/checkout/[orderId]/payment-page.tsx`, `app/api/test-slip2go/route.ts` (deleted) |
+| 16 | **F8: checkReceiver** - เพิ่ม `checkReceiver: { type: 'account', account: promptpay_id }` ใน checkCondition เพื่อตรวจว่าเงินเข้าบัญชี PromptPay ของ creator ถูกคน + query เพิ่ม `promptpay_id` จาก creators | `lib/slip2go.ts`, `actions/orders.ts` |
+
+**Key learnings จาก Slip2GO integration:**
+- Image URL method: Slip2GO ปฏิเสธ URL จาก Supabase Storage (format validation strict)
+- Base64 method: ต้องมี `data:image/<mime>;base64,` prefix + field name `imageBase64` + endpoint เฉพาะ
+- QR Code method (สำเร็จ!): อ่าน QR จากรูปแล้วส่งแค่ text — เรียบง่ายและน่าเชื่อถือที่สุด
+- sharp ไม่ทำงานบน Vercel serverless → ต้องอ่าน QR ฝั่ง browser แทน
+- `200000` ≠ verified! ต้องใช้ `checkCondition` แล้วรอ `200200` เท่านั้น
+
+### Session 10 (Feb 8, 2026) - Previous Session
 
 | # | Change | Files Modified |
 |---|--------|----------------|
@@ -430,12 +481,14 @@ Run in order via Supabase SQL Editor:
 4. `014_line_notify.sql` - LINE Notify token field (ถูกแทนที่ด้วย 015)
 5. `015_notification_email.sql` - Replace LINE Notify → Email Notifications
 6. `016_store_language.sql` - Store language preference (th/en)
+7. `017_slip_verification.sql` - Slip2GO auto-verification columns
 
-**Latest migration (016):**
+**Latest migration (017):**
 ```sql
-ALTER TABLE creators
-ADD COLUMN IF NOT EXISTS store_language TEXT NOT NULL DEFAULT 'th'
-CHECK (store_language IN ('th', 'en'));
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS slip_verified BOOLEAN DEFAULT NULL;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS slip_verified_at TIMESTAMPTZ DEFAULT NULL;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS slip_verify_ref TEXT DEFAULT NULL;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS slip_verify_message TEXT DEFAULT NULL;
 ```
 
 ---
@@ -489,7 +542,10 @@ CHECK (store_language IN ('th', 'en'));
 
 ### Payment Flow
 - ลูกค้าชำระผ่าน PromptPay QR หรือ โอนธนาคาร
-- อัพโหลดสลิป → Creator ตรวจสอบและยืนยัน
+- อัพโหลดสลิป → **ระบบตรวจ QR อัตโนมัติผ่าน Slip2GO**
+  - ✅ สลิปถูกต้อง (`200200`) → Auto-confirm ทันที ไปหน้า success
+  - ❌ สลิปไม่ผ่าน → แจ้งเตือนลูกค้า + รอ Creator ตรวจสอบ manual
+  - ⏭️ สินค้า booking/live → ข้าม auto-verify (ต้อง Creator จัดการ)
 - Stripe Card ถูกลบแล้ว (เงินเข้า platform ไม่ใช่ creator, รอ Stripe Connect)
 
 ### Storage Buckets
@@ -512,6 +568,10 @@ CRON_SECRET=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Slip2GO (Auto Slip Verification)
+SLIP2GO_API_URL=https://connect.slip2go.com
+SLIP2GO_SECRET_KEY=<your-secret-key>
 ```
 
 ---
@@ -537,6 +597,9 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 | Billing/Subscription | `settings-form.tsx` (BillingTab), `api/stripe/cancel-subscription/route.ts` |
 | Upgrade Page | `app/dashboard/upgrade/page.tsx`, `upgrade-client.tsx` |
 | Payment Page | `app/checkout/[orderId]/payment-page.tsx` |
+| Slip Verification (API) | `lib/slip2go.ts` (`verifySlipByQrCode`) |
+| Slip Verification (QR read) | `app/checkout/[orderId]/payment-page.tsx` (`extractQrCodeFromFile` — client-side Canvas + jsQR) |
+| Slip Verification (debug) | `app/api/test-slip2go/route.ts` (test endpoint — remove after testing) |
 | Email Notifications (Creator) | `lib/email.ts` (`sendNewOrderNotificationEmail`, `sendSlipUploadedNotificationEmail`) |
 | Onboarding | `components/dashboard/onboarding-checklist.tsx`, `actions/onboarding.ts` |
 | Logo | `public/logo-black.png`, `public/logo-white.png` |
@@ -600,7 +663,7 @@ npm run dev
 ---
 
 ## Last Updated
-February 8, 2026 (Session 10)
+February 11, 2026 (Session 11)
 
 ---
 
