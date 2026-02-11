@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
 import { checkoutSchema, type CheckoutInput } from '@/lib/validations/checkout';
-import { verifySlipBase64 } from '@/lib/slip2go';
+import { extractQrFromImage, verifySlipByQrCode } from '@/lib/slip2go';
 import { 
   sendOrderConfirmationEmail, 
   sendPaymentRejectionEmail,
@@ -504,43 +504,53 @@ export async function uploadSlip(
 
   const orderTotal = orderInfo ? Number(orderInfo.total) : 0;
 
-  // === Slip2GO Auto-Verification (Base64) ===
+  // === Slip2GO Auto-Verification (QR Code) ===
   let autoConfirmed = false;
   let verifyFailed = false;
   let verifyMessage = '';
   try {
-    // Convert uploaded file to Base64 with correct MIME type for Slip2GO
-    const mimeType = file.type || 'image/jpeg';
-    const base64Raw = Buffer.from(buffer).toString('base64');
-    const base64Image = `data:${mimeType};base64,${base64Raw}`;
+    // Step 1: Extract QR code from the slip image
+    const qrCode = await extractQrFromImage(buffer);
     
-    const verifyResult = await verifySlipBase64(base64Image, orderTotal);
-    console.log('[AutoVerify] Result:', verifyResult.verified, verifyResult.message);
-
-    if (verifyResult.success && verifyResult.verified && orderInfo) {
-      // Slip is valid and amount matches → Auto-confirm
-      autoConfirmed = await _autoConfirmOrder(supabase, orderId, orderInfo, t);
-
-      // Mark slip as verified
-      await supabase
-        .from('payments')
-        .update({ 
-          slip_verified: true,
-          slip_verified_at: new Date().toISOString(),
-          slip_verify_ref: verifyResult.transRef,
-        })
-        .eq('order_id', orderId);
-    } else {
-      // Verification failed or amount mismatch — save result for creator reference
+    if (!qrCode) {
+      console.log('[AutoVerify] No QR code found in slip image, skipping auto-verify');
       verifyFailed = true;
-      verifyMessage = verifyResult.message;
-      await supabase
-        .from('payments')
-        .update({ 
-          slip_verified: false,
-          slip_verify_message: verifyResult.message,
-        })
-        .eq('order_id', orderId);
+      verifyMessage = 'No QR code found in slip';
+    }
+
+    // Step 2: Verify QR code with Slip2GO
+    const verifyResult = qrCode ? await verifySlipByQrCode(qrCode, orderTotal) : null;
+    
+    if (!verifyResult) {
+      // No QR code found — skip to manual flow
+    } else {
+      console.log('[AutoVerify] Result:', verifyResult.verified, verifyResult.message);
+
+      if (verifyResult.success && verifyResult.verified && orderInfo) {
+        // Slip is valid and amount matches → Auto-confirm
+        autoConfirmed = await _autoConfirmOrder(supabase, orderId, orderInfo, t);
+
+        // Mark slip as verified
+        await supabase
+          .from('payments')
+          .update({ 
+            slip_verified: true,
+            slip_verified_at: new Date().toISOString(),
+            slip_verify_ref: verifyResult.transRef,
+          })
+          .eq('order_id', orderId);
+      } else {
+        // Verification failed or amount mismatch
+        verifyFailed = true;
+        verifyMessage = verifyResult.message;
+        await supabase
+          .from('payments')
+          .update({ 
+            slip_verified: false,
+            slip_verify_message: verifyResult.message,
+          })
+          .eq('order_id', orderId);
+      }
     }
   } catch (verifyError) {
     console.error('[AutoVerify] Error:', verifyError);

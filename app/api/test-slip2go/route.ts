@@ -1,28 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySlipBase64 } from '@/lib/slip2go';
+import { extractQrFromImage, verifySlipByQrCode } from '@/lib/slip2go';
 
 // DEBUG ENDPOINT - remove after testing
 export async function POST(request: NextRequest) {
   try {
-    const { base64Image, amount } = await request.json();
+    const formData = await request.formData();
+    const file = formData.get('slip') as File | null;
+    const amount = formData.get('amount') as string | null;
 
-    if (!base64Image) {
-      return NextResponse.json({ error: 'base64Image required' }, { status: 400 });
+    if (!file) {
+      return NextResponse.json({ error: 'slip file required (use form-data)' }, { status: 400 });
     }
 
-    console.log('[TestSlip2GO] Testing Base64, length:', base64Image.length, 'amount:', amount);
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
 
-    const result = await verifySlipBase64(base64Image, amount || undefined, false);
+    // Step 1: Extract QR code
+    const qrCode = await extractQrFromImage(buffer);
 
-    console.log('[TestSlip2GO] Result:', JSON.stringify(result));
+    if (!qrCode) {
+      return NextResponse.json({
+        step: 'qr_extraction',
+        error: 'No QR code found in image',
+      });
+    }
+
+    // Step 2: Verify with Slip2GO
+    const result = await verifySlipByQrCode(
+      qrCode,
+      amount ? Number(amount) : undefined,
+      false
+    );
 
     return NextResponse.json({
+      qrCode: qrCode.substring(0, 60) + '...',
       result,
-      env: {
-        hasApiUrl: !!process.env.SLIP2GO_API_URL,
-        hasSecretKey: !!process.env.SLIP2GO_SECRET_KEY,
-        apiUrl: process.env.SLIP2GO_API_URL || '(not set)',
-      }
     });
   } catch (error) {
     console.error('[TestSlip2GO] Error:', error);

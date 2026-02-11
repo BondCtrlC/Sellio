@@ -1,7 +1,10 @@
 // ============================================
-// Slip2GO - Verify Slip API Client (Base64)
+// Slip2GO - Verify Slip via QR Code
 // https://slip2go.com
 // ============================================
+
+import jsQR from 'jsqr';
+import sharp from 'sharp';
 
 const SLIP2GO_API_URL = process.env.SLIP2GO_API_URL || 'https://connect.slip2go.com';
 const SLIP2GO_SECRET_KEY = process.env.SLIP2GO_SECRET_KEY || '';
@@ -15,17 +18,45 @@ export interface Slip2GoVerifyResult {
   dateTime: string | null;
   senderName: string | null;
   receiverName: string | null;
+  qrCode?: string;
   raw?: unknown;
 }
 
 /**
- * Verify a bank transfer slip using Slip2GO Base64 API
- * @param base64Image - Base64 encoded slip image (without data:image prefix)
+ * Extract QR code text from a slip image buffer
+ */
+export async function extractQrFromImage(imageBuffer: Uint8Array): Promise<string | null> {
+  try {
+    // Convert image to raw RGBA pixel data using sharp
+    const { data, info } = await sharp(Buffer.from(imageBuffer))
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    // Use jsQR to decode QR code
+    const qrResult = jsQR(new Uint8ClampedArray(data), info.width, info.height);
+
+    if (qrResult) {
+      console.log('[Slip2GO] QR code found:', qrResult.data.substring(0, 50) + '...');
+      return qrResult.data;
+    }
+
+    console.log('[Slip2GO] No QR code found in image');
+    return null;
+  } catch (error) {
+    console.error('[Slip2GO] QR extraction error:', error);
+    return null;
+  }
+}
+
+/**
+ * Verify a bank transfer slip using Slip2GO QR Code API
+ * @param qrCode - QR code text extracted from the slip
  * @param expectedAmount - Expected payment amount to verify against
  * @param checkDuplicate - Whether to check for duplicate slips (default: true)
  */
-export async function verifySlipBase64(
-  base64Image: string,
+export async function verifySlipByQrCode(
+  qrCode: string,
   expectedAmount?: number,
   checkDuplicate: boolean = true
 ): Promise<Slip2GoVerifyResult> {
@@ -44,10 +75,8 @@ export async function verifySlipBase64(
   }
 
   try {
-    // Build request body for Base64 endpoint
-    // base64Image should already include "data:image/...;base64,..." prefix
     const payload: Record<string, unknown> = {
-      imageBase64: base64Image,
+      qrCode,
     };
 
     // Add optional check conditions
@@ -68,9 +97,10 @@ export async function verifySlipBase64(
       payload.checkCondition = checkCondition;
     }
 
-    console.log('[Slip2GO] Verifying slip (Base64), expected:', expectedAmount, 'base64 length:', base64Image.length);
+    console.log('[Slip2GO] Verifying QR code, expected amount:', expectedAmount);
+    console.log('[Slip2GO] QR data:', qrCode.substring(0, 50) + '...');
 
-    const response = await fetch(`${SLIP2GO_API_URL}/api/verify-slip/qr-base64/info`, {
+    const response = await fetch(`${SLIP2GO_API_URL}/api/verify-slip/qr-code/info`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -99,11 +129,11 @@ export async function verifySlipBase64(
         dateTime: data.dateTime || null,
         senderName: data.sender?.account?.name || null,
         receiverName: data.receiver?.account?.name || null,
+        qrCode,
         raw: data,
       };
     }
 
-    // Slip not found or invalid
     return {
       success: true,
       verified: false,
@@ -113,6 +143,7 @@ export async function verifySlipBase64(
       dateTime: null,
       senderName: null,
       receiverName: null,
+      qrCode,
       raw: result,
     };
   } catch (error) {
