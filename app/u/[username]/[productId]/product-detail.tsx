@@ -323,6 +323,9 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                     const isSelected = dateStr === selectedDate;
                     const isClickable = inMonth && hasSlots && !isPast;
 
+                    // Check if ALL slots on this date are full
+                    const allFull = hasSlots && slotsByDate[dateStr]?.every(s => (s.current_bookings || 0) >= (s.max_bookings || 1));
+
                     return (
                       <button
                         key={idx}
@@ -334,18 +337,26 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                             ? 'text-gray-300'
                             : isPast && !hasSlots
                             ? 'text-gray-300'
-                            : isSelected
-                            ? 'bg-primary text-white font-bold'
                             : hasSlots && !isPast
-                            ? 'font-semibold text-primary hover:bg-primary/10 cursor-pointer'
+                            ? 'cursor-pointer'
                             : 'text-gray-400'
                         }`}
                       >
-                        <span className={isToday && !isSelected ? 'underline underline-offset-4 decoration-2 decoration-primary' : ''}>
+                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                          isSelected && allFull
+                            ? 'bg-red-500 text-white font-bold'
+                            : isSelected
+                            ? 'bg-primary text-white font-bold'
+                            : allFull && !isPast && inMonth
+                            ? 'font-semibold text-red-500 hover:bg-red-100'
+                            : hasSlots && !isPast && inMonth
+                            ? 'font-semibold text-primary hover:bg-primary/10'
+                            : ''
+                        } ${isToday && !isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}>
                           {date.getDate()}
                         </span>
                         {hasSlots && !isPast && !isSelected && (
-                          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                          <span className={`absolute bottom-2.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${allFull ? 'bg-red-500' : 'bg-primary'}`} />
                         )}
                       </button>
                     );
@@ -411,7 +422,9 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                           onClick={() => !isDisabled && setSelectedSlot(slot.id)}
                           disabled={isDisabled}
                           className={`px-3 py-2.5 text-sm rounded-lg border-2 font-medium transition-colors ${
-                            isDisabled
+                            isFull
+                              ? 'bg-red-50 text-red-400 border-red-200 cursor-not-allowed'
+                              : isDisabled
                               ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                               : selectedSlot === slot.id
                               ? 'bg-primary text-white border-primary'
@@ -420,7 +433,9 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                         >
                           <div>{slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}</div>
                           <div className={`text-xs mt-0.5 ${
-                            isDisabled 
+                            isFull
+                              ? 'text-red-400'
+                              : isDisabled 
                               ? 'text-gray-400' 
                               : selectedSlot === slot.id 
                               ? 'text-white/80' 
