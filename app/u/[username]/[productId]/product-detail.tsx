@@ -100,7 +100,8 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
     return acc;
   }, {} as Record<string, Slot[]>), [availableSlots]);
 
-  // Calendar state — use state+effect for `today` to avoid SSR/client timezone mismatch
+  // Calendar state — defer `today` to client-only to avoid SSR/client timezone mismatch
+  const [isMounted, setIsMounted] = useState(false);
   const [today, setToday] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -108,10 +109,11 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
   const [calendarMonth, setCalendarMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  // Re-compute today on client after hydration to fix UTC vs local timezone
+  // Mark as mounted and re-compute today with correct client timezone
   useEffect(() => {
     const d = new Date();
     setToday(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+    setIsMounted(true);
   }, []);
 
   // Set of dates that have available slots
@@ -358,7 +360,7 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                             : hasSlots && !isPast && inMonth
                             ? 'font-semibold text-primary hover:bg-primary/10'
                             : ''
-                        } ${isToday && !isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}>
+                        } ${isMounted && isToday && !isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}>
                           {date.getDate()}
                         </span>
                         {hasSlots && !isPast && !isSelected && (
