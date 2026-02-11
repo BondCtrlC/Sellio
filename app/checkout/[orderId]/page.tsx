@@ -4,6 +4,8 @@ import { getOrderById } from '@/actions/orders';
 import { PaymentPage } from './payment-page';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
+import { injectAmount, isValidEmvcoPayload } from '@/lib/emvco-qr-generator';
+import QRCode from 'qrcode';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('Payment');
@@ -58,5 +60,20 @@ export default async function CheckoutPaymentPage({ params }: PageProps) {
     );
   }
 
-  return <PaymentPage order={order} />;
+  // Generate QR code with amount from EMVCo data (if available)
+  let generatedQrDataUrl: string | null = null;
+  if (order.creator.promptpay_qr_data && isValidEmvcoPayload(order.creator.promptpay_qr_data)) {
+    try {
+      const payload = injectAmount(order.creator.promptpay_qr_data, order.total);
+      generatedQrDataUrl = await QRCode.toDataURL(payload, {
+        width: 300,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+      });
+    } catch (err) {
+      console.error('[Checkout] Failed to generate QR from EMVCo data:', err);
+    }
+  }
+
+  return <PaymentPage order={order} emvcoQrDataUrl={generatedQrDataUrl} />;
 }

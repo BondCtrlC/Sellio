@@ -81,9 +81,10 @@ async function extractQrCodeFromFile(file: File): Promise<string | null> {
 
 interface PaymentPageProps {
   order: OrderDetails;
+  emvcoQrDataUrl?: string | null;
 }
 
-export function PaymentPage({ order }: PaymentPageProps) {
+export function PaymentPage({ order, emvcoQrDataUrl }: PaymentPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations('Payment');
@@ -100,43 +101,48 @@ export function PaymentPage({ order }: PaymentPageProps) {
 
   // Payment method availability
   const hasUploadedQR = !!order.creator.promptpay_qr_url;
-  const hasPromptPay = !!order.creator.promptpay_id || hasUploadedQR;
+  const hasPromptPay = !!order.creator.promptpay_id || hasUploadedQR || !!emvcoQrDataUrl;
   const hasBank = !!(order.creator.bank_name && order.creator.bank_account_number && order.creator.bank_account_name);
   const hasAnyPayment = hasPromptPay || hasBank;
   
   // Default to PromptPay if available, otherwise bank
   const [paymentTab, setPaymentTab] = useState<'promptpay' | 'bank'>(hasPromptPay ? 'promptpay' : 'bank');
 
-  // QR code: use uploaded QR image if available, otherwise generate from phone/national ID
-  const generatedQrUrl = order.creator.promptpay_id && canGeneratePromptPayQR(order.creator.promptpay_id)
+  // QR code priority:
+  // 1. EMVCo-generated QR (from uploaded QR data + amount injected) — best: has amount embedded
+  // 2. Generated from phone/national ID via promptpay.io — good: has amount embedded
+  // 3. Uploaded QR image as-is — fallback: no amount, customer enters manually
+  const promptpayIoQrUrl = order.creator.promptpay_id && canGeneratePromptPayQR(order.creator.promptpay_id)
     ? generatePromptPayQR(order.creator.promptpay_id, order.total)
     : null;
-  const qrCodeUrl = hasUploadedQR ? order.creator.promptpay_qr_url : generatedQrUrl;
-  // If using uploaded QR (no amount embedded), customer must enter amount manually
-  const isUploadedQR = hasUploadedQR;
+  const qrCodeUrl = emvcoQrDataUrl || promptpayIoQrUrl || (hasUploadedQR ? order.creator.promptpay_qr_url : null);
+  // Only show "enter amount manually" if using the raw uploaded image (no amount embedded)
+  const isUploadedQR = !emvcoQrDataUrl && !promptpayIoQrUrl && hasUploadedQR;
 
-  // Download QR code via server proxy (avoids CORS issues)
+  // Download QR code
   const handleDownloadQR = async () => {
     if (!qrCodeUrl) return;
     
     const filename = `promptpay-${order.id.slice(0, 8)}.png`;
-    const downloadUrl = `/api/download-qr?url=${encodeURIComponent(qrCodeUrl)}&filename=${encodeURIComponent(filename)}`;
-    
-    // Check if mobile
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    // For data URLs (EMVCo-generated QR), download directly
+    const isDataUrl = qrCodeUrl.startsWith('data:');
     
     if (isMobile && navigator.share) {
-      // Try Web Share API for mobile (allows save to album)
       try {
-        const response = await fetch(downloadUrl);
-        const blob = await response.blob();
+        let blob: Blob;
+        if (isDataUrl) {
+          const res = await fetch(qrCodeUrl);
+          blob = await res.blob();
+        } else {
+          const downloadUrl = `/api/download-qr?url=${encodeURIComponent(qrCodeUrl)}&filename=${encodeURIComponent(filename)}`;
+          const res = await fetch(downloadUrl);
+          blob = await res.blob();
+        }
         const file = new File([blob], filename, { type: 'image/png' });
-        
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: 'PromptPay QR Code',
-          });
+          await navigator.share({ files: [file], title: 'PromptPay QR Code' });
           return;
         }
       } catch (err) {
@@ -146,7 +152,11 @@ export function PaymentPage({ order }: PaymentPageProps) {
     
     // Desktop or share not available - direct download
     const link = document.createElement('a');
-    link.href = downloadUrl;
+    if (isDataUrl) {
+      link.href = qrCodeUrl;
+    } else {
+      link.href = `/api/download-qr?url=${encodeURIComponent(qrCodeUrl)}&filename=${encodeURIComponent(filename)}`;
+    }
     link.download = filename;
     document.body.appendChild(link);
     link.click();
@@ -408,7 +418,8 @@ export function PaymentPage({ order }: PaymentPageProps) {
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground">{t('transferTo')}</p>
                       <p className="font-semibold">{order.creator.promptpay_name || 'PromptPay'}</p>
-                      {order.creator.promptpay_id && (
+                      {/* Show PromptPay ID only if it's a phone/national ID (not e-wallet 15 digits) */}
+                      {order.creator.promptpay_id && order.creator.promptpay_id.replace(/[-\s]/g, '').length <= 13 && (
                         <p className="text-muted-foreground">{order.creator.promptpay_id}</p>
                       )}
                     </div>

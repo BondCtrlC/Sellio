@@ -91,6 +91,7 @@ export interface OrderDetails {
     promptpay_id: string | null;
     promptpay_name: string | null;
     promptpay_qr_url: string | null;
+    promptpay_qr_data: string | null;
     bank_name: string | null;
     bank_account_number: string | null;
     bank_account_name: string | null;
@@ -421,6 +422,7 @@ export async function getOrderById(orderId: string): Promise<OrderDetails | null
         promptpay_id,
         promptpay_name,
         promptpay_qr_url,
+        promptpay_qr_data,
         bank_name,
         bank_account_number,
         bank_account_name,
@@ -555,7 +557,7 @@ export async function uploadSlip(
     .select(`
       id, total, buyer_name, buyer_email, creator_id, booking_date, booking_time,
       product:products(id, title, type, type_config),
-      creator:creators(id, display_name, notification_email, contact_line, contact_ig, promptpay_id)
+      creator:creators(id, display_name, notification_email, contact_line, contact_ig, promptpay_id, promptpay_name)
     `)
     .eq('id', orderId)
     .single();
@@ -591,18 +593,41 @@ export async function uploadSlip(
         // Compare receiver info from Slip2GO response with creator's PromptPay ID
         // This prevents attack: transfer to friend → use that slip → money didn't go to creator
         let receiverMatch = false; // default: DENY — require manual review if no receiver data
+        const creatorPromptPayName = creatorData?.promptpay_name || creatorData?.display_name || null;
+        const isEwalletId = creatorPromptPayId ? /^\d{15}$/.test(creatorPromptPayId.replace(/[-\s.]/g, '')) : false;
         
         if (creatorPromptPayId && (verifyResult.receiverProxy || verifyResult.receiverAccount)) {
           const normalizedCreatorId = normalizePromptPayId(creatorPromptPayId);
           const normalizedProxy = verifyResult.receiverProxy ? normalizePromptPayId(verifyResult.receiverProxy) : null;
           const normalizedAccount = verifyResult.receiverAccount ? normalizePromptPayId(verifyResult.receiverAccount) : null;
 
+          // Standard check: proxy or account matches creator's PromptPay ID
           receiverMatch = (
             (normalizedProxy !== null && normalizedProxy === normalizedCreatorId) ||
             (normalizedAccount !== null && normalizedAccount === normalizedCreatorId)
           );
 
-          console.log('[AutoVerify] Receiver check: match =', receiverMatch);
+          // Fallback for e-wallet IDs: proxy/account won't match 15-digit ID,
+          // so also check receiver name against creator's name
+          if (!receiverMatch && isEwalletId && verifyResult.receiverName && creatorPromptPayName) {
+            const normalizedReceiverName = verifyResult.receiverName.replace(/\s+/g, ' ').trim().toLowerCase();
+            const normalizedCreatorName = creatorPromptPayName.replace(/\s+/g, ' ').trim().toLowerCase();
+            
+            // Check if names match (either exact or one contains the other)
+            receiverMatch = (
+              normalizedReceiverName === normalizedCreatorName ||
+              normalizedReceiverName.includes(normalizedCreatorName) ||
+              normalizedCreatorName.includes(normalizedReceiverName)
+            );
+            
+            if (receiverMatch) {
+              console.log('[AutoVerify] Receiver check: e-wallet name match');
+            } else {
+              console.log('[AutoVerify] Receiver check: e-wallet name mismatch');
+            }
+          }
+
+          console.log('[AutoVerify] Receiver check: match =', receiverMatch, isEwalletId ? '(e-wallet)' : '');
         } else {
           console.log('[AutoVerify] Receiver check: no proxy/account data available — falling back to manual review');
         }

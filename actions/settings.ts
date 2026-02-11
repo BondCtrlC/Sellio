@@ -5,6 +5,7 @@ import { settingsSchema, type SettingsInput } from '@/lib/validations/settings';
 import { revalidatePath } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
 import { extractPromptPayId } from '@/lib/promptpay-parser';
+import { isValidEmvcoPayload } from '@/lib/emvco-qr-generator';
 
 export type SettingsResult = {
   success: boolean;
@@ -214,8 +215,9 @@ export async function uploadPromptPayQR(formData: FormData): Promise<QRUploadRes
   }
 
   try {
-    // Try to decode PromptPay ID from QR (best-effort, not required)
+    // Try to decode PromptPay ID and raw EMVCo data from QR (best-effort, not required)
     let decodedResult: import('@/lib/promptpay-parser').PromptPayResult | null = null;
+    let rawQrData: string | null = null;
     try {
       const sharp = (await import('sharp')).default;
       const jsQR = (await import('jsqr')).default;
@@ -233,6 +235,12 @@ export async function uploadPromptPayQR(formData: FormData): Promise<QRUploadRes
       );
 
       if (qrResult?.data) {
+        // Store raw EMVCo data for QR generation with amount at checkout
+        if (isValidEmvcoPayload(qrResult.data)) {
+          rawQrData = qrResult.data;
+          console.log('[QR Upload] Valid EMVCo payload stored, length:', rawQrData.length);
+        }
+
         decodedResult = extractPromptPayId(qrResult.data);
         if (decodedResult) {
           console.log('[QR Upload] Decoded PromptPay:', decodedResult.type, 'canGenerate:', decodedResult.canGenerateQR);
@@ -262,9 +270,10 @@ export async function uploadPromptPayQR(formData: FormData): Promise<QRUploadRes
 
     const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
 
-    // Build update: always set QR URL, optionally set decoded promptpay_id
+    // Build update: always set QR URL, store raw QR data, optionally set decoded promptpay_id
     const updateData: Record<string, string | null> = {
       promptpay_qr_url: urlWithCacheBust,
+      promptpay_qr_data: rawQrData, // Raw EMVCo text for generating QR with amount
     };
 
     // If we decoded a valid PromptPay ID, auto-fill it
