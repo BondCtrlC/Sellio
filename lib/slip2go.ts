@@ -24,7 +24,8 @@ export interface Slip2GoVerifyResult {
 
 /**
  * Verify a bank transfer slip using Slip2GO QR Code API
- * Sends only the QR code — amount is verified locally from the response data.
+ * Uses checkCondition to validate amount + duplicate check.
+ * Only code "200200" (Slip is Valid) means the slip passes all conditions.
  */
 export async function verifySlipByQrCode(
   qrCode: string,
@@ -41,19 +42,31 @@ export async function verifySlipByQrCode(
   }
 
   try {
-    // Send only qrCode — no checkCondition to minimize failure points
-    // We verify amount ourselves from the response data
-    const requestBody = {
-      payload: {
-        qrCode,
-      },
+    // Build payload with checkCondition for proper validation
+    const payload: Record<string, unknown> = {
+      qrCode,
     };
 
+    // Add conditions: duplicate check + amount match
+    const checkCondition: Record<string, unknown> = {
+      checkDuplicate: true,
+    };
+
+    if (expectedAmount && expectedAmount > 0) {
+      checkCondition.checkAmount = {
+        type: 'eq',
+        amount: String(expectedAmount),
+      };
+    }
+
+    payload.checkCondition = checkCondition;
+
+    const requestBody = { payload };
     const apiUrl = `${SLIP2GO_API_URL}/api/verify-slip/qr-code/info`;
 
     console.log('[Slip2GO] POST', apiUrl);
     console.log('[Slip2GO] QR:', qrCode.substring(0, 60) + '...');
-    console.log('[Slip2GO] Expected amount:', expectedAmount);
+    console.log('[Slip2GO] checkCondition:', JSON.stringify(checkCondition));
 
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -72,30 +85,24 @@ export async function verifySlipByQrCode(
       console.log('[Slip2GO] Data amount:', result.data.amount, '| transRef:', result.data.transRef);
     }
 
-    // Success codes that mean the slip was found in the bank system:
-    // 200000 = Slip Found
-    // 200200 = Slip is Valid  
-    // 200401 = Recipient Account Not Match (slip is real, but receiver doesn't match)
-    // 200402 = Transfer Amount Not Match (slip is real, but amount doesn't match)
-    // 200403 = Transfer Date Not Match (slip is real, but date doesn't match)
-    const slipFoundCodes = ['200000', '200200', '200401', '200402', '200403'];
+    // Response codes:
+    // 200200 = Slip is Valid (all conditions passed!) → AUTO-CONFIRM
+    // 200000 = Slip Found (but conditions not validated) → NOT enough
+    // 200401 = Recipient Account Not Match
+    // 200402 = Transfer Amount Not Match
+    // 200403 = Transfer Date Not Match
+    // 200404 = Slip Not Found in bank system
+    // 200500 = Slip is Fraud
+    // 200501 = Slip is Duplicated
 
-    if (slipFoundCodes.includes(code) && result.data) {
+    if (code === '200200' && result.data) {
+      // ONLY 200200 = fully verified with conditions
       const data = result.data;
-      const slipAmount = Number(data.amount) || 0;
-
-      // Verify amount ourselves
-      const amountMatches = expectedAmount 
-        ? slipAmount === expectedAmount 
-        : true;
-
       return {
         success: true,
-        verified: amountMatches,
-        amount: slipAmount,
-        message: amountMatches 
-          ? 'Slip verified successfully'
-          : `Amount mismatch: expected ${expectedAmount}, got ${slipAmount}`,
+        verified: true,
+        amount: Number(data.amount) || 0,
+        message: 'Slip verified successfully',
         transRef: data.transRef || null,
         dateTime: data.dateTime || null,
         senderName: data.sender?.account?.name || null,
@@ -106,13 +113,31 @@ export async function verifySlipByQrCode(
       };
     }
 
-    // Fraud / Duplicate / Not Found
+    // 200000 = Found but not validated, or condition mismatch codes
+    // Extract amount from data if available
+    const slipAmount = result.data ? Number(result.data.amount) || null : null;
+
+    // Build readable message
+    let msg = '';
+    switch (code) {
+      case '200000': msg = 'Slip found but conditions not verified'; break;
+      case '200401': msg = 'Recipient account does not match'; break;
+      case '200402': msg = `Amount mismatch (slip: ${slipAmount}, expected: ${expectedAmount})`; break;
+      case '200403': msg = 'Transfer date does not match'; break;
+      case '200404': msg = 'Slip not found in bank system'; break;
+      case '200500': msg = 'Slip is fraud/fake'; break;
+      case '200501': msg = 'Slip already used (duplicate)'; break;
+      default: msg = result.message || 'Verification failed';
+    }
+
     return {
       success: true,
       verified: false,
-      amount: null,
-      message: `[${code}] ${result.message || 'Verification failed'}`,
-      transRef: null, dateTime: null, senderName: null, receiverName: null,
+      amount: slipAmount,
+      message: `[${code}] ${msg}`,
+      transRef: result.data?.transRef || null,
+      dateTime: result.data?.dateTime || null,
+      senderName: null, receiverName: null,
       qrCode,
       apiCode: code,
       raw: result,
