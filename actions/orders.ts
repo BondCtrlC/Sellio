@@ -580,31 +580,34 @@ export async function uploadSlip(
 
       if (verifyResult.success && verifyResult.verified && orderInfo) {
         // === Receiver Check ===
-        // We passed checkReceiver to Slip2GO API with the creator's PromptPay ID.
-        // If Slip2GO returned 200200, it means ALL conditions passed including receiver.
-        // If receiver didn't match, Slip2GO would have returned 200401 instead.
-        //
-        // So if we're here (200200 + verified), the receiver is confirmed by Slip2GO.
-        let receiverMatch = !!creatorPromptPayId; // Trusted if we sent checkReceiver
+        // Compare receiver info from Slip2GO response with creator's PromptPay ID
+        let receiverMatch = false;
 
-        console.log('[AutoVerify] Receiver check: Slip2GO 200200 with checkReceiver =', creatorPromptPayId || '(none)');
-        console.log('[AutoVerify] Receiver data from response:', {
+        console.log('[AutoVerify] Receiver data from Slip2GO:', {
           receiverProxy: verifyResult.receiverProxy,
           receiverAccount: verifyResult.receiverAccount,
-          receiverName: verifyResult.receiverName,
+          creatorPromptPayId,
         });
         
-        // If no PromptPay ID was set (checkReceiver wasn't sent),
-        // try manual proxy/account matching as fallback
-        if (!receiverMatch && (verifyResult.receiverProxy || verifyResult.receiverAccount)) {
-          console.log('[AutoVerify] No checkReceiver sent, trying manual match...');
-          // This path shouldn't normally be reached since we always send checkReceiver
-          // when creatorPromptPayId is set, but kept as safety net
-          receiverMatch = true;
+        // Step 1: Try standard proxy/account matching
+        if (creatorPromptPayId && (verifyResult.receiverProxy || verifyResult.receiverAccount)) {
+          const normalizedCreatorId = normalizePromptPayId(creatorPromptPayId);
+          const normalizedProxy = verifyResult.receiverProxy ? normalizePromptPayId(verifyResult.receiverProxy) : null;
+          const normalizedAccount = verifyResult.receiverAccount ? normalizePromptPayId(verifyResult.receiverAccount) : null;
+
+          receiverMatch = (
+            (normalizedProxy !== null && normalizedProxy === normalizedCreatorId) ||
+            (normalizedAccount !== null && normalizedAccount === normalizedCreatorId)
+          );
+
+          console.log('[AutoVerify] Receiver check (standard): match =', receiverMatch);
         }
         
-        if (!receiverMatch) {
-          console.log('[AutoVerify] No PromptPay ID configured — cannot verify receiver');
+        // Step 2: If Slip2GO did NOT return receiver data,
+        // trust Slip2GO's overall verification (amount + authenticity + no duplicate)
+        if (!receiverMatch && !verifyResult.receiverProxy && !verifyResult.receiverAccount) {
+          console.log('[AutoVerify] No receiver data from Slip2GO — trusting overall verification');
+          receiverMatch = true;
         }
 
         if (receiverMatch) {

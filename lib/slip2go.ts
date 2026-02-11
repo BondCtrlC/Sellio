@@ -65,14 +65,6 @@ export async function verifySlipByQrCode(
       };
     }
 
-    // Add receiver check — let Slip2GO verify the receiver server-side
-    // If receiver matches → 200200, if not → 200401
-    if (receiverPromptPayId) {
-      const cleanId = receiverPromptPayId.replace(/[-\s.]/g, '');
-      checkCondition.checkReceiver = cleanId;
-      console.log('[Slip2GO] Adding checkReceiver:', cleanId);
-    }
-
     payload.checkCondition = checkCondition;
 
     const requestBody = { payload };
