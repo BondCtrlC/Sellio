@@ -46,6 +46,7 @@ interface Order {
     refund_slip_url: string | null;
     slip_verified: boolean | null;
     slip_verify_ref: string | null;
+    slip_verify_message: string | null;
   } | null;
 }
 
