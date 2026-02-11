@@ -557,7 +557,7 @@ export async function uploadSlip(
     .select(`
       id, total, buyer_name, buyer_email, creator_id, booking_date, booking_time,
       product:products(id, title, type, type_config),
-      creator:creators(id, display_name, notification_email, contact_line, contact_ig, promptpay_id, promptpay_name)
+      creator:creators(id, display_name, notification_email, contact_line, contact_ig, promptpay_id, promptpay_name, promptpay_qr_data)
     `)
     .eq('id', orderId)
     .single();
@@ -594,11 +594,12 @@ export async function uploadSlip(
         // This prevents attack: transfer to friend → use that slip → money didn't go to creator
         let receiverMatch = false; // default: DENY — require manual review if no receiver data
         const isEwalletId = creatorPromptPayId ? /^\d{15}$/.test(creatorPromptPayId.replace(/[-\s.]/g, '')) : false;
+        const hasUploadedQrData = !!(creatorData as Record<string, unknown>)?.promptpay_qr_data;
         
-        if (isEwalletId) {
-          // E-wallet IDs (15 digits, e.g. KBank Thai QR Payment):
-          // Slip2GO returns receiver as phone/bank account — format is fundamentally different
-          // from the 15-digit e-wallet ID, so proxy/account matching is impossible.
+        if (isEwalletId || hasUploadedQrData) {
+          // Creator uses uploaded QR (e-wallet or other format):
+          // Slip2GO returns receiver as phone/bank account — format may be different
+          // from what we have stored, so proxy/account matching may be impossible.
           //
           // Since we generate the QR ourselves (with amount embedded from the creator's
           // uploaded QR data), and Slip2GO has already verified:
@@ -607,7 +608,7 @@ export async function uploadSlip(
           //   3. The slip hasn't been used before (duplicate check)
           // We trust this as sufficient for auto-confirmation.
           receiverMatch = true;
-          console.log('[AutoVerify] Receiver check: e-wallet ID — trusting Slip2GO verification (amount + validity + duplicate)');
+          console.log('[AutoVerify] Receiver check: uploaded QR mode — trusting Slip2GO verification (amount + validity + duplicate)', { isEwalletId, hasUploadedQrData });
         } else if (creatorPromptPayId && (verifyResult.receiverProxy || verifyResult.receiverAccount)) {
           // Standard check for phone/national ID: proxy or account matches creator's PromptPay ID
           const normalizedCreatorId = normalizePromptPayId(creatorPromptPayId);
