@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, memo } from 'react';
+import { useState, useMemo, useEffect, memo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { 
@@ -100,13 +100,19 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
     return acc;
   }, {} as Record<string, Slot[]>), [availableSlots]);
 
-  // Calendar state
-  const today = useMemo(() => {
+  // Calendar state — use state+effect for `today` to avoid SSR/client timezone mismatch
+  const [today, setToday] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  }, []);
+  });
   const [calendarMonth, setCalendarMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // Re-compute today on client after hydration to fix UTC vs local timezone
+  useEffect(() => {
+    const d = new Date();
+    setToday(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+  }, []);
 
   // Set of dates that have available slots
   const datesWithSlots = useMemo(() => new Set(Object.keys(slotsByDate)), [slotsByDate]);
