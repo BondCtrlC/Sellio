@@ -40,14 +40,11 @@ export function OnboardingOverlay() {
   const [collapsed, setCollapsed] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [notificationSkipped, setNotificationSkipped] = useState(false);
-  const [customizeSkipped, setCustomizeSkipped] = useState(false);
 
   // Load status on mount and periodically
   useEffect(() => {
     const skipped = localStorage.getItem('sellio_notification_skipped');
     if (skipped === 'true') setNotificationSkipped(true);
-    const customizeStoreSkipped = localStorage.getItem('sellio_customize_store_skipped');
-    if (customizeStoreSkipped === 'true') setCustomizeSkipped(true);
 
     loadStatus();
     const interval = setInterval(loadStatus, 15000);
@@ -73,11 +70,6 @@ export function OnboardingOverlay() {
   const handleSkipNotification = () => {
     setNotificationSkipped(true);
     localStorage.setItem('sellio_notification_skipped', 'true');
-  };
-
-  const handleSkipCustomize = () => {
-    setCustomizeSkipped(true);
-    localStorage.setItem('sellio_customize_store_skipped', 'true');
   };
 
   // Navigate to a step - use router.push for reliable navigation
@@ -129,6 +121,16 @@ export function OnboardingOverlay() {
       required: true,
     },
     {
+      id: 'customize_store',
+      title: t('customizeTitle'),
+      description: t('customizeDesc'),
+      icon: Palette,
+      completed: status.hasCustomizedStore,
+      href: '/dashboard/my-store',
+      color: 'bg-pink-100 text-pink-700',
+      required: true,
+    },
+    {
       id: 'publish',
       title: t('publishTitle'),
       description: t('publishDesc'),
@@ -137,17 +139,6 @@ export function OnboardingOverlay() {
       href: '/dashboard/settings?tab=store',
       color: 'bg-orange-100 text-orange-700',
       required: true,
-    },
-    {
-      id: 'customize_store',
-      title: t('customizeTitle'),
-      description: t('customizeDesc'),
-      icon: Palette,
-      completed: status.hasCustomizedStore,
-      href: '/dashboard/my-store',
-      color: 'bg-pink-100 text-pink-700',
-      required: false,
-      skipped: customizeSkipped,
     },
     {
       id: 'notification_email',
@@ -258,7 +249,7 @@ export function OnboardingOverlay() {
                 {optionalSteps.map((step) => {
                   if (step.skipped) return null;
                   const Icon = step.icon;
-                  const handleSkip = step.id === 'customize_store' ? handleSkipCustomize : handleSkipNotification;
+                  const handleSkip = handleSkipNotification;
                   return (
                     <div key={step.id} className="flex items-center gap-3 p-2.5 rounded-xl">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
