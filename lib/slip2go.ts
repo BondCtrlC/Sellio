@@ -53,7 +53,7 @@ export async function verifySlipByQrCode(
       qrCode,
     };
 
-    // Add conditions: duplicate check + amount match
+    // Add conditions: duplicate check + amount match + receiver check
     const checkCondition: Record<string, unknown> = {
       checkDuplicate: true,
     };
@@ -63,6 +63,30 @@ export async function verifySlipByQrCode(
         type: 'eq',
         amount: String(expectedAmount),
       };
+    }
+
+    // Add receiver check — Slip2GO verifies receiver server-side
+    // Format: checkReceiver is an ARRAY of objects with accountType + accountNumber
+    // accountType "02001" = PromptPay phone number
+    // If Slip2GO can't match → returns 200401 instead of 200200
+    if (receiverPromptPayId) {
+      const cleanId = receiverPromptPayId.replace(/[-\s.]/g, '');
+      
+      if (/^0\d{9}$/.test(cleanId)) {
+        // 10-digit phone number → PromptPay type 02001
+        checkCondition.checkReceiver = [
+          { accountType: '02001', accountNumber: cleanId },
+        ];
+        console.log('[Slip2GO] Adding checkReceiver: PromptPay phone', cleanId);
+      } else if (/^\d{13}$/.test(cleanId)) {
+        // 13-digit national ID → just accountNumber (no specific type code known)
+        checkCondition.checkReceiver = [
+          { accountNumber: cleanId },
+        ];
+        console.log('[Slip2GO] Adding checkReceiver: National ID', cleanId);
+      } else {
+        console.log('[Slip2GO] Unknown PromptPay ID format, skipping checkReceiver:', cleanId);
+      }
     }
 
     payload.checkCondition = checkCondition;

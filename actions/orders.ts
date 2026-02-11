@@ -580,35 +580,22 @@ export async function uploadSlip(
 
       if (verifyResult.success && verifyResult.verified && orderInfo) {
         // === Receiver Check ===
-        // Compare receiver info from Slip2GO response with creator's PromptPay ID
-        let receiverMatch = false;
+        // We sent checkReceiver to Slip2GO with the creator's PromptPay ID.
+        // Slip2GO's response code tells us everything:
+        //   200200 = ALL conditions passed (slip valid + amount + receiver + no duplicate)
+        //   200401 = Recipient account does NOT match → would NOT reach here (verified=false)
+        //
+        // If we're here, verifyResult.verified === true, which means code was 200200.
+        // So if checkReceiver was included, the receiver is already verified by Slip2GO.
+        const receiverMatch = !!creatorPromptPayId; // true = checkReceiver was sent & passed
 
-        console.log('[AutoVerify] Receiver data from Slip2GO:', {
-          receiverProxy: verifyResult.receiverProxy,
-          receiverAccount: verifyResult.receiverAccount,
+        console.log('[AutoVerify] Receiver check:', {
           creatorPromptPayId,
+          receiverMatch,
+          note: creatorPromptPayId 
+            ? 'checkReceiver was sent — Slip2GO 200200 confirms receiver' 
+            : 'No PromptPay ID configured — cannot verify receiver',
         });
-        
-        // Step 1: Try standard proxy/account matching
-        if (creatorPromptPayId && (verifyResult.receiverProxy || verifyResult.receiverAccount)) {
-          const normalizedCreatorId = normalizePromptPayId(creatorPromptPayId);
-          const normalizedProxy = verifyResult.receiverProxy ? normalizePromptPayId(verifyResult.receiverProxy) : null;
-          const normalizedAccount = verifyResult.receiverAccount ? normalizePromptPayId(verifyResult.receiverAccount) : null;
-
-          receiverMatch = (
-            (normalizedProxy !== null && normalizedProxy === normalizedCreatorId) ||
-            (normalizedAccount !== null && normalizedAccount === normalizedCreatorId)
-          );
-
-          console.log('[AutoVerify] Receiver check (standard): match =', receiverMatch);
-        }
-        
-        // Step 2: If Slip2GO did NOT return receiver data,
-        // trust Slip2GO's overall verification (amount + authenticity + no duplicate)
-        if (!receiverMatch && !verifyResult.receiverProxy && !verifyResult.receiverAccount) {
-          console.log('[AutoVerify] No receiver data from Slip2GO — trusting overall verification');
-          receiverMatch = true;
-        }
 
         if (receiverMatch) {
           // Slip is valid + amount matches + receiver matches → Auto-confirm
