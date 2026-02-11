@@ -3,22 +3,25 @@
 import { useState } from 'react';
 import { Button, Input, Label } from '@/components/ui';
 import { updateProductBookingSettings } from '@/actions/products';
-import { Clock, Save, Loader2, Timer } from 'lucide-react';
+import { Clock, Save, Loader2, Timer, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface BookingSettingsProps {
   productId: string;
   initialMinimumAdvanceHours: number;
   initialBufferMinutes: number;
+  initialMaxPerCustomer: number;
 }
 
 export function BookingSettings({ 
   productId, 
   initialMinimumAdvanceHours,
-  initialBufferMinutes
+  initialBufferMinutes,
+  initialMaxPerCustomer,
 }: BookingSettingsProps) {
   const [minimumAdvanceHours, setMinimumAdvanceHours] = useState(initialMinimumAdvanceHours);
   const [bufferMinutes, setBufferMinutes] = useState(initialBufferMinutes);
+  const [maxPerCustomer, setMaxPerCustomer] = useState(initialMaxPerCustomer);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const t = useTranslations('BookingSettings');
@@ -31,6 +34,7 @@ export function BookingSettings({
       const result = await updateProductBookingSettings(productId, {
         minimum_advance_hours: minimumAdvanceHours,
         buffer_minutes: bufferMinutes,
+        max_bookings_per_customer: maxPerCustomer,
       });
       
       if (result.success) {
@@ -80,7 +84,22 @@ export function BookingSettings({
         </div>
       </div>
 
-      {(minimumAdvanceHours > 0 || bufferMinutes > 0) && (
+      <div className="space-y-2">
+        <Label htmlFor="max_per_customer">{t('maxPerCustomer')}</Label>
+        <Input
+          id="max_per_customer"
+          type="number"
+          min={0}
+          max={100}
+          value={maxPerCustomer}
+          onChange={(e) => setMaxPerCustomer(parseInt(e.target.value) || 0)}
+        />
+        <p className="text-xs text-muted-foreground">
+          {t('maxPerCustomerHint')}
+        </p>
+      </div>
+
+      {(minimumAdvanceHours > 0 || bufferMinutes > 0 || maxPerCustomer > 0) && (
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 space-y-1">
           {minimumAdvanceHours > 0 && (
             <div className="flex items-center gap-2 text-sm">
@@ -92,6 +111,12 @@ export function BookingSettings({
             <div className="flex items-center gap-2 text-sm">
               <Timer className="h-4 w-4" />
               <span>{t('bufferInfo', { minutes: bufferMinutes })}</span>
+            </div>
+          )}
+          {maxPerCustomer > 0 && (
+            <div className="flex items-center gap-2 text-sm">
+              <Users className="h-4 w-4" />
+              <span>{t('maxPerCustomerInfo', { count: maxPerCustomer })}</span>
             </div>
           )}
         </div>

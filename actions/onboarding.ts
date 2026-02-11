@@ -32,18 +32,13 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
     .select('*', { count: 'exact', head: true })
     .eq('creator_id', creator.id);
 
-  // Check if store has been customized (has items, sections, or custom design)
+  // Check if store has products added (store_items > 0)
   const { count: storeItemCount } = await supabase
     .from('store_items')
     .select('*', { count: 'exact', head: true })
     .eq('creator_id', creator.id);
 
-  const { count: storeSectionCount } = await supabase
-    .from('store_sections')
-    .select('*', { count: 'exact', head: true })
-    .eq('creator_id', creator.id);
-
-  const hasCustomizedStore = (storeItemCount || 0) > 0 || (storeSectionCount || 0) > 0 || !!creator.store_design;
+  const hasCustomizedStore = (storeItemCount || 0) > 0;
 
   const hasContact = !!(creator.contact_phone || creator.contact_line || creator.contact_ig || creator.contact_email);
   const hasPayment = !!creator.promptpay_id;

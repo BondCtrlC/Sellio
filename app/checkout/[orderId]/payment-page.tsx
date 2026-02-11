@@ -353,16 +353,23 @@ export function PaymentPage({ order }: PaymentPageProps) {
                   </div>
                 ) : (
                   /* Drop Zone */
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full border-2 border-dashed rounded-xl p-8 text-center hover:border-primary hover:bg-primary/5 transition-colors mb-4"
-                  >
-                    <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-                    <p className="font-medium">{t('clickSelectSlip')}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {t('slipFormats')}
-                    </p>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full border-2 border-dashed rounded-xl p-8 text-center hover:border-primary hover:bg-primary/5 transition-colors mb-3"
+                    >
+                      <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                      <p className="font-medium">{t('clickSelectSlip')}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {t('slipFormats')}
+                      </p>
+                    </button>
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+                      <p className="text-xs text-amber-700">
+                        💡 {t('slipQrGuide')}
+                      </p>
+                    </div>
+                  </>
                 )}
 
                 {/* Error */}

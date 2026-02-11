@@ -14,6 +14,7 @@ import { useTranslations } from 'next-intl';
 
 interface ProductFormProps {
   product?: Product;
+  hideBookingSettings?: boolean;
 }
 
 const typeIcons = {
@@ -22,7 +23,7 @@ const typeIcons = {
   link: Link2,
 };
 
-export function ProductForm({ product }: ProductFormProps) {
+export function ProductForm({ product, hideBookingSettings }: ProductFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const isEditing = !!product;
@@ -186,7 +187,7 @@ export function ProductForm({ product }: ProductFormProps) {
       </div>
 
       {/* Booking Specific */}
-      {selectedType === 'booking' && (
+      {selectedType === 'booking' && !hideBookingSettings && (
         <div className="space-y-4 p-4 border rounded-lg">
           <h4 className="font-medium">{t('bookingSettings')}</h4>
           

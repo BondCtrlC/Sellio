@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { 
@@ -9,9 +9,11 @@ import {
   Calendar, 
   ExternalLink,
   Package,
-  Clock
+  Clock,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
-import { formatPrice, formatDate } from '@/lib/utils';
+import { formatPrice } from '@/lib/utils';
 import { ShareButtons } from '@/components/shared/share-buttons';
 import { ProductReviews } from '@/components/shared/product-reviews';
 import { useTranslations } from 'next-intl';
@@ -90,13 +92,83 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
   const Icon = config.icon;
 
   // Group slots by date
-  const slotsByDate = availableSlots.reduce((acc, slot) => {
+  const slotsByDate = useMemo(() => availableSlots.reduce((acc, slot) => {
     if (!acc[slot.slot_date]) {
       acc[slot.slot_date] = [];
     }
     acc[slot.slot_date].push(slot);
     return acc;
-  }, {} as Record<string, Slot[]>);
+  }, {} as Record<string, Slot[]>), [availableSlots]);
+
+  // Calendar state
+  const today = useMemo(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }, []);
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // Set of dates that have available slots
+  const datesWithSlots = useMemo(() => new Set(Object.keys(slotsByDate)), [slotsByDate]);
+
+  // Calendar helpers
+  const WEEKDAYS_TH = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'];
+  const MONTHS_TH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+
+  // Format date as YYYY-MM-DD using local time (NOT UTC)
+  const toDateStr = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const todayStr = useMemo(() => toDateStr(today), [today]);
+
+  const calendarDays = useMemo(() => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    // Monday = 0, Sunday = 6
+    let startDow = firstDay.getDay() - 1;
+    if (startDow < 0) startDow = 6;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const days: { date: Date; dateStr: string; inMonth: boolean }[] = [];
+
+    // Previous month padding
+    for (let i = startDow - 1; i >= 0; i--) {
+      const d = new Date(year, month, -i);
+      days.push({ date: d, dateStr: toDateStr(d), inMonth: false });
+    }
+
+    // Current month
+    for (let i = 1; i <= daysInMonth; i++) {
+      const d = new Date(year, month, i);
+      days.push({ date: d, dateStr: toDateStr(d), inMonth: true });
+    }
+
+    // Next month padding to fill last row
+    const remainder = days.length % 7;
+    if (remainder > 0) {
+      const fill = 7 - remainder;
+      for (let i = 1; i <= fill; i++) {
+        const d = new Date(year, month + 1, i);
+        days.push({ date: d, dateStr: toDateStr(d), inMonth: false });
+      }
+    }
+
+    return days;
+  }, [calendarMonth]);
+
+  const canGoPrev = calendarMonth > new Date(today.getFullYear(), today.getMonth(), 1);
+
+  const handleDateClick = (dateStr: string) => {
+    if (datesWithSlots.has(dateStr)) {
+      setSelectedDate(dateStr === selectedDate ? null : dateStr);
+      setSelectedSlot(null); // reset slot when changing date
+    }
+  };
 
   const handleCheckout = () => {
     // For booking/live, need to select a slot first
@@ -170,6 +242,14 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
           </div>
         )}
 
+        {/* Max bookings per customer info */}
+        {(product.type === 'booking' || product.type === 'live') && (product.type_config?.max_bookings_per_customer as number) > 0 && (
+          <div className="flex items-center gap-2 text-sm text-amber-600">
+            <span className="text-base">👤</span>
+            <span>{t('maxPerCustomerNote', { count: product.type_config?.max_bookings_per_customer as number })}</span>
+          </div>
+        )}
+
 
         {/* Price */}
         <div className="text-3xl font-bold">
@@ -184,7 +264,7 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
         />
       </div>
 
-      {/* Slot Selection for Booking/Live */}
+      {/* Calendar Slot Selection for Booking/Live */}
       {(product.type === 'booking' || product.type === 'live') && (
         <div className="mb-6">
           <h3 className="font-semibold mb-2">{t('selectDateTime')}</h3>
@@ -201,19 +281,91 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
             </p>
           ) : (
             <div className="space-y-4">
-              {Object.entries(slotsByDate).map(([date, slots]) => (
-                <div key={date}>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">
-                    {formatDate(date)}
+              {/* Calendar */}
+              <div className="border rounded-xl overflow-hidden">
+                {/* Month navigation */}
+                <div className="flex items-center justify-between px-4 py-3 bg-muted/50">
+                  <button
+                    type="button"
+                    onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
+                    disabled={!canGoPrev}
+                    className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="font-semibold text-sm">
+                    {MONTHS_TH[calendarMonth.getMonth()]} {calendarMonth.getFullYear() + 543}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
+                    className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Weekday headers */}
+                <div className="grid grid-cols-7 border-t">
+                  {WEEKDAYS_TH.map((day) => (
+                    <div key={day} className="py-2 text-center text-xs font-medium text-muted-foreground">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar grid */}
+                <div className="grid grid-cols-7 border-t">
+                  {calendarDays.map(({ date, dateStr, inMonth }, idx) => {
+                    const hasSlots = datesWithSlots.has(dateStr);
+                    const isPast = date < today;
+                    const isToday = dateStr === todayStr;
+                    const isSelected = dateStr === selectedDate;
+                    const isClickable = inMonth && hasSlots && !isPast;
+
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => isClickable && handleDateClick(dateStr)}
+                        disabled={!isClickable}
+                        className={`relative py-2.5 text-center text-sm transition-all ${
+                          !inMonth
+                            ? 'text-gray-300'
+                            : isPast && !hasSlots
+                            ? 'text-gray-300'
+                            : isSelected
+                            ? 'bg-primary text-white font-bold'
+                            : hasSlots && !isPast
+                            ? 'font-semibold text-primary hover:bg-primary/10 cursor-pointer'
+                            : 'text-gray-400'
+                        }`}
+                      >
+                        <span className={isToday && !isSelected ? 'underline underline-offset-4 decoration-2 decoration-primary' : ''}>
+                          {date.getDate()}
+                        </span>
+                        {hasSlots && !isPast && !isSelected && (
+                          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Time slots for selected date */}
+              {selectedDate && slotsByDate[selectedDate] && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {new Intl.DateTimeFormat('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Bangkok' }).format(new Date(selectedDate + 'T00:00:00+07:00'))}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {slots.map((slot) => {
+                    {slotsByDate[selectedDate].map((slot) => {
                       const maxBookings = slot.max_bookings || 1;
                       const currentBookings = slot.current_bookings || 0;
                       const remaining = maxBookings - currentBookings;
                       const isFull = remaining <= 0;
                       
-                      // Check minimum advance booking
                       const minAdvanceHours = (product.type_config?.minimum_advance_hours as number) || 0;
                       let isTooClose = false;
                       if (minAdvanceHours > 0) {
@@ -223,24 +375,17 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                         isTooClose = hoursUntil < minAdvanceHours;
                       }
                       
-                      // Check buffer time conflict
                       const bufferMinutes = (product.type_config?.buffer_minutes as number) || 0;
                       let isInBuffer = false;
                       if (bufferMinutes > 0 && !isFull) {
-                        // Get all booked slots on the same day
-                        const bookedSlots = slots.filter(s => (s.current_bookings || 0) > 0 && s.id !== slot.id);
-                        
-                        // Convert slot start time to minutes from midnight
+                        const slotsOnDay = slotsByDate[selectedDate];
+                        const bookedSlots = slotsOnDay.filter(s => (s.current_bookings || 0) > 0 && s.id !== slot.id);
                         const [slotStartH, slotStartM] = slot.start_time.split(':').map(Number);
                         const slotStartMinutes = slotStartH * 60 + slotStartM;
                         
-                        // Check if this slot starts within buffer time after any booked slot ends
                         for (const bookedSlot of bookedSlots) {
                           const [bookedEndH, bookedEndM] = bookedSlot.end_time.split(':').map(Number);
                           const bookedEndMinutes = bookedEndH * 60 + bookedEndM;
-                          
-                          // Slot is blocked if it starts before (booked end + buffer)
-                          // and starts after booked start (to only block AFTER, not before)
                           const [bookedStartH, bookedStartM] = bookedSlot.start_time.split(':').map(Number);
                           const bookedStartMinutes = bookedStartH * 60 + bookedStartM;
                           
@@ -254,7 +399,6 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                       
                       const isDisabled = isFull || isTooClose || isInBuffer;
                       
-                      // Determine status text
                       let statusText = t('slotsAvailable', { count: remaining });
                       if (isFull) statusText = t('slotFull');
                       else if (isTooClose) statusText = t('slotTooClose');
@@ -266,7 +410,7 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                           key={slot.id}
                           onClick={() => !isDisabled && setSelectedSlot(slot.id)}
                           disabled={isDisabled}
-                          className={`px-3 py-2 text-sm rounded-lg border-2 font-medium transition-colors ${
+                          className={`px-3 py-2.5 text-sm rounded-lg border-2 font-medium transition-colors ${
                             isDisabled
                               ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                               : selectedSlot === slot.id
@@ -289,7 +433,14 @@ export function ProductDetail({ product, creator, availableSlots }: ProductDetai
                     })}
                   </div>
                 </div>
-              ))}
+              )}
+
+              {/* Prompt to select a date */}
+              {!selectedDate && (
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  {t('selectDatePrompt')}
+                </p>
+              )}
             </div>
           )}
         </div>

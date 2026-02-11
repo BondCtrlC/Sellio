@@ -40,7 +40,7 @@ export default async function NewProductPage() {
 
   if (!canCreateProduct(plan, currentCount)) {
     return (
-      <div className="max-w-2xl">
+      <div className="max-w-4xl">
         <div className="mb-6">
           <h2 className="text-2xl font-bold">{t('title')}</h2>
           <p className="text-muted-foreground">{t('subtitle')}</p>
@@ -76,7 +76,7 @@ export default async function NewProductPage() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-4xl">
       <div className="mb-6">
         <h2 className="text-2xl font-bold">{t('title')}</h2>
         <p className="text-muted-foreground">{t('subtitle')}</p>

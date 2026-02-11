@@ -255,7 +255,7 @@ export async function deleteProduct(productId: string): Promise<ProductResult> {
 
 export async function updateProductBookingSettings(
   productId: string,
-  settings: { minimum_advance_hours?: number; duration_minutes?: number; buffer_minutes?: number }
+  settings: { minimum_advance_hours?: number; duration_minutes?: number; buffer_minutes?: number; max_bookings_per_customer?: number }
 ): Promise<ProductResult> {
   const t = await getTranslations('ServerActions');
   const creatorId = await getCreatorId();
@@ -285,6 +285,7 @@ export async function updateProductBookingSettings(
     ...(settings.minimum_advance_hours !== undefined && { minimum_advance_hours: settings.minimum_advance_hours }),
     ...(settings.duration_minutes !== undefined && { duration_minutes: settings.duration_minutes }),
     ...(settings.buffer_minutes !== undefined && { buffer_minutes: settings.buffer_minutes }),
+    ...(settings.max_bookings_per_customer !== undefined && { max_bookings_per_customer: settings.max_bookings_per_customer }),
   };
 
   const { error } = await supabase
@@ -295,6 +296,64 @@ export async function updateProductBookingSettings(
 
   if (error) {
     console.error('Update booking settings error:', error);
+    return { success: false, error: t('cannotSaveSettings') };
+  }
+
+  revalidatePath('/dashboard/products');
+  revalidatePath(`/dashboard/products/${productId}/edit`);
+  return { success: true };
+}
+
+export async function updateProductLocationSettings(
+  productId: string,
+  settings: {
+    location_type: 'online' | 'offline';
+    meeting_platform?: string;
+    meeting_link?: string;
+    location_name?: string;
+    location_address?: string;
+    location_notes?: string;
+  }
+): Promise<ProductResult> {
+  const t = await getTranslations('ServerActions');
+  const creatorId = await getCreatorId();
+  if (!creatorId) {
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
+  }
+
+  const supabase = await createClient();
+
+  const { data: currentProduct } = await supabase
+    .from('products')
+    .select('type_config')
+    .eq('id', productId)
+    .eq('creator_id', creatorId)
+    .single();
+
+  if (!currentProduct) {
+    return { success: false, error: t('productNotFound') };
+  }
+
+  const existingConfig = (currentProduct.type_config as Record<string, unknown>) || {};
+
+  const updatedConfig = {
+    ...existingConfig,
+    location_type: settings.location_type,
+    meeting_platform: settings.meeting_platform || '',
+    meeting_link: settings.meeting_link || '',
+    location_name: settings.location_name || '',
+    location_address: settings.location_address || '',
+    location_notes: settings.location_notes || '',
+  };
+
+  const { error } = await supabase
+    .from('products')
+    .update({ type_config: updatedConfig })
+    .eq('id', productId)
+    .eq('creator_id', creatorId);
+
+  if (error) {
+    console.error('Update location settings error:', error);
     return { success: false, error: t('cannotSaveSettings') };
   }
 

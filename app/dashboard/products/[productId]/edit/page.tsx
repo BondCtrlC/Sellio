@@ -15,6 +15,7 @@ import { ProductImageUpload } from './product-image-upload';
 import { DigitalFileUpload } from './digital-file-upload';
 import { BookingSlotsManager } from './booking-slots-manager';
 import { BookingSettings } from './booking-settings';
+import { BookingLocationSettings } from './booking-location-settings';
 import { CheckCircle } from 'lucide-react';
 
 interface EditProductPageProps {
@@ -93,12 +94,20 @@ export default async function EditProductPage({ params, searchParams }: EditProd
   const durationMinutes = (typeConfig.duration_minutes as number) || 60;
   const minimumAdvanceHours = (typeConfig.minimum_advance_hours as number) || 0;
   const bufferMinutes = (typeConfig.buffer_minutes as number) || 0;
+  const maxPerCustomer = (typeConfig.max_bookings_per_customer as number) || 0;
+  const locationType = (typeConfig.location_type as 'online' | 'offline') || 'online';
+  const meetingPlatform = (typeConfig.meeting_platform as string) || '';
+  const meetingLink = (typeConfig.meeting_link as string) || '';
+  const locationName = (typeConfig.location_name as string) || '';
+  const locationAddress = (typeConfig.location_address as string) || '';
+  const locationNotes = (typeConfig.location_notes as string) || '';
   
   // Check if need to show upload/slots section
   const needsSetup = product.type === 'digital' || product.type === 'booking' || product.type === 'link';
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-6">
+      {/* Page Header */}
       <div>
         <h2 className="text-2xl font-bold">
           {isNewProduct ? t('setupTitle') : t('editTitle')}
@@ -116,7 +125,7 @@ export default async function EditProductPage({ params, searchParams }: EditProd
 
       {/* Steps Indicator - Only for new products that need setup */}
       {isNewProduct && needsSetup && (
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm max-w-xl">
           <div className="flex items-center gap-2 text-muted-foreground">
             <span className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center">
               <CheckCircle className="w-4 h-4" />
@@ -136,96 +145,172 @@ export default async function EditProductPage({ params, searchParams }: EditProd
         </div>
       )}
 
-      {/* Product Image */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('productImage')}</CardTitle>
-          <CardDescription>{t('productImageDesc')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ProductImageUpload 
-            productId={product.id} 
-            currentImageUrl={product.image_url}
-            productTitle={product.title}
-          />
-        </CardContent>
-      </Card>
+      {/* Two-column layout: Desktop = left scrollable + right sticky, Mobile = single column */}
+      {/* Only use 2-col when there IS left-column content (digital/booking) */}
+      {(product.type === 'digital' || product.type === 'booking') ? (
+        <div className="flex flex-col lg:flex-row lg:gap-6">
+          {/* ===== LEFT COLUMN (scrollable settings) ===== */}
+          <div className="flex-1 min-w-0 space-y-6 order-2 lg:order-1">
+            {/* Digital File Upload - Only for digital products */}
+            {product.type === 'digital' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('digitalFile')}</CardTitle>
+                  <CardDescription>{t('digitalFileDesc')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DigitalFileUpload
+                    productId={product.id}
+                    creatorId={creatorId}
+                    currentFileUrl={digitalFileUrl}
+                    currentFileName={digitalFileName}
+                    currentDeliveryType={deliveryType}
+                    currentRedirectUrl={redirectUrl}
+                    currentRedirectName={redirectName}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
-      {/* Digital File Upload - Only for digital products */}
-      {product.type === 'digital' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('digitalFile')}</CardTitle>
-            <CardDescription>{t('digitalFileDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DigitalFileUpload
-              productId={product.id}
-              creatorId={creatorId}
-              currentFileUrl={digitalFileUrl}
-              currentFileName={digitalFileName}
-              currentDeliveryType={deliveryType}
-              currentRedirectUrl={redirectUrl}
-              currentRedirectName={redirectName}
-            />
-          </CardContent>
-        </Card>
-      )}
+            {/* Booking Location Settings - Only for booking products */}
+            {product.type === 'booking' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('bookingLocationTitle')}</CardTitle>
+                  <CardDescription>{t('bookingLocationDesc')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <BookingLocationSettings
+                    productId={product.id}
+                    initialLocationType={locationType}
+                    initialMeetingPlatform={meetingPlatform}
+                    initialMeetingLink={meetingLink}
+                    initialLocationName={locationName}
+                    initialLocationAddress={locationAddress}
+                    initialLocationNotes={locationNotes}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
-      {/* Booking Settings - Only for booking products */}
-      {product.type === 'booking' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('bookingSettingsTitle')}</CardTitle>
-            <CardDescription>{t('bookingSettingsDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BookingSettings
-              productId={product.id}
-              initialMinimumAdvanceHours={minimumAdvanceHours}
-              initialBufferMinutes={bufferMinutes}
-            />
-          </CardContent>
-        </Card>
-      )}
+            {/* Booking Settings - Only for booking products */}
+            {product.type === 'booking' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('bookingSettingsTitle')}</CardTitle>
+                  <CardDescription>{t('bookingSettingsDesc')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <BookingSettings
+                    productId={product.id}
+                    initialMinimumAdvanceHours={minimumAdvanceHours}
+                    initialBufferMinutes={bufferMinutes}
+                    initialMaxPerCustomer={maxPerCustomer}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
-      {/* Booking Slots Manager - Only for booking products */}
-      {product.type === 'booking' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('slotsTitle')}</CardTitle>
-            <CardDescription>{t('slotsDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BookingSlotsManager
-              productId={product.id}
-              durationMinutes={durationMinutes}
-              initialSlots={slots}
-            />
-          </CardContent>
-        </Card>
-      )}
+            {/* Booking Slots Manager - Only for booking products */}
+            {product.type === 'booking' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('slotsTitle')}</CardTitle>
+                  <CardDescription>{t('slotsDesc')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <BookingSlotsManager
+                    productId={product.id}
+                    durationMinutes={durationMinutes}
+                    initialSlots={slots}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
-      {/* Product Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('productInfo')}</CardTitle>
-          <CardDescription>{t('productInfoDesc')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ProductForm product={product} />
-        </CardContent>
-      </Card>
+            {/* Finish Button - For new products */}
+            {isNewProduct && needsSetup && (
+              <div className="flex justify-end gap-4 pt-4 border-t">
+                <Link href="/dashboard/products">
+                  <Button size="lg">
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    {t('finish')}
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
 
-      {/* Finish Button - For new products */}
-      {isNewProduct && needsSetup && (
-        <div className="flex justify-end gap-4 pt-4 border-t">
-          <Link href="/dashboard/products">
-            <Button size="lg">
-              <CheckCircle className="w-4 h-4 mr-2" />
-              {t('finish')}
-            </Button>
-          </Link>
+          {/* ===== RIGHT COLUMN (sticky image + product info) ===== */}
+          <div className="lg:w-[520px] lg:shrink-0 min-w-0 order-1 lg:order-2 mb-6 lg:mb-0">
+            <div className="lg:sticky lg:top-[80px] space-y-6">
+              {/* Product Image */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('productImage')}</CardTitle>
+                  <CardDescription>{t('productImageDesc')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ProductImageUpload 
+                    productId={product.id} 
+                    currentImageUrl={product.image_url}
+                    productTitle={product.title}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Product Info Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('productInfo')}</CardTitle>
+                  <CardDescription>{t('productInfoDesc')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ProductForm product={product} hideBookingSettings />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Single column for link/other products (no extra settings panels) */
+        <div className="max-w-4xl space-y-6">
+          {/* Product Image + Info combined */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('productImage')}</CardTitle>
+              <CardDescription>{t('productImageDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ProductImageUpload 
+                productId={product.id} 
+                currentImageUrl={product.image_url}
+                productTitle={product.title}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('productInfo')}</CardTitle>
+              <CardDescription>{t('productInfoDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ProductForm product={product} />
+            </CardContent>
+          </Card>
+
+          {/* Finish Button - For new products */}
+          {isNewProduct && needsSetup && (
+            <div className="flex justify-end gap-4 pt-4 border-t">
+              <Link href="/dashboard/products">
+                <Button size="lg">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  {t('finish')}
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -165,7 +165,7 @@ export async function createOrder(
     }
 
     // Check minimum advance booking hours
-    const typeConfig = product.type_config as { minimum_advance_hours?: number; buffer_minutes?: number } | null;
+    const typeConfig = product.type_config as { minimum_advance_hours?: number; buffer_minutes?: number; max_bookings_per_customer?: number } | null;
     const minAdvanceHours = typeConfig?.minimum_advance_hours || 0;
     
     if (minAdvanceHours > 0) {
@@ -212,6 +212,25 @@ export async function createOrder(
             };
           }
         }
+      }
+    }
+
+    // Check max bookings per customer
+    const maxPerCustomer = typeConfig?.max_bookings_per_customer || 0;
+    if (maxPerCustomer > 0) {
+      const buyerEmailLower = parsed.data.buyer_email.toLowerCase();
+      const { count: existingBookings } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('product_id', productId)
+        .ilike('buyer_email', buyerEmailLower)
+        .not('status', 'in', '(cancelled,refunded)');
+
+      if ((existingBookings || 0) >= maxPerCustomer) {
+        return {
+          success: false,
+          error: t('maxBookingsPerCustomerReached', { count: maxPerCustomer }),
+        };
       }
     }
 

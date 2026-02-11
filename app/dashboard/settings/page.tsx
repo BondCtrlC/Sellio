@@ -77,7 +77,7 @@ export default async function SettingsPage() {
   const billingInfo = await getBillingInfo(creator);
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-4xl">
       <div>
         <h2 className="text-2xl font-bold">{t('title')}</h2>
         <p className="text-muted-foreground">{t('subtitle')}</p>
