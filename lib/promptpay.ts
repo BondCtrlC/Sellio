@@ -19,7 +19,7 @@ export function generatePromptPayQR(promptPayId: string, amount?: number): strin
 }
 
 /**
- * Validate Thai phone number format (for PromptPay)
+ * Check if a PromptPay ID is valid (any format: phone, national ID, e-wallet)
  */
 export function isValidPromptPayId(id: string): boolean {
   const cleanId = id.replace(/[-\s]/g, '');
@@ -34,8 +34,29 @@ export function isValidPromptPayId(id: string): boolean {
     return true;
   }
   
-  // Check for e-wallet ID format
+  // Check for e-wallet ID format (15 digits)
   if (/^[0-9]{15}$/.test(cleanId)) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Check if a PromptPay ID can be used to generate QR via promptpay.io
+ * promptpay.io only supports 10-digit phone and 13-digit national ID
+ * E-wallet (15-digit) IDs are NOT supported for QR generation
+ */
+export function canGeneratePromptPayQR(id: string): boolean {
+  const cleanId = id.replace(/[-\s]/g, '');
+  
+  // Phone number (10 digits starting with 0)
+  if (/^0[0-9]{9}$/.test(cleanId)) {
+    return true;
+  }
+  
+  // National ID (13 digits)
+  if (/^[0-9]{13}$/.test(cleanId)) {
     return true;
   }
   

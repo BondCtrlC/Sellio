@@ -7,25 +7,16 @@
  *   - Length: 2 chars (e.g. "37" = 37 chars of value)
  *   - Value: {length} chars (may contain nested TLV)
  *
- * PromptPay Credit Transfer uses:
- *   - AID: A000000677010111
- *   - Sub-tag 01: Phone (0066XXXXXXXXX, 13 chars)
+ * PromptPay uses AID: A000000677010111
+ * Account types (sub-tags within the PromptPay merchant block):
+ *   - Sub-tag 01: Phone number (0066XXXXXXXXX, 13 chars)
  *   - Sub-tag 02: National ID (13 digits)
- *   - Sub-tag 03: E-Wallet (15 digits)
+ *   - Sub-tag 03: E-Wallet / Bank reference (15 digits) — used by KBank etc.
  *
- * Bill Payment uses:
- *   - AID: A000000677010112
- *   - Sub-tag 01: Biller ID (15 digits — NOT a PromptPay phone!)
- *   - Sub-tag 02: Reference 1
- *   - Sub-tag 03: Reference 2
- *
- * We only extract phone numbers (10-digit) and national IDs (13-digit)
- * since those are the only formats usable with promptpay.io QR generation.
+ * All three formats are valid PromptPay identifiers.
  */
 
-const PROMPTPAY_CREDIT_AID = 'A000000677010111';
-// Bill payment AID — we detect but reject these
-const BILL_PAYMENT_AID = 'A000000677010112';
+const PROMPTPAY_AID = 'A000000677010111';
 
 interface TLVEntry {
   tag: string;
@@ -60,94 +51,95 @@ function parseTLV(data: string): TLVEntry[] {
  * Convert a PromptPay phone from QR format (0066XXXXXXXXX) to Thai format (0XXXXXXXXX).
  */
 function convertPhoneToThai(phone: string): string {
-  // Format: 0066XXXXXXXXX → 0XXXXXXXXX
   if (phone.startsWith('0066') && phone.length === 13) {
     return '0' + phone.slice(4);
   }
-  // Already in Thai format
   if (phone.startsWith('0') && phone.length === 10) {
     return phone;
   }
-  // +66 format
   if (phone.startsWith('+66')) {
     return '0' + phone.slice(3);
   }
   return phone;
 }
 
-/**
- * Check if a value looks like a valid PromptPay phone number.
- * QR format: 0066XXXXXXXXX (13 chars) → converts to 0XXXXXXXXX (10 digits)
- * Thai format: 0XXXXXXXXX (10 digits starting with 0)
- */
-function isPhoneNumber(value: string): boolean {
-  // QR format: 0066 + 9 digits = 13 chars
-  if (value.startsWith('0066') && value.length === 13 && /^\d+$/.test(value)) {
-    return true;
-  }
-  // Thai format: 0 + 9 digits = 10 chars
-  if (value.startsWith('0') && value.length === 10 && /^\d+$/.test(value)) {
-    return true;
-  }
-  return false;
-}
-
-/**
- * Check if a value looks like a Thai national ID (13 digits, not starting with 0066).
- */
-function isNationalId(value: string): boolean {
-  return /^\d{13}$/.test(value) && !value.startsWith('0066');
+export interface PromptPayResult {
+  /** The extracted identifier (phone, national ID, or e-wallet) */
+  id: string;
+  /** Type of identifier */
+  type: 'phone' | 'national_id' | 'ewallet';
+  /** Whether this ID can be used with promptpay.io to generate QR */
+  canGenerateQR: boolean;
 }
 
 /**
  * Extract the PromptPay ID from an EMVCo QR code string.
  *
- * Only returns phone numbers (10-digit Thai format) or national IDs (13-digit).
- * Rejects bill payment QRs and e-wallet/biller IDs.
+ * Supports all three PromptPay identifier types:
+ * - Phone number (10 digits, starting with 0)
+ * - National ID (13 digits)
+ * - E-Wallet / Bank reference (15 digits) — e.g. KBank Thai QR Payment
  *
  * @param qrText The decoded text from a PromptPay QR code
- * @returns The PromptPay ID, or null if not found/invalid.
+ * @returns PromptPayResult with id, type, and canGenerateQR flag, or null if not PromptPay
  */
-export function extractPromptPayId(qrText: string): string | null {
+export function extractPromptPayId(qrText: string): PromptPayResult | null {
   if (!qrText || qrText.length < 20) return null;
 
   const topLevel = parseTLV(qrText);
 
-  // Search through all merchant account tags (29-31)
-  // Some banks put PromptPay in tag 29, others in tag 30
+  // Search merchant account tags (26-51 per EMVCo spec)
   for (const entry of topLevel) {
     const tagNum = parseInt(entry.tag, 10);
-    if (tagNum < 26 || tagNum > 51) continue; // Merchant account range per EMVCo spec
+    if (tagNum < 26 || tagNum > 51) continue;
 
     const subEntries = parseTLV(entry.value);
     const aidEntry = subEntries.find(e => e.tag === '00');
-    if (!aidEntry) continue;
+    if (!aidEntry || aidEntry.value !== PROMPTPAY_AID) continue;
 
-    // Skip bill payment AIDs — they contain biller IDs, not PromptPay numbers
-    if (aidEntry.value === BILL_PAYMENT_AID) continue;
-
-    // Only process PromptPay credit transfer blocks
-    if (aidEntry.value !== PROMPTPAY_CREDIT_AID) continue;
-
-    // Search sub-tags for phone number or national ID
-    // Priority: phone number first (sub-tag 01), then national ID (sub-tag 02)
+    // Found PromptPay block — extract account from sub-tags 01, 02, 03
     for (const subTag of ['01', '02', '03']) {
       const accountEntry = subEntries.find(e => e.tag === subTag);
       if (!accountEntry || !accountEntry.value) continue;
 
       const raw = accountEntry.value;
 
-      // Phone number: 0066XXXXXXXXX (13 chars) or 0XXXXXXXXX (10 chars)
-      if (isPhoneNumber(raw)) {
-        return convertPhoneToThai(raw);
+      // Sub-tag 01: Phone number (0066XXXXXXXXX = 13 chars)
+      if (subTag === '01' && raw.startsWith('0066') && raw.length === 13) {
+        return {
+          id: convertPhoneToThai(raw),
+          type: 'phone',
+          canGenerateQR: true,
+        };
       }
 
-      // National ID: 13 digits (not starting with 0066)
-      if (isNationalId(raw)) {
-        return raw;
+      // Sub-tag 01 could also be a phone in local format
+      if (subTag === '01' && /^0\d{9}$/.test(raw)) {
+        return {
+          id: raw,
+          type: 'phone',
+          canGenerateQR: true,
+        };
       }
 
-      // Skip anything else (15-digit biller IDs, reference numbers, etc.)
+      // Sub-tag 02: National ID (13 digits)
+      if (subTag === '02' && /^\d{13}$/.test(raw)) {
+        return {
+          id: raw,
+          type: 'national_id',
+          canGenerateQR: true,
+        };
+      }
+
+      // Sub-tag 03: E-Wallet / Bank reference (15 digits)
+      // Used by KBank and other Thai banks for PromptPay
+      if (subTag === '03' && /^\d{15}$/.test(raw)) {
+        return {
+          id: raw,
+          type: 'ewallet',
+          canGenerateQR: false, // promptpay.io doesn't support 15-digit IDs
+        };
+      }
     }
   }
 

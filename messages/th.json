@@ -598,6 +598,7 @@
     "uploadQRButton": "เลือกรูป QR Code",
     "uploadingQR": "กำลังอ่าน QR Code...",
     "qrDecoded": "อ่าน QR สำเร็จ! เลข PromptPay: {id}",
+    "qrDecodedEwallet": "อ่าน QR สำเร็จ! ระบบจดจำบัญชี PromptPay ของคุณแล้ว",
     "qrDecodeFailed": "ไม่สามารถอ่าน QR Code ได้ กรุณาลองรูปอื่น",
     "qrNotPromptPay": "ไม่พบเลข PromptPay ใน QR Code นี้ กรุณาใช้ QR Code PromptPay (ไม่ใช่ QR โอนเข้าบัญชี) หรือกรอกเบอร์เอง",
     "qrUploadedNeedPhone": "อัปโหลด QR สำเร็จ! กรุณากรอกเบอร์ PromptPay ด้านล่างด้วย",

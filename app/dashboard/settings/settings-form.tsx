@@ -167,12 +167,20 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
 
     if (result.success) {
       if (result.promptpayId) {
-        // Decoded phone number from QR — auto-fill
-        setQrSuccess(t('qrDecoded', { id: result.promptpayId }));
-        setValue('promptpay_phone', result.promptpayId);
-        setShowManualInput(false);
+        // Decoded PromptPay ID from QR — auto-fill
+        if (result.promptpayIdType === 'ewallet') {
+          // E-wallet 15-digit ID: store it but don't show in phone field (different format)
+          setQrSuccess(t('qrDecodedEwallet'));
+          // Don't auto-fill phone field for e-wallet IDs (they're 15 digits)
+          setShowManualInput(false);
+        } else {
+          // Phone or National ID — auto-fill
+          setQrSuccess(t('qrDecoded', { id: result.promptpayId }));
+          setValue('promptpay_phone', result.promptpayId);
+          setShowManualInput(false);
+        }
       } else {
-        // Image uploaded but couldn't decode phone — ask to enter manually
+        // Image uploaded but couldn't decode — ask to enter manually
         setQrSuccess(t('qrUploadedNeedPhone'));
         setShowManualInput(true);
       }

@@ -598,6 +598,7 @@
     "uploadQRButton": "Select QR Code Image",
     "uploadingQR": "Reading QR Code...",
     "qrDecoded": "QR read successfully! PromptPay: {id}",
+    "qrDecodedEwallet": "QR read successfully! Your PromptPay account has been saved.",
     "qrDecodeFailed": "Could not read QR Code. Please try another image.",
     "qrNotPromptPay": "No PromptPay number found in this QR. Please use a PromptPay QR Code (not a bank account transfer QR), or enter the number manually.",
     "qrUploadedNeedPhone": "QR uploaded! Please enter your PromptPay phone number below.",

@@ -16,6 +16,8 @@ export type QRUploadResult = {
   success: boolean;
   error?: string;
   promptpayId?: string;
+  promptpayIdType?: 'phone' | 'national_id' | 'ewallet';
+  canGenerateQR?: boolean;
 };
 
 export async function updateSettings(data: SettingsInput): Promise<SettingsResult> {
@@ -213,7 +215,7 @@ export async function uploadPromptPayQR(formData: FormData): Promise<QRUploadRes
 
   try {
     // Try to decode PromptPay ID from QR (best-effort, not required)
-    let decodedPromptPayId: string | null = null;
+    let decodedResult: import('@/lib/promptpay-parser').PromptPayResult | null = null;
     try {
       const sharp = (await import('sharp')).default;
       const jsQR = (await import('jsqr')).default;
@@ -231,9 +233,9 @@ export async function uploadPromptPayQR(formData: FormData): Promise<QRUploadRes
       );
 
       if (qrResult?.data) {
-        const extracted = extractPromptPayId(qrResult.data);
-        if (extracted && (/^0\d{9}$/.test(extracted) || /^\d{13}$/.test(extracted))) {
-          decodedPromptPayId = extracted;
+        decodedResult = extractPromptPayId(qrResult.data);
+        if (decodedResult) {
+          console.log('[QR Upload] Decoded PromptPay:', decodedResult.type, 'canGenerate:', decodedResult.canGenerateQR);
         }
       }
     } catch {
@@ -266,8 +268,8 @@ export async function uploadPromptPayQR(formData: FormData): Promise<QRUploadRes
     };
 
     // If we decoded a valid PromptPay ID, auto-fill it
-    if (decodedPromptPayId) {
-      updateData.promptpay_id = decodedPromptPayId;
+    if (decodedResult) {
+      updateData.promptpay_id = decodedResult.id;
     }
 
     const { error: updateError } = await supabase
@@ -285,7 +287,9 @@ export async function uploadPromptPayQR(formData: FormData): Promise<QRUploadRes
 
     return {
       success: true,
-      promptpayId: decodedPromptPayId || undefined,
+      promptpayId: decodedResult?.id || undefined,
+      promptpayIdType: decodedResult?.type || undefined,
+      canGenerateQR: decodedResult?.canGenerateQR || undefined,
     };
   } catch (err) {
     console.error('QR upload error:', err);

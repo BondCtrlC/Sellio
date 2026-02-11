@@ -22,18 +22,29 @@ import {
 // ============================================
 
 /**
- * Normalize a PromptPay ID / phone number for comparison.
+ * Normalize a PromptPay ID / phone number / e-wallet ID for comparison.
  * Strips dashes, spaces, leading +66 / 66 → convert to 0-prefix 10-digit format.
- * Examples: "+66918830892" → "0918830892", "091-883-0892" → "0918830892"
+ * E-wallet (15-digit) and National ID (13-digit) are kept as-is after cleaning.
+ * Examples: "+66918830892" → "0918830892", "091-883-0892" → "0918830892", "004999022445661" → "004999022445661"
  */
 function normalizePromptPayId(id: string): string {
   // Remove dashes, spaces, dots
   let cleaned = id.replace(/[-\s.]/g, '');
-  // Convert +66 or 66 prefix to 0
+  
+  // If it's an e-wallet ID (15 digits) or national ID (13 digits), just return cleaned
+  if (/^\d{15}$/.test(cleaned) || /^\d{13}$/.test(cleaned)) {
+    return cleaned;
+  }
+  
+  // Convert +66 or 66 prefix to 0 (phone number normalization)
   if (cleaned.startsWith('+66')) {
     cleaned = '0' + cleaned.slice(3);
   } else if (cleaned.startsWith('66') && cleaned.length === 11) {
     cleaned = '0' + cleaned.slice(2);
+  }
+  // Convert 0066 prefix to 0 (used in QR EMVCo format)
+  if (cleaned.startsWith('0066') && cleaned.length === 13) {
+    cleaned = '0' + cleaned.slice(4);
   }
   return cleaned;
 }
