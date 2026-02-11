@@ -150,21 +150,18 @@ export async function updateProduct(productId: string, data: ProductInput): Prom
   const existingConfig = (currentProduct?.type_config as Record<string, unknown>) || {};
 
   // Build type_config based on product type, preserving existing fields
+  // NOTE: For booking products on edit, location/meeting fields are managed
+  // separately by BookingLocationSettings component — do NOT overwrite them here.
+  // Booking time settings (advance hours, buffer, max per customer) are managed
+  // by BookingSettings component. Only duration_minutes comes from the main form.
   let newTypeConfig: Record<string, unknown> = {};
   if (parsed.data.type === 'digital') {
     newTypeConfig = {};
   } else if (parsed.data.type === 'booking') {
+    // Only set duration_minutes; all other booking settings are managed by
+    // their dedicated components (BookingLocationSettings, BookingSettings)
     newTypeConfig = {
-      duration_minutes: parsed.data.duration_minutes || 60,
-      location_type: parsed.data.location_type || 'online',
-      location_details: parsed.data.location_details || '',
-      // Online
-      meeting_platform: parsed.data.meeting_platform || '',
-      meeting_link: parsed.data.meeting_link || '',
-      // Offline
-      location_name: parsed.data.location_name || '',
-      location_address: parsed.data.location_address || '',
-      location_notes: parsed.data.location_notes || '',
+      duration_minutes: parsed.data.duration_minutes || existingConfig.duration_minutes || 60,
     };
   } else if (parsed.data.type === 'link') {
     newTypeConfig = {
