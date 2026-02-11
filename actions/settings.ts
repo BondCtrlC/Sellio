@@ -212,41 +212,32 @@ export async function uploadPromptPayQR(formData: FormData): Promise<QRUploadRes
   }
 
   try {
-    // Convert image to raw RGBA pixels using sharp
-    const sharp = (await import('sharp')).default;
-    const jsQR = (await import('jsqr')).default;
+    // Try to decode PromptPay ID from QR (best-effort, not required)
+    let decodedPromptPayId: string | null = null;
+    try {
+      const sharp = (await import('sharp')).default;
+      const jsQR = (await import('jsqr')).default;
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const { data: pixels, info } = await sharp(buffer)
-      .ensureAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const { data: pixels, info } = await sharp(buffer)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
 
-    // Decode QR code from pixels
-    const qrResult = jsQR(
-      new Uint8ClampedArray(pixels.buffer, pixels.byteOffset, pixels.byteLength),
-      info.width,
-      info.height
-    );
+      const qrResult = jsQR(
+        new Uint8ClampedArray(pixels.buffer, pixels.byteOffset, pixels.byteLength),
+        info.width,
+        info.height
+      );
 
-    if (!qrResult || !qrResult.data) {
-      return { success: false, error: t('qrDecodeFailed') };
-    }
-
-    // Parse EMVCo TLV to extract PromptPay ID
-    const promptpayId = extractPromptPayId(qrResult.data);
-
-    if (!promptpayId) {
-      console.log('[QR Upload] Failed to extract PromptPay ID from QR data (first 100 chars):', qrResult.data.substring(0, 100));
-      return { success: false, error: t('qrNotPromptPay') };
-    }
-
-    // Double-check: must be 10-digit phone or 13-digit national ID
-    const isValidPhone = /^0\d{9}$/.test(promptpayId);
-    const isValidNationalId = /^\d{13}$/.test(promptpayId) && !promptpayId.startsWith('0066');
-    if (!isValidPhone && !isValidNationalId) {
-      console.log('[QR Upload] Extracted ID is not a valid PromptPay format:', promptpayId);
-      return { success: false, error: t('qrNotPromptPay') };
+      if (qrResult?.data) {
+        const extracted = extractPromptPayId(qrResult.data);
+        if (extracted && (/^0\d{9}$/.test(extracted) || /^\d{13}$/.test(extracted))) {
+          decodedPromptPayId = extracted;
+        }
+      }
+    } catch {
+      // Decode failed — that's OK, we still accept the image
     }
 
     // Upload QR image to storage
@@ -269,13 +260,19 @@ export async function uploadPromptPayQR(formData: FormData): Promise<QRUploadRes
 
     const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
 
-    // Update creator: set decoded promptpay_id + image URL
+    // Build update: always set QR URL, optionally set decoded promptpay_id
+    const updateData: Record<string, string | null> = {
+      promptpay_qr_url: urlWithCacheBust,
+    };
+
+    // If we decoded a valid PromptPay ID, auto-fill it
+    if (decodedPromptPayId) {
+      updateData.promptpay_id = decodedPromptPayId;
+    }
+
     const { error: updateError } = await supabase
       .from('creators')
-      .update({
-        promptpay_id: promptpayId,
-        promptpay_qr_url: urlWithCacheBust,
-      })
+      .update(updateData)
       .eq('user_id', user.id);
 
     if (updateError) {
@@ -286,9 +283,12 @@ export async function uploadPromptPayQR(formData: FormData): Promise<QRUploadRes
     revalidatePath('/dashboard');
     revalidatePath('/dashboard/settings');
 
-    return { success: true, promptpayId };
+    return {
+      success: true,
+      promptpayId: decodedPromptPayId || undefined,
+    };
   } catch (err) {
-    console.error('QR decode error:', err);
-    return { success: false, error: t('qrDecodeFailed') };
+    console.error('QR upload error:', err);
+    return { success: false, error: t('cannotUploadImage') };
   }
 }

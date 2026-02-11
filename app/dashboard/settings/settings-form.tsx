@@ -165,10 +165,17 @@ export function SettingsForm({ creator, billingInfo }: SettingsFormProps) {
 
     const result = await uploadPromptPayQR(formData);
 
-    if (result.success && result.promptpayId) {
-      setQrSuccess(t('qrDecoded', { id: result.promptpayId }));
-      setValue('promptpay_phone', result.promptpayId);
-      setShowManualInput(false);
+    if (result.success) {
+      if (result.promptpayId) {
+        // Decoded phone number from QR — auto-fill
+        setQrSuccess(t('qrDecoded', { id: result.promptpayId }));
+        setValue('promptpay_phone', result.promptpayId);
+        setShowManualInput(false);
+      } else {
+        // Image uploaded but couldn't decode phone — ask to enter manually
+        setQrSuccess(t('qrUploadedNeedPhone'));
+        setShowManualInput(true);
+      }
     } else {
       setQrError(result.error || t('qrDecodeFailed'));
       setQrPreview(creator.promptpay_qr_url || null);

@@ -99,17 +99,21 @@ export function PaymentPage({ order }: PaymentPageProps) {
   const hasSlip = order.payment?.slip_url;
 
   // Payment method availability
-  const hasPromptPay = !!order.creator.promptpay_id;
+  const hasUploadedQR = !!order.creator.promptpay_qr_url;
+  const hasPromptPay = !!order.creator.promptpay_id || hasUploadedQR;
   const hasBank = !!(order.creator.bank_name && order.creator.bank_account_number && order.creator.bank_account_name);
   const hasAnyPayment = hasPromptPay || hasBank;
   
   // Default to PromptPay if available, otherwise bank
   const [paymentTab, setPaymentTab] = useState<'promptpay' | 'bank'>(hasPromptPay ? 'promptpay' : 'bank');
 
-  // Generate QR code URL (only if valid PromptPay ID)
-  const qrCodeUrl = order.creator.promptpay_id && isValidPromptPayId(order.creator.promptpay_id)
+  // QR code: use uploaded QR image if available, otherwise generate from phone number
+  const generatedQrUrl = order.creator.promptpay_id && isValidPromptPayId(order.creator.promptpay_id)
     ? generatePromptPayQR(order.creator.promptpay_id, order.total)
     : null;
+  const qrCodeUrl = hasUploadedQR ? order.creator.promptpay_qr_url : generatedQrUrl;
+  // If using uploaded QR (no amount embedded), customer must enter amount manually
+  const isUploadedQR = hasUploadedQR;
 
   // Download QR code via server proxy (avoids CORS issues)
   const handleDownloadQR = async () => {
@@ -370,38 +374,52 @@ export function PaymentPage({ order }: PaymentPageProps) {
                   <h3 className="font-semibold text-center mb-4">{t('scanPromptPay')}</h3>
                   
                   <div className="flex flex-col items-center">
+                    {/* Amount (show prominently BEFORE QR when using uploaded QR) */}
+                    {isUploadedQR && (
+                      <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-6 py-3 text-center">
+                        <p className="text-sm text-amber-700 font-medium">{t('amountToPay')}</p>
+                        <p className="text-2xl font-bold text-amber-800">{formatPrice(order.total)}</p>
+                      </div>
+                    )}
+
                     {/* QR Code */}
                     <div className="bg-white p-4 rounded-xl border-2 border-dashed mb-3">
                       <img
                         src={qrCodeUrl}
                         alt="PromptPay QR Code"
-                        className="w-48 h-48"
+                        className={isUploadedQR ? "w-56 h-auto max-h-72 object-contain" : "w-48 h-48"}
                       />
                     </div>
 
-                    {/* Save QR Button */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDownloadQR}
-                      className="mb-4"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      {t('saveQR')}
-                    </Button>
+                    {/* Save QR Button (only for generated QR, not uploaded) */}
+                    {!isUploadedQR && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownloadQR}
+                        className="mb-4"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        {t('saveQR')}
+                      </Button>
+                    )}
 
                     {/* Account Info */}
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground">{t('transferTo')}</p>
                       <p className="font-semibold">{order.creator.promptpay_name || 'PromptPay'}</p>
-                      <p className="text-muted-foreground">{order.creator.promptpay_id}</p>
+                      {order.creator.promptpay_id && (
+                        <p className="text-muted-foreground">{order.creator.promptpay_id}</p>
+                      )}
                     </div>
 
-                    {/* Amount */}
-                    <div className="mt-4 bg-primary/5 rounded-lg px-6 py-3 text-center">
-                      <p className="text-sm text-muted-foreground">{t('amountToPay')}</p>
-                      <p className="text-2xl font-bold text-primary">{formatPrice(order.total)}</p>
-                    </div>
+                    {/* Amount (below QR for generated QR) */}
+                    {!isUploadedQR && (
+                      <div className="mt-4 bg-primary/5 rounded-lg px-6 py-3 text-center">
+                        <p className="text-sm text-muted-foreground">{t('amountToPay')}</p>
+                        <p className="text-2xl font-bold text-primary">{formatPrice(order.total)}</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

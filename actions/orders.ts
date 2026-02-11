@@ -408,6 +408,7 @@ export async function getOrderById(orderId: string): Promise<OrderDetails | null
         display_name,
         promptpay_id,
         promptpay_name,
+        promptpay_qr_url,
         bank_name,
         bank_account_number,
         bank_account_name,
