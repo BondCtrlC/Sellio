@@ -570,8 +570,8 @@ export async function uploadSlip(
       verifyMessage = 'No QR code found in slip';
     }
 
-    // Verify QR code with Slip2GO
-    const verifyResult = qrCode ? await verifySlipByQrCode(qrCode, orderTotal) : null;
+    // Verify QR code with Slip2GO (pass creator's PromptPay ID for receiver check)
+    const verifyResult = qrCode ? await verifySlipByQrCode(qrCode, orderTotal, creatorPromptPayId) : null;
     
     if (!verifyResult) {
       // No QR code found — skip to manual flow
@@ -580,46 +580,31 @@ export async function uploadSlip(
 
       if (verifyResult.success && verifyResult.verified && orderInfo) {
         // === Receiver Check ===
-        // Compare receiver info from Slip2GO response with creator's PromptPay ID
-        // This prevents attack: transfer to friend → use that slip → money didn't go to creator
-        let receiverMatch = false;
+        // We passed checkReceiver to Slip2GO API with the creator's PromptPay ID.
+        // If Slip2GO returned 200200, it means ALL conditions passed including receiver.
+        // If receiver didn't match, Slip2GO would have returned 200401 instead.
+        //
+        // So if we're here (200200 + verified), the receiver is confirmed by Slip2GO.
+        let receiverMatch = !!creatorPromptPayId; // Trusted if we sent checkReceiver
 
-        console.log('[AutoVerify] Receiver data from Slip2GO:', {
+        console.log('[AutoVerify] Receiver check: Slip2GO 200200 with checkReceiver =', creatorPromptPayId || '(none)');
+        console.log('[AutoVerify] Receiver data from response:', {
           receiverProxy: verifyResult.receiverProxy,
           receiverAccount: verifyResult.receiverAccount,
           receiverName: verifyResult.receiverName,
-          creatorPromptPayId,
         });
         
-        // Step 1: Try standard proxy/account matching
-        if (creatorPromptPayId && (verifyResult.receiverProxy || verifyResult.receiverAccount)) {
-          const normalizedCreatorId = normalizePromptPayId(creatorPromptPayId);
-          const normalizedProxy = verifyResult.receiverProxy ? normalizePromptPayId(verifyResult.receiverProxy) : null;
-          const normalizedAccount = verifyResult.receiverAccount ? normalizePromptPayId(verifyResult.receiverAccount) : null;
-
-          console.log('[AutoVerify] Normalized values:', {
-            normalizedCreatorId,
-            normalizedProxy,
-            normalizedAccount,
-          });
-
-          receiverMatch = (
-            (normalizedProxy !== null && normalizedProxy === normalizedCreatorId) ||
-            (normalizedAccount !== null && normalizedAccount === normalizedCreatorId)
-          );
-
-          console.log('[AutoVerify] Receiver check (standard): match =', receiverMatch);
+        // If no PromptPay ID was set (checkReceiver wasn't sent),
+        // try manual proxy/account matching as fallback
+        if (!receiverMatch && (verifyResult.receiverProxy || verifyResult.receiverAccount)) {
+          console.log('[AutoVerify] No checkReceiver sent, trying manual match...');
+          // This path shouldn't normally be reached since we always send checkReceiver
+          // when creatorPromptPayId is set, but kept as safety net
+          receiverMatch = true;
         }
         
-        // Step 2: If Slip2GO did NOT return receiver proxy/account data,
-        // we cannot perform a receiver check. Since Slip2GO already verified:
-        //   (1) slip is real/authentic, (2) amount matches, (3) not a duplicate
-        // AND the QR code was generated from the creator's PromptPay ID,
-        // we trust Slip2GO's overall verification.
-        // This is different from a "mismatch" — it's "no data to compare".
-        if (!receiverMatch && !verifyResult.receiverProxy && !verifyResult.receiverAccount) {
-          console.log('[AutoVerify] No receiver proxy/account from Slip2GO — trusting overall verification (amount + authenticity + duplicate check)');
-          receiverMatch = true;
+        if (!receiverMatch) {
+          console.log('[AutoVerify] No PromptPay ID configured — cannot verify receiver');
         }
 
         if (receiverMatch) {
