@@ -47,7 +47,7 @@ const pridi = Pridi({
 
 export const metadata: Metadata = {
   title: {
-    default: "Sellio - ขายโคตรเร็ว แค่ลิงก์เดียว",
+    default: "Sellio - ขายโคตรเร็ว แค่ผ่านลิงก์เดียว",
     template: "%s | Sellio",
   },
   description: "แพลตฟอร์มขายสินค้าดิจิทัลสำหรับ Content Creator ไทย ไม่ต้องตอบแชท ไม่ต้องมีเว็บไซต์ เริ่มขายได้ทันที",
@@ -59,13 +59,13 @@ export const metadata: Metadata = {
     type: "website",
     locale: "th_TH",
     siteName: "Sellio",
-    title: "Sellio - ขายโคตรเร็ว แค่ลิงก์เดียว",
+    title: "Sellio - ขายโคตรเร็ว แค่ผ่านลิงก์เดียว",
     description: "แพลตฟอร์มขายสินค้าดิจิทัลสำหรับ Content Creator ไทย ไม่ต้องตอบแชท ไม่ต้องมีเว็บไซต์ เริ่มขายได้ทันที",
     images: [{ url: "/logo-black.png", width: 1000, height: 500, alt: "Sellio" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sellio - ขายโคตรเร็ว แค่ลิงก์เดียว",
+    title: "Sellio - ขายโคตรเร็ว แค่ผ่านลิงก์เดียว",
     description: "แพลตฟอร์มขายสินค้าดิจิทัลสำหรับ Content Creator ไทย",
     images: ["/logo-black.png"],
   },
