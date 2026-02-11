@@ -13,7 +13,8 @@ import {
   Calendar,
   Search,
   Filter,
-  RefreshCcw
+  RefreshCcw,
+  ShieldAlert
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { OrderDetailModal } from './order-detail-modal';
@@ -193,6 +194,14 @@ export function OrdersList({ orders, currentStatus }: OrdersListProps) {
                           <StatusIcon className="h-3 w-3" />
                           {statusConfig.label}
                         </span>
+
+                        {/* Slip Verification Failed Badge */}
+                        {order.payment?.slip_verified === false && order.payment?.slip_verify_message && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                            <ShieldAlert className="h-3 w-3" />
+                            {t('slipVerifyFailedBadge')}
+                          </span>
+                        )}
 
                         {/* Order ID */}
                         <span className="text-xs text-muted-foreground">

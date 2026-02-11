@@ -537,6 +537,7 @@
     "slipReasonFraud": "Slip suspected to be fraudulent",
     "slipReasonNotFound": "Transfer not found in the banking system",
     "slipReasonNoQr": "No QR code found in the slip image",
+    "slipVerifyFailedBadge": "Slip failed",
     "refundSlip": "Refund Slip",
     "error": "An error occurred",
     "rejectReasonTitle": "Rejection Reason",

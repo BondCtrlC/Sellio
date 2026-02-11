@@ -537,6 +537,7 @@
     "slipReasonFraud": "สลิปต้องสงสัยว่าเป็นของปลอม",
     "slipReasonNotFound": "ไม่พบข้อมูลการโอนเงินในระบบธนาคาร",
     "slipReasonNoQr": "ไม่พบ QR Code ในรูปสลิป",
+    "slipVerifyFailedBadge": "สลิปไม่ผ่าน",
     "refundSlip": "สลิปการคืนเงิน",
     "error": "เกิดข้อผิดพลาด",
     "rejectReasonTitle": "เหตุผลในการปฏิเสธ",
