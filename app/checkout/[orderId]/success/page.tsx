@@ -238,7 +238,7 @@ export default async function SuccessPage({ params }: PageProps) {
           </Card>
         )}
 
-        {isConfirmed && (
+        {(isConfirmed || isPendingConfirmation) && (
           <Card className="mb-6 bg-green-50 border-green-200">
             <CardContent className="p-4">
               <h4 className="font-medium text-green-800 mb-2 flex items-center gap-2">
@@ -247,6 +247,10 @@ export default async function SuccessPage({ params }: PageProps) {
               </h4>
               <p className="text-sm text-green-700">
                 {t('emailSent', { email: order.buyer_email })}
+              </p>
+              <p className="text-sm text-amber-600 mt-2 flex items-start gap-1.5">
+                <span className="flex-shrink-0">⚠️</span>
+                <span>{t('checkSpamFolder')}</span>
               </p>
             </CardContent>
           </Card>

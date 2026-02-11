@@ -188,6 +188,9 @@ export function PaymentPage({ order }: PaymentPageProps) {
                       {t('canCloseTabDesc', { email: order.buyer_email })}
                     </span>
                   </p>
+                  <p className="text-sm text-amber-600 mt-2">
+                    ⚠️ {t('checkSpamFolder')}
+                  </p>
                 </div>
               </>
             ) : (
@@ -208,6 +211,9 @@ export function PaymentPage({ order }: PaymentPageProps) {
                     <span className="text-blue-700">
                       {t('canCloseTabDesc', { email: order.buyer_email })}
                     </span>
+                  </p>
+                  <p className="text-sm text-amber-600 mt-2">
+                    ⚠️ {t('checkSpamFolder')}
                   </p>
                 </div>
               </>
