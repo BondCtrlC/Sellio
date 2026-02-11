@@ -15,7 +15,6 @@ export async function POST(request: NextRequest) {
     const result = await verifySlipByQrCode(
       qrCode,
       amount ? Number(amount) : undefined,
-      false
     );
 
     return NextResponse.json({

@@ -225,7 +225,8 @@ export function PaymentPage({ order }: PaymentPageProps) {
       if (result.verifyFailed) {
         // Redirect with verify=failed param and debug info
         const debugParam = qrCode ? `&qr=found` : `&qr=none`;
-        router.push(`/checkout/${order.id}?verify=failed${debugParam}`);
+        const msgParam = result.verifyMessage ? `&msg=${encodeURIComponent(result.verifyMessage)}` : '';
+        router.push(`/checkout/${order.id}?verify=failed${debugParam}${msgParam}`);
         return;
       }
 
@@ -260,9 +261,9 @@ export function PaymentPage({ order }: PaymentPageProps) {
                   <div>
                     <p className="font-medium text-red-800">{t('slipVerifyFailed')}</p>
                     <p className="text-sm text-red-700 mt-1">{t('slipVerifyFailedDesc')}</p>
-                    {/* DEBUG: Show QR extraction status */}
-                    <p className="text-xs text-red-500 mt-2 font-mono">
-                      [DEBUG] QR: {searchParams.get('qr') || 'unknown'}
+                    {/* DEBUG: Show verification details - remove after testing */}
+                    <p className="text-xs text-red-500 mt-2 font-mono break-all">
+                      [DEBUG] QR: {searchParams.get('qr') || 'unknown'} | API: {searchParams.get('msg') ? decodeURIComponent(searchParams.get('msg')!) : 'no message'}
                     </p>
                   </div>
                 </div>
