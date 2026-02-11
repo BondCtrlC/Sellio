@@ -810,6 +810,106 @@ export async function sendBookingCancellationEmail(data: {
 }
 
 // ============================================
+// BOOKING CANCELLATION EMAIL (to buyer)
+// ============================================
+export async function sendBookingCancellationToBuyerEmail(data: {
+  orderId: string;
+  buyerName: string;
+  buyerEmail: string;
+  productTitle: string;
+  bookingDate: string;
+  bookingTime: string;
+  creatorName: string;
+  creatorContact?: {
+    line?: string;
+    ig?: string;
+  };
+  cancelledBy: 'buyer' | 'creator';
+  reason?: string;
+}) {
+  try {
+    const t = await getTranslations('Emails');
+
+    const formattedDate = data.bookingDate ? new Date(data.bookingDate + 'T00:00:00').toLocaleDateString('th-TH', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }) : '';
+    const formattedTime = data.bookingTime?.slice(0, 5) || '';
+
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.buyerEmail,
+      subject: t('buyerCancellationSubject', { product: data.productTitle }),
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+        <body style="font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
+          <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 30px; text-align: center;">
+              <div style="font-size: 48px; margin-bottom: 10px;">❌</div>
+              <h1 style="color: white; margin: 0; font-size: 24px;">${t('buyerCancellationTitle')}</h1>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 30px;">
+              <p style="color: #374151; margin: 0 0 20px;">${t('hello', { name: data.buyerName })}</p>
+              
+              <p style="color: #374151; margin: 0 0 20px;">
+                ${data.cancelledBy === 'buyer' ? t('buyerCancellationBodySelf') : t('buyerCancellationBodyCreator')}
+              </p>
+              
+              <!-- Cancelled Booking Details -->
+              <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <p style="margin: 0 0 10px; font-weight: bold; color: #991b1b;">📦 ${data.productTitle}</p>
+                <p style="margin: 0 0 5px; color: #7f1d1d;">📆 ${formattedDate}</p>
+                <p style="margin: 0 0 5px; color: #7f1d1d;">⏰ ${formattedTime} น.</p>
+                <p style="margin: 10px 0 0; color: #6b7280; font-size: 14px;">${t('orderNumber', { id: data.orderId.slice(0, 8).toUpperCase() })}</p>
+              </div>
+              
+              ${data.reason ? `
+              <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <p style="margin: 0 0 5px; font-weight: bold; color: #374151;">${t('cancellationReasonLabel')}</p>
+                <p style="margin: 0; color: #6b7280;">${data.reason}</p>
+              </div>
+              ` : ''}
+              
+              <p style="color: #374151; margin: 0 0 20px;">
+                ${t('buyerCancellationRefund')}
+              </p>
+              
+              <!-- Creator Contact -->
+              ${data.creatorContact && (data.creatorContact.line || data.creatorContact.ig) ? `
+              <div style="background: #f0f9ff; border-radius: 12px; padding: 20px;">
+                <p style="margin: 0 0 10px; color: #0369a1; font-weight: bold;">${t('contactSeller', { name: data.creatorName })}</p>
+                ${data.creatorContact.line ? `<p style="margin: 0 0 5px; color: #374151;">Line: ${data.creatorContact.line}</p>` : ''}
+                ${data.creatorContact.ig ? `<p style="margin: 0; color: #374151;">Instagram: ${data.creatorContact.ig}</p>` : ''}
+              </div>
+              ` : ''}
+            </div>
+            
+            <!-- Footer -->
+            <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">Sellio</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error('Send buyer cancellation email error:', error);
+    }
+  } catch (err) {
+    console.error('Buyer cancellation email error:', err);
+  }
+}
+
+// ============================================
 // BOOKING RESCHEDULE EMAIL (to creator)
 // ============================================
 export async function sendBookingRescheduleEmail(data: {

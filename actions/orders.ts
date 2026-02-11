@@ -15,6 +15,7 @@ import {
   sendSlipUploadedNotificationEmail,
   sendRefundNotificationEmail,
   sendBookingCancellationEmail,
+  sendBookingCancellationToBuyerEmail,
   sendBookingRescheduleEmail
 } from '@/lib/email';
 
@@ -1600,12 +1601,33 @@ export async function cancelBooking(
         bookingTime: order.booking_time || '',
         reason: reason || t('notSpecified'),
       });
-      console.log('Cancel booking - email sent successfully');
+      console.log('Cancel booking - email sent to creator successfully');
     } catch (emailError) {
-      console.error('Cancel booking - email failed:', emailError);
+      console.error('Cancel booking - creator email failed:', emailError);
     }
   } else {
     console.log('Cancel booking - no creator email found');
+  }
+
+  // Send cancellation confirmation email to buyer
+  try {
+    await sendBookingCancellationToBuyerEmail({
+      orderId: order.id,
+      buyerName: order.buyer_name,
+      buyerEmail: order.buyer_email,
+      productTitle: product.title,
+      bookingDate: order.booking_date || '',
+      bookingTime: order.booking_time || '',
+      creatorName: creator?.display_name || 'Creator',
+      creatorContact: {
+        line: creator?.contact_line || undefined,
+      },
+      cancelledBy: 'buyer',
+      reason: reason || undefined,
+    });
+    console.log('Cancel booking - email sent to buyer:', order.buyer_email);
+  } catch (emailError) {
+    console.error('Cancel booking - buyer email failed:', emailError);
   }
 
   revalidatePath(`/checkout/${orderId}/success`);
