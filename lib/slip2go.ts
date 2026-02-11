@@ -1,10 +1,9 @@
 // ============================================
 // Slip2GO - Verify Slip via QR Code
 // https://slip2go.com
+// QR extraction is done on the CLIENT side (browser Canvas + jsQR)
+// This file only handles the API call to Slip2GO
 // ============================================
-
-import jsQR from 'jsqr';
-import sharp from 'sharp';
 
 const SLIP2GO_API_URL = process.env.SLIP2GO_API_URL || 'https://connect.slip2go.com';
 const SLIP2GO_SECRET_KEY = process.env.SLIP2GO_SECRET_KEY || '';
@@ -20,123 +19,6 @@ export interface Slip2GoVerifyResult {
   receiverName: string | null;
   qrCode?: string;
   raw?: unknown;
-}
-
-/**
- * Try to decode QR from raw RGBA pixel data
- */
-function tryDecodeQR(data: Buffer, width: number, height: number): string | null {
-  try {
-    const qrResult = jsQR(new Uint8ClampedArray(data), width, height);
-    return qrResult ? qrResult.data : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Extract QR code text from a slip image buffer.
- * Tries multiple strategies: full image, bottom-right crop, bottom-half crop,
- * and different scales to maximize detection success.
- */
-export async function extractQrFromImage(imageBuffer: Uint8Array): Promise<string | null> {
-  try {
-    const imgBuf = Buffer.from(imageBuffer);
-    const metadata = await sharp(imgBuf).metadata();
-    const origW = metadata.width || 800;
-    const origH = metadata.height || 1200;
-
-    console.log(`[Slip2GO] Image size: ${origW}x${origH}`);
-
-    // Strategy 1: Full image at reasonable size (max 1200px)
-    {
-      const { data, info } = await sharp(imgBuf)
-        .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
-        .ensureAlpha()
-        .raw()
-        .toBuffer({ resolveWithObject: true });
-
-      const qr = tryDecodeQR(data, info.width, info.height);
-      if (qr) {
-        console.log('[Slip2GO] QR found (full image):', qr.substring(0, 50) + '...');
-        return qr;
-      }
-    }
-
-    // Strategy 2: Bottom-right quadrant (QR is usually bottom-right on Thai slips)
-    {
-      const cropW = Math.floor(origW * 0.5);
-      const cropH = Math.floor(origH * 0.5);
-      const { data, info } = await sharp(imgBuf)
-        .extract({ left: origW - cropW, top: origH - cropH, width: cropW, height: cropH })
-        .ensureAlpha()
-        .raw()
-        .toBuffer({ resolveWithObject: true });
-
-      const qr = tryDecodeQR(data, info.width, info.height);
-      if (qr) {
-        console.log('[Slip2GO] QR found (bottom-right crop):', qr.substring(0, 50) + '...');
-        return qr;
-      }
-    }
-
-    // Strategy 3: Bottom-right 35% — tighter crop for small QR codes
-    {
-      const cropW = Math.floor(origW * 0.35);
-      const cropH = Math.floor(origH * 0.35);
-      const { data, info } = await sharp(imgBuf)
-        .extract({ left: origW - cropW, top: origH - cropH, width: cropW, height: cropH })
-        .resize(600, 600, { fit: 'inside' })
-        .ensureAlpha()
-        .raw()
-        .toBuffer({ resolveWithObject: true });
-
-      const qr = tryDecodeQR(data, info.width, info.height);
-      if (qr) {
-        console.log('[Slip2GO] QR found (tight bottom-right):', qr.substring(0, 50) + '...');
-        return qr;
-      }
-    }
-
-    // Strategy 4: Bottom half of image
-    {
-      const cropH = Math.floor(origH * 0.5);
-      const { data, info } = await sharp(imgBuf)
-        .extract({ left: 0, top: origH - cropH, width: origW, height: cropH })
-        .ensureAlpha()
-        .raw()
-        .toBuffer({ resolveWithObject: true });
-
-      const qr = tryDecodeQR(data, info.width, info.height);
-      if (qr) {
-        console.log('[Slip2GO] QR found (bottom half):', qr.substring(0, 50) + '...');
-        return qr;
-      }
-    }
-
-    // Strategy 5: Grayscale + sharpen for low-quality images
-    {
-      const { data, info } = await sharp(imgBuf)
-        .greyscale()
-        .sharpen()
-        .resize(1400, 1400, { fit: 'inside', withoutEnlargement: true })
-        .ensureAlpha()
-        .raw()
-        .toBuffer({ resolveWithObject: true });
-
-      const qr = tryDecodeQR(data, info.width, info.height);
-      if (qr) {
-        console.log('[Slip2GO] QR found (grayscale+sharpen):', qr.substring(0, 50) + '...');
-        return qr;
-      }
-    }
-
-    console.log('[Slip2GO] No QR code found after all strategies');
-    return null;
-  } catch (error) {
-    console.error('[Slip2GO] QR extraction error:', error);
-    return null;
-  }
 }
 
 /**

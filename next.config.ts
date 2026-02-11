@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     },
   },
   // Increase body size limit for file uploads
-  serverExternalPackages: ['sharp'],
+  serverExternalPackages: [],
   images: {
     remotePatterns: [
       {

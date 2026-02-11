@@ -1,31 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { extractQrFromImage, verifySlipByQrCode } from '@/lib/slip2go';
+import { verifySlipByQrCode } from '@/lib/slip2go';
 
-// DEBUG ENDPOINT - remove after testing
+// DEBUG ENDPOINT - test QR code verification directly
+// Usage: POST with JSON body { "qrCode": "...", "amount": 10 }
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('slip') as File | null;
-    const amount = formData.get('amount') as string | null;
-
-    if (!file) {
-      return NextResponse.json({ error: 'slip file required (use form-data)' }, { status: 400 });
-    }
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = new Uint8Array(arrayBuffer);
-
-    // Step 1: Extract QR code
-    const qrCode = await extractQrFromImage(buffer);
+    const body = await request.json();
+    const { qrCode, amount } = body;
 
     if (!qrCode) {
-      return NextResponse.json({
-        step: 'qr_extraction',
-        error: 'No QR code found in image',
-      });
+      return NextResponse.json({ error: 'qrCode required' }, { status: 400 });
     }
 
-    // Step 2: Verify with Slip2GO
     const result = await verifySlipByQrCode(
       qrCode,
       amount ? Number(amount) : undefined,
@@ -33,7 +19,7 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({
-      qrCode: qrCode.substring(0, 60) + '...',
+      qrCodePreview: qrCode.substring(0, 60) + '...',
       result,
     });
   } catch (error) {

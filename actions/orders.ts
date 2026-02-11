@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
 import { checkoutSchema, type CheckoutInput } from '@/lib/validations/checkout';
-import { extractQrFromImage, verifySlipByQrCode } from '@/lib/slip2go';
+import { verifySlipByQrCode } from '@/lib/slip2go';
 import { 
   sendOrderConfirmationEmail, 
   sendPaymentRejectionEmail,
@@ -405,6 +405,7 @@ export async function uploadSlip(
   const supabase = await createClient();
 
   const file = formData.get('slip') as File;
+  const clientQrCode = formData.get('qrCode') as string | null;
   if (!file || file.size === 0) {
     return { success: false, error: t('pleaseUploadSlip') };
   }
@@ -509,16 +510,16 @@ export async function uploadSlip(
   let verifyFailed = false;
   let verifyMessage = '';
   try {
-    // Step 1: Extract QR code from the slip image
-    const qrCode = await extractQrFromImage(buffer);
+    // QR code was extracted on the client side (browser Canvas + jsQR)
+    const qrCode = clientQrCode || null;
     
     if (!qrCode) {
-      console.log('[AutoVerify] No QR code found in slip image, skipping auto-verify');
+      console.log('[AutoVerify] No QR code from client, skipping auto-verify');
       verifyFailed = true;
       verifyMessage = 'No QR code found in slip';
     }
 
-    // Step 2: Verify QR code with Slip2GO
+    // Verify QR code with Slip2GO
     const verifyResult = qrCode ? await verifySlipByQrCode(qrCode, orderTotal) : null;
     
     if (!verifyResult) {
