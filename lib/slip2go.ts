@@ -104,20 +104,25 @@ export async function verifySlipByQrCode(
       const data = result.data;
 
       // Log full receiver object for debugging
-      console.log('[Slip2GO] Full receiver data:', JSON.stringify(data.receiver, null, 2));
-      console.log('[Slip2GO] Full sender data:', JSON.stringify(data.sender, null, 2));
+      console.log('[Slip2GO] Full receiver data:', JSON.stringify(data.receiver));
 
       // Extract receiver proxy (PromptPay number) — try all possible paths
-      const receiverProxy = data.receiver?.account?.proxy?.value
-        || data.receiver?.proxy?.value
-        || data.receiver?.account?.proxy
+      // Different banks/APIs may structure this differently
+      const rawProxy = data.receiver?.account?.proxy?.value  // Pattern A: nested
+        || data.receiver?.proxy?.value                       // Pattern B: direct proxy object
+        || data.receiver?.account?.proxy                     // Pattern C: proxy as string directly
+        || data.receiver?.proxy                              // Pattern D: proxy as string on receiver
         || null;
       
       // Extract receiver account number — try all possible paths
-      const receiverAccount = data.receiver?.account?.value
-        || data.receiver?.account?.number
-        || data.receiver?.account?.id
+      const rawAccount = data.receiver?.account?.value       // Pattern A: value field
+        || data.receiver?.account?.number                    // Pattern B: number field
+        || data.receiver?.account?.id                        // Pattern C: id field
         || null;
+
+      // Ensure we only use string values (not objects)
+      const receiverProxy = (typeof rawProxy === 'string' && rawProxy.length > 0) ? rawProxy : null;
+      const receiverAccount = (typeof rawAccount === 'string' && rawAccount.length > 0) ? rawAccount : null;
 
       console.log('[Slip2GO] Extracted receiverProxy:', receiverProxy, '| receiverAccount:', receiverAccount);
 

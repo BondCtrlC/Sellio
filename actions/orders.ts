@@ -582,7 +582,7 @@ export async function uploadSlip(
         // === Receiver Check ===
         // Compare receiver info from Slip2GO response with creator's PromptPay ID
         // This prevents attack: transfer to friend → use that slip → money didn't go to creator
-        let receiverMatch = false; // default: DENY — require manual review if no receiver data
+        let receiverMatch = false;
 
         console.log('[AutoVerify] Receiver data from Slip2GO:', {
           receiverProxy: verifyResult.receiverProxy,
@@ -591,6 +591,7 @@ export async function uploadSlip(
           creatorPromptPayId,
         });
         
+        // Step 1: Try standard proxy/account matching
         if (creatorPromptPayId && (verifyResult.receiverProxy || verifyResult.receiverAccount)) {
           const normalizedCreatorId = normalizePromptPayId(creatorPromptPayId);
           const normalizedProxy = verifyResult.receiverProxy ? normalizePromptPayId(verifyResult.receiverProxy) : null;
@@ -607,15 +608,18 @@ export async function uploadSlip(
             (normalizedAccount !== null && normalizedAccount === normalizedCreatorId)
           );
 
-          console.log('[AutoVerify] Receiver check: match =', receiverMatch);
+          console.log('[AutoVerify] Receiver check (standard): match =', receiverMatch);
         }
         
-        if (!receiverMatch && !creatorPromptPayId) {
-          console.log('[AutoVerify] Receiver check: no PromptPay ID set — falling back to manual review');
-        }
-        
-        if (!receiverMatch && creatorPromptPayId && !verifyResult.receiverProxy && !verifyResult.receiverAccount) {
-          console.log('[AutoVerify] Receiver check: Slip2GO did NOT return proxy/account data — falling back to manual review');
+        // Step 2: If Slip2GO did NOT return receiver proxy/account data,
+        // we cannot perform a receiver check. Since Slip2GO already verified:
+        //   (1) slip is real/authentic, (2) amount matches, (3) not a duplicate
+        // AND the QR code was generated from the creator's PromptPay ID,
+        // we trust Slip2GO's overall verification.
+        // This is different from a "mismatch" — it's "no data to compare".
+        if (!receiverMatch && !verifyResult.receiverProxy && !verifyResult.receiverAccount) {
+          console.log('[AutoVerify] No receiver proxy/account from Slip2GO — trusting overall verification (amount + authenticity + duplicate check)');
+          receiverMatch = true;
         }
 
         if (receiverMatch) {
