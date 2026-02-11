@@ -189,8 +189,18 @@ export function PaymentPage({ order }: PaymentPageProps) {
 
     try {
       // Extract QR code from slip image on client side (browser Canvas + jsQR)
-      const qrCode = await extractQrCodeFromFile(selectedFile);
-      console.log('[Upload] QR extracted:', qrCode ? qrCode.substring(0, 40) + '...' : 'none');
+      let qrCode: string | null = null;
+      try {
+        qrCode = await extractQrCodeFromFile(selectedFile);
+        console.log('[Upload] QR extracted:', qrCode ? qrCode.substring(0, 60) + '...' : 'NONE');
+      } catch (qrErr) {
+        console.error('[Upload] QR extraction error:', qrErr);
+      }
+
+      // DEBUG: Show QR extraction result (remove after testing)
+      if (qrCode) {
+        console.log('[Upload] Full QR data length:', qrCode.length);
+      }
 
       const formData = new FormData();
       formData.append('slip', selectedFile);
@@ -213,8 +223,9 @@ export function PaymentPage({ order }: PaymentPageProps) {
       }
 
       if (result.verifyFailed) {
-        // Redirect with verify=failed param to show warning
-        router.push(`/checkout/${order.id}?verify=failed`);
+        // Redirect with verify=failed param and debug info
+        const debugParam = qrCode ? `&qr=found` : `&qr=none`;
+        router.push(`/checkout/${order.id}?verify=failed${debugParam}`);
         return;
       }
 
@@ -249,6 +260,10 @@ export function PaymentPage({ order }: PaymentPageProps) {
                   <div>
                     <p className="font-medium text-red-800">{t('slipVerifyFailed')}</p>
                     <p className="text-sm text-red-700 mt-1">{t('slipVerifyFailedDesc')}</p>
+                    {/* DEBUG: Show QR extraction status */}
+                    <p className="text-xs text-red-500 mt-2 font-mono">
+                      [DEBUG] QR: {searchParams.get('qr') || 'unknown'}
+                    </p>
                   </div>
                 </div>
 
