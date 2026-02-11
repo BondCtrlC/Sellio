@@ -45,13 +45,9 @@ export async function verifySlipBase64(
 
   try {
     // Build request body for Base64 endpoint
-    // Slip2GO requires data URI prefix: "data:image/jpeg;base64,..."
-    const imageBase64 = base64Image.startsWith('data:')
-      ? base64Image
-      : `data:image/jpeg;base64,${base64Image}`;
-
+    // base64Image should already include "data:image/...;base64,..." prefix
     const payload: Record<string, unknown> = {
-      imageBase64,
+      imageBase64: base64Image,
     };
 
     // Add optional check conditions

@@ -509,8 +509,10 @@ export async function uploadSlip(
   let verifyFailed = false;
   let verifyMessage = '';
   try {
-    // Convert uploaded file to Base64 for Slip2GO verification
-    const base64Image = Buffer.from(buffer).toString('base64');
+    // Convert uploaded file to Base64 with correct MIME type for Slip2GO
+    const mimeType = file.type || 'image/jpeg';
+    const base64Raw = Buffer.from(buffer).toString('base64');
+    const base64Image = `data:${mimeType};base64,${base64Raw}`;
     
     const verifyResult = await verifySlipBase64(base64Image, orderTotal);
     console.log('[AutoVerify] Result:', verifyResult.verified, verifyResult.message);
