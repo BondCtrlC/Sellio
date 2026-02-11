@@ -115,7 +115,7 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
-          <section>
+          <section id="cookies" className="scroll-mt-20">
             <h2 className="text-xl font-semibold mt-8 mb-3">9. คุกกี้</h2>
             <p>เราใช้คุกกี้ที่จำเป็นสำหรับการทำงานของระบบ (เช่น session authentication) เราไม่ใช้คุกกี้ติดตามจากบุคคลที่สาม</p>
           </section>

@@ -47,7 +47,7 @@ export default function TermsPage() {
             </ul>
           </section>
 
-          <section>
+          <section id="refund" className="scroll-mt-20">
             <h2 className="text-xl font-semibold mt-8 mb-3">5. แพลนและการชำระเงิน</h2>
             <ul className="list-disc pl-6 space-y-2">
               <li><strong>Free:</strong> ใช้งานฟรี จำกัด 2 สินค้า</li>

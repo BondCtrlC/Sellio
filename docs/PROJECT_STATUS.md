@@ -6,8 +6,8 @@
 **URL:** trysellio.com  
 **Pricing:** Free + Pro (99 THB/เดือน)  
 **Deployment:** Vercel  
-**Status:** MVP Ready | ✅ i18n Complete | ✅ Yearly Subscription | ✅ Auto Slip Verification (Slip2GO)  
-**Last Updated:** February 11, 2026 (Session 11)
+**Status:** MVP Ready | ✅ i18n Complete | ✅ Yearly Subscription | ✅ Auto Slip Verification (Slip2GO) | ✅ Production Ready  
+**Last Updated:** February 11, 2026 (Session 12)
 
 ---
 
@@ -153,7 +153,9 @@ new/
 - **Creator Dashboard:** แสดง badge "ยืนยันอัตโนมัติแล้ว" (เขียว) หรือ "รอตรวจสอบ" (เหลือง) ในหน้าจัดการ order
 - **Database:** เพิ่ม columns `slip_verified`, `slip_verified_at`, `slip_verify_ref`, `slip_verify_message` ใน payments table
 - **Fallback:** ถ้าตรวจสลิปไม่ผ่าน ยังสามารถรอ creator ยืนยันด้วยตนเองได้ (manual flow เหมือนเดิม)
-- **Skip auto-verify:** สินค้าประเภท booking/live ข้าม auto-confirm (ต้องให้ creator จัดการ slot)
+- **Auto-confirm booking/live:** สินค้า booking/live ยืนยันอัตโนมัติพร้อม pre-fill fulfillment จาก meeting link/location
+- **Retry Logic:** Retry สูงสุด 2 ครั้ง (delay 5 วินาที) สำหรับ `200404` (Not found) + disable `checkDuplicate` ใน retry เพื่อป้องกัน `200501` false positive
+- **checkReceiver:** ตรวจสอบผู้รับเงินตรง creator PromptPay ID
 
 ### 11. Social Sharing
 - Share buttons (Facebook, X, Line, Copy link)
@@ -324,14 +326,32 @@ new/
 | F5 | i18n: Constants & Calendar | แปล `lib/constants.ts` labels + `lib/ics.ts` calendar descriptions |
 | F6 | i18n: Time Format | แก้ hardcoded "น." suffix ให้ใช้ locale-aware time formatting |
 | F7 | Remove Debug UI | ✅ Done — ลบ `[DEBUG]` text จากหน้าชำระเงิน + ลบ `/api/test-slip2go` endpoint |
-| F8 | Slip2GO Receiver Check | ⬜ Reverted — `checkReceiver` format ไม่ตรงกับ Slip2GO API ทำให้ request ถูก reject ทั้งหมด ต้องยืนยัน format กับ Slip2GO support ก่อน |
-| F9 | M2: Resend Domain Verification | Verify domain เพื่อส่ง email จริง (ไม่ใช่ sandbox) |
+| F8 | Slip2GO Receiver Check | ✅ Done — `checkReceiver` ตรวจสอบผู้รับเงินตรง creator PromptPay ID (format ใช้ array ของ object) |
+| F9 | M2: Resend Domain Verification | ✅ Done — Domain verified, ส่งอีเมลจาก noreply@trysellio.com + DMARC record เพิ่มแล้ว |
 
 ---
 
 ## Recent Changes Log
 
-### Session 11 (Feb 11, 2026) - Current Session
+### Session 12 (Feb 11, 2026) - Current Session
+
+| # | Change | Files Modified |
+|---|--------|----------------|
+| 1 | **Slip2GO Retry Logic** - Retry สูงสุด 2 ครั้ง (delay 5 วินาที) สำหรับ `200404` + disable `checkDuplicate` ใน retry เพื่อป้องกัน `200501` false positive | `lib/slip2go.ts` |
+| 2 | **Slip2GO checkReceiver** - ตรวจสอบผู้รับเงินตรง creator PromptPay ID | `lib/slip2go.ts`, `actions/orders.ts` |
+| 3 | **Security: Magic Bytes in refundOrder** - เพิ่ม server-side file validation (JPEG/PNG/WebP magic bytes + extension whitelist) สำหรับ refund slip upload | `actions/orders.ts` |
+| 4 | **Security: Optimistic Lock in rescheduleBooking** - ป้องกัน race condition เมื่อย้าย slot + rollback ถ้าล็อค fail | `actions/orders.ts` |
+| 5 | **Auto-confirm Booking/Live** - สินค้า booking/live ยืนยันอัตโนมัติผ่าน Slip2GO พร้อม pre-fill fulfillment จาก meeting link/location | `actions/orders.ts` |
+| 6 | **Creator Meeting Link Enforcement** - บังคับ creator กรอก meeting link/location ก่อนขาย booking product + warning badges | `actions/products.ts`, `components/dashboard/products-list.tsx` |
+| 7 | **Buyer Cancellation Email** - ส่งอีเมลแจ้งเตือนลูกค้าเมื่อ order ถูกยกเลิก | `actions/orders.ts`, `lib/email.ts`, `messages/*.json` |
+| 8 | **Spam Folder Warning** - เพิ่มข้อความแจ้งเตือนให้ลูกค้าเช็ค Spam/Junk folder ในหน้า success + payment | `app/checkout/[orderId]/success/page.tsx`, `payment-page.tsx`, `messages/*.json` |
+| 9 | **Remove Bank Transfer + Upload QR** - ลบช่องทาง Bank Transfer และ Upload QR (e-wallet) เพื่อความปลอดภัย เหลือแค่ PromptPay | `actions/orders.ts`, `payment-page.tsx`, `settings-form.tsx` |
+| 10 | **Error Pages** - เพิ่ม `app/error.tsx`, `app/global-error.tsx`, `app/not-found.tsx` สำหรับ production | `app/error.tsx`, `app/global-error.tsx`, `app/not-found.tsx` |
+| 11 | **SEO: Sitemap + Robots** - Dynamic sitemap กับ public store URLs + robots.txt | `app/sitemap.ts`, `app/robots.ts` |
+| 12 | **Web Analytics** - ติดตั้ง `@vercel/analytics` ใน root layout | `app/layout.tsx`, `package.json` |
+| 13 | **Footer Anchor Links** - แก้ `#cookies` → id="cookies" ในหน้า Privacy, `#refund` → id="refund" ในหน้า Terms | `app/privacy/page.tsx`, `app/terms/page.tsx` |
+
+### Session 11 (Feb 11, 2026) - Previous Session
 
 | # | Change | Files Modified |
 |---|--------|----------------|
@@ -540,11 +560,11 @@ ALTER TABLE payments ADD COLUMN IF NOT EXISTS slip_verify_message TEXT DEFAULT N
 - จะถูก treat เหมือน "booking" ใน UI
 
 ### Payment Flow
-- ลูกค้าชำระผ่าน PromptPay QR หรือ โอนธนาคาร
+- ลูกค้าชำระผ่าน PromptPay QR เท่านั้น (ลบ Bank Transfer + Upload QR แล้วเพื่อความปลอดภัย)
 - อัพโหลดสลิป → **ระบบตรวจ QR อัตโนมัติผ่าน Slip2GO**
-  - ✅ สลิปถูกต้อง (`200200`) → Auto-confirm ทันที ไปหน้า success
+  - ✅ สลิปถูกต้อง (`200200`) → Auto-confirm ทันที ไปหน้า success (ทุกประเภทสินค้ารวม booking)
   - ❌ สลิปไม่ผ่าน → แจ้งเตือนลูกค้า + รอ Creator ตรวจสอบ manual
-  - ⏭️ สินค้า booking/live → ข้าม auto-verify (ต้อง Creator จัดการ)
+  - 🔄 Retry: ถ้า `200404` หรือ `200501` → retry สูงสุด 2 ครั้ง (delay 5 วินาที, disable checkDuplicate ใน retry)
 - Stripe Card ถูกลบแล้ว (เงินเข้า platform ไม่ใช่ creator, รอ Stripe Connect)
 
 ### Storage Buckets
@@ -560,6 +580,7 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 RESEND_API_KEY=
+RESEND_FROM_EMAIL=Sellio <noreply@trysellio.com>
 NEXT_PUBLIC_APP_URL=
 CRON_SECRET=
 

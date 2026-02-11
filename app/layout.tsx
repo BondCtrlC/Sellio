@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Sarabun, Prompt, Noto_Sans_Thai, IBM_Plex_Sans_Thai, Pridi } from "next/font/google";
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { Analytics } from '@vercel/analytics/react';
 import "./globals.css";
 
 const inter = Inter({
@@ -91,6 +92,7 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages} locale={locale}>
           {children}
         </NextIntlClientProvider>
+        <Analytics />
       </body>
     </html>
   );

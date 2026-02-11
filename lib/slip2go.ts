@@ -96,6 +96,10 @@ export async function verifySlipByQrCode(
     // IMPORTANT: On retry, we MUST disable checkDuplicate because Slip2GO
     // registers the QR on first call — retrying with checkDuplicate would
     // trigger 200501 (duplicate) even though the first call returned 200404.
+    //
+    // CRITICAL: NEVER retry on 200501 (duplicate). That is a legitimate
+    // rejection meaning the slip was already used. Retrying with checkDuplicate
+    // disabled would let duplicate/fake slips pass verification.
     const MAX_RETRIES = 2;
     const RETRY_DELAYS = [5000, 5000]; // 5s between each retry
     let result: Record<string, unknown> = {};
@@ -103,7 +107,6 @@ export async function verifySlipByQrCode(
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       // On retry: disable checkDuplicate (Slip2GO already recorded QR from attempt 1)
-      // and also retry on 200501 since it's a false positive from our own retry
       const attemptCondition = { ...checkCondition };
       if (attempt > 0) {
         delete attemptCondition.checkDuplicate;
@@ -138,8 +141,9 @@ export async function verifySlipByQrCode(
         console.log('[Slip2GO] Data amount:', data.amount, '| transRef:', data.transRef);
       }
 
-      // Only retry on 200404 (Slip not found) or 200501 (false duplicate from our retry)
-      if (code !== '200404' && code !== '200501') break;
+      // ONLY retry on 200404 (Slip not found = bank timing issue)
+      // NEVER retry on 200501 (duplicate) — that is a real rejection
+      if (code !== '200404') break;
     }
 
     // Response codes:
