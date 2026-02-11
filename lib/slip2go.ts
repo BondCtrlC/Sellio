@@ -17,6 +17,8 @@ export interface Slip2GoVerifyResult {
   dateTime: string | null;
   senderName: string | null;
   receiverName: string | null;
+  receiverProxy: string | null;   // PromptPay number from slip (e.g. "0918830892")
+  receiverAccount: string | null; // Bank account number from slip
   qrCode?: string;
   apiCode?: string;
   raw?: unknown;
@@ -27,9 +29,9 @@ export interface Slip2GoVerifyResult {
  * Uses checkCondition to validate amount + duplicate check.
  * Only code "200200" (Slip is Valid) means the slip passes all conditions.
  *
- * NOTE: checkReceiver was attempted but the exact API format is unconfirmed.
- * Slip2GO rejects requests with incorrect checkReceiver format (returns 400).
- * TODO: Confirm checkReceiver format with Slip2GO support before re-enabling.
+ * Receiver verification is done AFTER the API call by comparing
+ * the receiver proxy/account from the response with the creator's PromptPay ID.
+ * (checkReceiver in checkCondition format is unknown, so we do it manually)
  */
 export async function verifySlipByQrCode(
   qrCode: string,
@@ -41,6 +43,7 @@ export async function verifySlipByQrCode(
       success: false, verified: false, amount: null,
       message: 'API key not configured',
       transRef: null, dateTime: null, senderName: null, receiverName: null,
+      receiverProxy: null, receiverAccount: null,
       apiCode: 'NO_KEY',
     };
   }
@@ -62,9 +65,6 @@ export async function verifySlipByQrCode(
         amount: String(expectedAmount),
       };
     }
-
-    // TODO: Add checkReceiver after confirming exact format with Slip2GO support
-    // checkCondition.checkReceiver = { ??? };
 
     payload.checkCondition = checkCondition;
 
@@ -105,6 +105,19 @@ export async function verifySlipByQrCode(
     if (code === '200200' && result.data) {
       // ONLY 200200 = fully verified with conditions
       const data = result.data;
+
+      // Log full receiver data to understand Slip2GO response structure
+      console.log('[Slip2GO] Receiver data:', JSON.stringify(data.receiver));
+      console.log('[Slip2GO] Sender data:', JSON.stringify(data.sender));
+
+      // Extract receiver proxy (PromptPay number) and account number
+      const receiverProxy = data.receiver?.account?.proxy?.value
+        || data.receiver?.proxy?.value
+        || null;
+      const receiverAccount = data.receiver?.account?.value
+        || data.receiver?.account?.number
+        || null;
+
       return {
         success: true,
         verified: true,
@@ -114,6 +127,8 @@ export async function verifySlipByQrCode(
         dateTime: data.dateTime || null,
         senderName: data.sender?.account?.name || null,
         receiverName: data.receiver?.account?.name || null,
+        receiverProxy,
+        receiverAccount,
         qrCode,
         apiCode: code,
         raw: data,
@@ -145,6 +160,7 @@ export async function verifySlipByQrCode(
       transRef: result.data?.transRef || null,
       dateTime: result.data?.dateTime || null,
       senderName: null, receiverName: null,
+      receiverProxy: null, receiverAccount: null,
       qrCode,
       apiCode: code,
       raw: result,
@@ -157,6 +173,7 @@ export async function verifySlipByQrCode(
       amount: null,
       message: `Error: ${error instanceof Error ? error.message : String(error)}`,
       transRef: null, dateTime: null, senderName: null, receiverName: null,
+      receiverProxy: null, receiverAccount: null,
       apiCode: 'ERROR',
     };
   }

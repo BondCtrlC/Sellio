@@ -17,6 +17,27 @@ import {
 } from '@/lib/email';
 
 // ============================================
+// Helpers
+// ============================================
+
+/**
+ * Normalize a PromptPay ID / phone number for comparison.
+ * Strips dashes, spaces, leading +66 / 66 → convert to 0-prefix 10-digit format.
+ * Examples: "+66918830892" → "0918830892", "091-883-0892" → "0918830892"
+ */
+function normalizePromptPayId(id: string): string {
+  // Remove dashes, spaces, dots
+  let cleaned = id.replace(/[-\s.]/g, '');
+  // Convert +66 or 66 prefix to 0
+  if (cleaned.startsWith('+66')) {
+    cleaned = '0' + cleaned.slice(3);
+  } else if (cleaned.startsWith('66') && cleaned.length === 11) {
+    cleaned = '0' + cleaned.slice(2);
+  }
+  return cleaned;
+}
+
+// ============================================
 // Types
 // ============================================
 interface CreateOrderResult {
@@ -492,18 +513,20 @@ export async function uploadSlip(
     return { success: false, error: t('cannotSaveSlip') };
   }
 
-  // Get order details for verification
+  // Get order details for verification (include promptpay_id for receiver check)
   const { data: orderInfo } = await supabase
     .from('orders')
     .select(`
       id, total, buyer_name, buyer_email, creator_id, booking_date, booking_time,
       product:products(id, title, type, type_config),
-      creator:creators(id, display_name, notification_email, contact_line, contact_ig)
+      creator:creators(id, display_name, notification_email, contact_line, contact_ig, promptpay_id)
     `)
     .eq('id', orderId)
     .single();
 
   const orderTotal = orderInfo ? Number(orderInfo.total) : 0;
+  const creatorData = orderInfo ? (Array.isArray(orderInfo.creator) ? orderInfo.creator[0] : orderInfo.creator) : null;
+  const creatorPromptPayId = creatorData?.promptpay_id || null;
 
   // === Slip2GO Auto-Verification (QR Code) ===
   let autoConfirmed = false;
@@ -526,20 +549,60 @@ export async function uploadSlip(
       // No QR code found — skip to manual flow
     } else {
       console.log('[AutoVerify] Result:', verifyResult.verified, verifyResult.message);
+      console.log('[AutoVerify] Receiver proxy:', verifyResult.receiverProxy, '| account:', verifyResult.receiverAccount);
 
       if (verifyResult.success && verifyResult.verified && orderInfo) {
-        // Slip is valid and amount matches → Auto-confirm
-        autoConfirmed = await _autoConfirmOrder(supabase, orderId, orderInfo, t);
+        // === Manual Receiver Check ===
+        // Compare receiver info from Slip2GO response with creator's PromptPay ID
+        // This prevents attack: transfer to friend → use that slip → money didn't go to creator
+        let receiverMatch = true; // default: allow if no receiver data available
+        
+        if (creatorPromptPayId && (verifyResult.receiverProxy || verifyResult.receiverAccount)) {
+          const normalizedCreatorId = normalizePromptPayId(creatorPromptPayId);
+          const normalizedProxy = verifyResult.receiverProxy ? normalizePromptPayId(verifyResult.receiverProxy) : null;
+          const normalizedAccount = verifyResult.receiverAccount ? normalizePromptPayId(verifyResult.receiverAccount) : null;
 
-        // Mark slip as verified
-        await supabase
-          .from('payments')
-          .update({ 
-            slip_verified: true,
-            slip_verified_at: new Date().toISOString(),
-            slip_verify_ref: verifyResult.transRef,
-          })
-          .eq('order_id', orderId);
+          receiverMatch = (
+            (normalizedProxy !== null && normalizedProxy === normalizedCreatorId) ||
+            (normalizedAccount !== null && normalizedAccount === normalizedCreatorId)
+          );
+
+          console.log('[AutoVerify] Receiver check:', {
+            creatorId: normalizedCreatorId,
+            slipProxy: normalizedProxy,
+            slipAccount: normalizedAccount,
+            match: receiverMatch,
+          });
+        } else {
+          console.log('[AutoVerify] Receiver check skipped — no proxy/account data from Slip2GO or no creator PromptPay ID');
+        }
+
+        if (receiverMatch) {
+          // Slip is valid + amount matches + receiver matches → Auto-confirm
+          autoConfirmed = await _autoConfirmOrder(supabase, orderId, orderInfo, t);
+
+          // Mark slip as verified
+          await supabase
+            .from('payments')
+            .update({ 
+              slip_verified: true,
+              slip_verified_at: new Date().toISOString(),
+              slip_verify_ref: verifyResult.transRef,
+            })
+            .eq('order_id', orderId);
+        } else {
+          // Receiver doesn't match — potential fraud, require manual check
+          verifyFailed = true;
+          verifyMessage = 'Receiver account does not match creator PromptPay';
+          console.warn('[AutoVerify] RECEIVER MISMATCH! Slip receiver does not match creator PromptPay.');
+          await supabase
+            .from('payments')
+            .update({ 
+              slip_verified: false,
+              slip_verify_message: 'Receiver mismatch: money may not have gone to the correct account',
+            })
+            .eq('order_id', orderId);
+        }
       } else {
         // Verification failed or amount mismatch
         verifyFailed = true;
