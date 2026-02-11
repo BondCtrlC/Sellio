@@ -141,7 +141,7 @@ new/
 - **ระบบตรวจสอบสลิปอัตโนมัติ** — ลูกค้าอัปสลิป → ระบบตรวจ QR ในสลิปกับธนาคารจริง → auto-confirm ทันที
 - **Client-side QR Extraction** — ใช้ `jsQR` + Canvas API ใน browser อ่าน QR จากรูปสลิป (4 strategies: full image, bottom-right 50%, bottom-right 35%+scale, bottom half)
 - **Slip2GO QR Code API** — ส่ง QR text ไปตรวจสอบที่ `/api/verify-slip/qr-code/info` ด้วย Bearer token
-- **checkCondition** — ตรวจยอดเงิน (`checkAmount: eq`) + ตรวจสลิปซ้ำ (`checkDuplicate: true`) + ตรวจผู้รับเงิน (`checkReceiver: account`)
+- **checkCondition** — ตรวจยอดเงิน (`checkAmount: eq`) + ตรวจสลิปซ้ำ (`checkDuplicate: true`)
 - **Response Code Handling:**
   - `200200` (Slip is Valid) → **Auto-confirm order** ทันที ไม่ต้องรอ creator
   - `200000` (Slip Found but not validated) → ไม่ผ่าน
@@ -325,7 +325,7 @@ new/
 | F5 | i18n: Constants & Calendar | แปล `lib/constants.ts` labels + `lib/ics.ts` calendar descriptions |
 | F6 | i18n: Time Format | แก้ hardcoded "น." suffix ให้ใช้ locale-aware time formatting |
 | F7 | Remove Debug UI | ✅ Done — ลบ `[DEBUG]` text จากหน้าชำระเงิน + ลบ `/api/test-slip2go` endpoint |
-| F8 | Slip2GO Receiver Check | ✅ Done — เพิ่ม `checkReceiver` ใน checkCondition เพื่อตรวจว่าเงินเข้าบัญชี PromptPay ของ creator ถูกคน |
+| F8 | Slip2GO Receiver Check | ⬜ Reverted — `checkReceiver` format ไม่ตรงกับ Slip2GO API ทำให้ request ถูก reject ทั้งหมด ต้องยืนยัน format กับ Slip2GO support ก่อน |
 | F9 | M2: Resend Domain Verification | Verify domain เพื่อส่ง email จริง (ไม่ใช่ sandbox) |
 
 ---
@@ -351,7 +351,7 @@ new/
 | 13 | **Fix: 200000 vs 200200** - เปลี่ยนจาก auto-confirm ทุก `200000` (แค่พบสลิป) เป็นเฉพาะ `200200` (สลิปถูกต้อง+เงื่อนไขผ่าน) เพื่อป้องกันสลิปปลอมผ่าน | `lib/slip2go.ts` |
 | 14 | **Add checkCondition** - ใส่ `checkDuplicate: true` + `checkAmount: { type: "eq", amount }` กลับคืนเพื่อให้ Slip2GO ตรวจเงื่อนไขด้วย | `lib/slip2go.ts` |
 | 15 | **F7: Remove Debug UI** - ลบ `[DEBUG]` text จากหน้าชำระเงิน, ลบ debug URL params (`qr`, `msg`), ลบ debug console.logs, ลบ `/api/test-slip2go` test endpoint | `app/checkout/[orderId]/payment-page.tsx`, `app/api/test-slip2go/route.ts` (deleted) |
-| 16 | **F8: checkReceiver** - เพิ่ม `checkReceiver: { type: 'account', account: promptpay_id }` ใน checkCondition เพื่อตรวจว่าเงินเข้าบัญชี PromptPay ของ creator ถูกคน + query เพิ่ม `promptpay_id` จาก creators | `lib/slip2go.ts`, `actions/orders.ts` |
+| 16 | **F8: checkReceiver (reverted)** - เพิ่ม `checkReceiver` แต่ format ไม่ตรง API → Slip2GO reject request ทั้งหมด → revert ออก, ต้องยืนยัน format กับ Slip2GO support ก่อน | `lib/slip2go.ts`, `actions/orders.ts` |
 
 **Key learnings จาก Slip2GO integration:**
 - Image URL method: Slip2GO ปฏิเสธ URL จาก Supabase Storage (format validation strict)
