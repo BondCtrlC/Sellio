@@ -103,13 +103,23 @@ export async function verifySlipByQrCode(
       // ONLY 200200 = fully verified with conditions
       const data = result.data;
 
-      // Extract receiver proxy (PromptPay number) and account number
+      // Log full receiver object for debugging
+      console.log('[Slip2GO] Full receiver data:', JSON.stringify(data.receiver, null, 2));
+      console.log('[Slip2GO] Full sender data:', JSON.stringify(data.sender, null, 2));
+
+      // Extract receiver proxy (PromptPay number) — try all possible paths
       const receiverProxy = data.receiver?.account?.proxy?.value
         || data.receiver?.proxy?.value
+        || data.receiver?.account?.proxy
         || null;
+      
+      // Extract receiver account number — try all possible paths
       const receiverAccount = data.receiver?.account?.value
         || data.receiver?.account?.number
+        || data.receiver?.account?.id
         || null;
+
+      console.log('[Slip2GO] Extracted receiverProxy:', receiverProxy, '| receiverAccount:', receiverAccount);
 
       return {
         success: true,
@@ -118,10 +128,10 @@ export async function verifySlipByQrCode(
         message: 'Slip verified successfully',
         transRef: data.transRef || null,
         dateTime: data.dateTime || null,
-        senderName: data.sender?.account?.name || null,
-        receiverName: data.receiver?.account?.name || null,
-        receiverProxy,
-        receiverAccount,
+        senderName: data.sender?.account?.name || data.sender?.name || null,
+        receiverName: data.receiver?.account?.name || data.receiver?.name || null,
+        receiverProxy: typeof receiverProxy === 'string' ? receiverProxy : null,
+        receiverAccount: typeof receiverAccount === 'string' ? receiverAccount : null,
         apiCode: code,
       };
     }

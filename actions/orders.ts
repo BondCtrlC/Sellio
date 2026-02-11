@@ -583,11 +583,24 @@ export async function uploadSlip(
         // Compare receiver info from Slip2GO response with creator's PromptPay ID
         // This prevents attack: transfer to friend → use that slip → money didn't go to creator
         let receiverMatch = false; // default: DENY — require manual review if no receiver data
+
+        console.log('[AutoVerify] Receiver data from Slip2GO:', {
+          receiverProxy: verifyResult.receiverProxy,
+          receiverAccount: verifyResult.receiverAccount,
+          receiverName: verifyResult.receiverName,
+          creatorPromptPayId,
+        });
         
         if (creatorPromptPayId && (verifyResult.receiverProxy || verifyResult.receiverAccount)) {
           const normalizedCreatorId = normalizePromptPayId(creatorPromptPayId);
           const normalizedProxy = verifyResult.receiverProxy ? normalizePromptPayId(verifyResult.receiverProxy) : null;
           const normalizedAccount = verifyResult.receiverAccount ? normalizePromptPayId(verifyResult.receiverAccount) : null;
+
+          console.log('[AutoVerify] Normalized values:', {
+            normalizedCreatorId,
+            normalizedProxy,
+            normalizedAccount,
+          });
 
           receiverMatch = (
             (normalizedProxy !== null && normalizedProxy === normalizedCreatorId) ||
@@ -599,6 +612,10 @@ export async function uploadSlip(
         
         if (!receiverMatch && !creatorPromptPayId) {
           console.log('[AutoVerify] Receiver check: no PromptPay ID set — falling back to manual review');
+        }
+        
+        if (!receiverMatch && creatorPromptPayId && !verifyResult.receiverProxy && !verifyResult.receiverAccount) {
+          console.log('[AutoVerify] Receiver check: Slip2GO did NOT return proxy/account data — falling back to manual review');
         }
 
         if (receiverMatch) {
