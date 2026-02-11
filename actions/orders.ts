@@ -1385,7 +1385,7 @@ export async function refundOrder(
     return { success: false, error: t('pleaseUploadRefundSlip') };
   }
 
-  // Validate file type
+  // Validate file type (don't trust client MIME type alone)
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
   if (!allowedTypes.includes(refundSlip.type)) {
     return { success: false, error: t('imageFilesOnly') };
@@ -1396,12 +1396,24 @@ export async function refundOrder(
     return { success: false, error: t('fileSizeMax5MB') };
   }
 
+  // SECURITY: Validate file magic bytes (don't trust client-supplied MIME type)
+  const refundHeaderBytes = new Uint8Array(await refundSlip.slice(0, 12).arrayBuffer());
+  const isRefundJpeg = refundHeaderBytes[0] === 0xFF && refundHeaderBytes[1] === 0xD8 && refundHeaderBytes[2] === 0xFF;
+  const isRefundPng = refundHeaderBytes[0] === 0x89 && refundHeaderBytes[1] === 0x50 && refundHeaderBytes[2] === 0x4E && refundHeaderBytes[3] === 0x47;
+  const isRefundWebp = refundHeaderBytes[0] === 0x52 && refundHeaderBytes[1] === 0x49 && refundHeaderBytes[2] === 0x46 && refundHeaderBytes[3] === 0x46
+    && refundHeaderBytes[8] === 0x57 && refundHeaderBytes[9] === 0x45 && refundHeaderBytes[10] === 0x42 && refundHeaderBytes[11] === 0x50;
+
+  if (!isRefundJpeg && !isRefundPng && !isRefundWebp) {
+    return { success: false, error: t('imageFilesOnly') };
+  }
+
   // Convert File to ArrayBuffer for upload
   const arrayBuffer = await refundSlip.arrayBuffer();
   const buffer = new Uint8Array(arrayBuffer);
 
-  // Upload refund slip to Supabase Storage
-  const fileExt = refundSlip.name.split('.').pop() || 'jpg';
+  // Upload refund slip to Supabase Storage — whitelist extension (don't trust client filename)
+  const rawRefundExt = (refundSlip.name.split('.').pop() || '').toLowerCase();
+  const fileExt = ['jpg', 'jpeg', 'png', 'webp'].includes(rawRefundExt) ? rawRefundExt : 'jpg';
   const fileName = `refund-${orderId}-${Date.now()}.${fileExt}`;
   const filePath = `refund-slips/${fileName}`;
 
@@ -1729,14 +1741,42 @@ export async function rescheduleBooking(
     }
   }
 
-  // Increment new slot
-  await supabase
+  // Increment new slot — atomic with optimistic lock to prevent race conditions
+  const { data: slotUpdated } = await supabase
     .from('booking_slots')
     .update({
       current_bookings: newCurrentBookings + 1,
       is_booked: (newCurrentBookings + 1) >= newMaxBookings,
     })
-    .eq('id', newSlotId);
+    .eq('id', newSlotId)
+    .eq('current_bookings', newCurrentBookings) // Optimistic lock
+    .lt('current_bookings', newMaxBookings)     // Must still have room
+    .select('id')
+    .maybeSingle();
+
+  if (!slotUpdated) {
+    // Race condition: slot was taken. Re-increment old slot back.
+    if (order.booking_date && order.booking_time) {
+      const { data: oldSlotRevert } = await supabase
+        .from('booking_slots')
+        .select('id, current_bookings, max_bookings')
+        .eq('product_id', product.id)
+        .eq('slot_date', order.booking_date)
+        .eq('start_time', order.booking_time)
+        .single();
+
+      if (oldSlotRevert) {
+        await supabase
+          .from('booking_slots')
+          .update({
+            current_bookings: (oldSlotRevert.current_bookings || 0) + 1,
+            is_booked: ((oldSlotRevert.current_bookings || 0) + 1) >= (oldSlotRevert.max_bookings || 1),
+          })
+          .eq('id', oldSlotRevert.id);
+      }
+    }
+    return { success: false, error: t('slotFull') };
+  }
 
   // Update order with new booking info and increment reschedule count
   console.log('Reschedule - updating order with new booking date/time');
