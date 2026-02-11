@@ -79,6 +79,7 @@ export interface OrderDetails {
     display_name: string | null;
     promptpay_id: string | null;
     promptpay_name: string | null;
+    promptpay_qr_url: string | null;
     bank_name: string | null;
     bank_account_number: string | null;
     bank_account_name: string | null;
