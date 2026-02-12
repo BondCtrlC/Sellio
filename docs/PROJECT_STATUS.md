@@ -6,8 +6,8 @@
 **URL:** trysellio.com  
 **Pricing:** Free + Pro (99 THB/เดือน)  
 **Deployment:** Vercel  
-**Status:** MVP Ready | ✅ i18n Complete | ✅ Yearly Subscription | ✅ Auto Slip Verification (Slip2GO) | ✅ Production Ready  
-**Last Updated:** February 11, 2026 (Session 12)
+**Status:** MVP Ready | ✅ i18n Complete | ✅ Yearly Subscription | ✅ Auto Slip Verification (Slip2GO) | ✅ Production Ready | ✅ Calendar Booking UI | ✅ Max Bookings Per Customer  
+**Last Updated:** February 12, 2026 (Session 13)
 
 ---
 
@@ -23,7 +23,7 @@
 - **Charts:** Recharts
 - **i18n:** next-intl (cookie-based locale, Thai default)
 - **Email:** Resend
-- **Payments:** PromptPay QR + Bank Transfer (Stripe card ถูกลบแล้ว, รอ Stripe Connect)
+- **Payments:** PromptPay QR เท่านั้น (Bank Transfer + Upload QR ถูกลบเพื่อความปลอดภัย, Stripe card ถูกลบรอ Stripe Connect)
 - **Slip Verification:** Slip2GO API (QR Code scanning) + jsQR (client-side QR extraction)
 - **Deployment:** Vercel (Hobby plan)
 
@@ -87,6 +87,7 @@ new/
 - **Slot Management** - สร้าง slot วัน/เวลาได้ (single, batch, recurring)
 - **Recurring Slots** - สร้าง slot ซ้ำรายสัปดาห์ (เลือกวัน, จำนวนสัปดาห์)
 - **Max Bookings** - กำหนดจำนวนที่นั่งต่อ slot
+- **Max Bookings Per Customer** - จำกัดจำนวนการจองต่อคนต่อสินค้า (ตรวจสอบจาก buyer_email, case-insensitive)
 - **Auto-block** - เมื่อเต็มจะ block อัตโนมัติ
 - **Multi-select & Bulk Actions** - เลือกหลาย slot แล้ว ลบ/ซ่อน/แสดง ทีเดียว
 - **Inline Edit** - แก้ไขเวลาและจำนวนที่นั่งของแต่ละ slot ได้
@@ -94,6 +95,10 @@ new/
 - **Seat Count Display** - แสดง "ว่าง X ที่นั่ง" หรือ "เต็ม"
 - **Pre-fill Meeting Details** - กรอกลิงก์/สถานที่ล่วงหน้าได้
 - **Fulfillment Validation** - บังคับกรอกข้อมูลก่อนยืนยันชำระ
+- **Calendar UI** - ลูกค้าเลือกวัน/เวลาผ่านตาราง calendar แทน list (Thai month/weekday, Buddhist era year)
+- **Calendar UX** - วันเต็มเป็นสีแดง, วันนี้มี ring, hover/selected เป็นวงกลม, จุดบอกวันที่มี slot
+- **Booking Location Settings** - ตั้งค่า Online (platform/link) / Offline (สถานที่) แยกจากฟอร์มหลัก เซฟอิสระ
+- **Meeting Link Required** - บังคับกรอก meeting link ก่อนวางขายสินค้า booking
 
 ### 5. Calendar View
 - ปฏิทินรายเดือนแสดงนัดหมาย
@@ -154,8 +159,10 @@ new/
 - **Database:** เพิ่ม columns `slip_verified`, `slip_verified_at`, `slip_verify_ref`, `slip_verify_message` ใน payments table
 - **Fallback:** ถ้าตรวจสลิปไม่ผ่าน ยังสามารถรอ creator ยืนยันด้วยตนเองได้ (manual flow เหมือนเดิม)
 - **Auto-confirm booking/live:** สินค้า booking/live ยืนยันอัตโนมัติพร้อม pre-fill fulfillment จาก meeting link/location
-- **Retry Logic:** Retry สูงสุด 2 ครั้ง (delay 5 วินาที) สำหรับ `200404` (Not found) + disable `checkDuplicate` ใน retry เพื่อป้องกัน `200501` false positive
+- **Retry Logic:** Retry สูงสุด 2 ครั้ง (delay 5 วินาที) สำหรับ `200404` (Not found) เท่านั้น + `200501` (duplicate) ไม่ retry (hard fail)
 - **checkReceiver:** ตรวจสอบผู้รับเงินตรง creator PromptPay ID
+- **Verify Failed UI (Creator Dashboard):** แสดงเหตุผลสลิปไม่ผ่านใน order detail modal + badge "สลิปไม่ผ่าน" ใน order list + email แจ้ง creator พร้อมเหตุผล
+- **Slip QR Guide:** แนะนำลูกค้าให้อัปโหลดสลิปที่มี QR Code ชัดเจนบนหน้าชำระเงิน
 
 ### 11. Social Sharing
 - Share buttons (Facebook, X, Line, Copy link)
@@ -199,13 +206,13 @@ new/
 
 ### 16. Landing Page
 - **Navbar** - Responsive navigation with mobile menu + Sellio logo + **centered menu tabs**
-- **Hero Section** - Phone mockup preview ร้านจริง, floating stat cards (asymmetric), headline "ขายของออนไลน์ง่ายๆ ผ่านลิงก์เดียว"
-- **Features** - 12 feature cards with icons
+- **Hero Section** - Phone mockup preview ร้านจริง, floating stat cards (asymmetric), headline "ขายโคตรเร็ว แค่ผ่านลิงก์เดียว" / "Sell crazy fast with just one link"
+- **Features** - 12 feature cards with icons (incl. "ตรวจสลิปอัตโนมัติ" — auto slip verification)
 - **How It Works** - 4-step guide (video section removed)
 - **Pricing** - 2 tiers: Free + Pro (3.3 บาท/วัน = 99 บาท/เดือน)
 - **Testimonials** - 6 reviews with stats
 - **CTA Section** - Final call-to-action
-- **Footer** - Links, newsletter, social media + Sellio logo
+- **Footer** - Links, newsletter, social media + Sellio logo + anchor links to Terms/Privacy sections
 
 ### 17. Quick Reply / Auto-Reply Helper
 - 8 Template messages - ยืนยัน, เตือน, ขอบคุณ, แจ้งปัญหา
@@ -246,12 +253,13 @@ new/
 
 ### 23. Onboarding Flow
 - **Floating overlay** มุมขวาล่าง แสดงทุกหน้า dashboard (จนกว่าจะทำครบ)
-- **ขั้นตอนบังคับ (5 ขั้น):** ตั้งค่าโปรไฟล์, เพิ่มช่องทางติดต่อ, ตั้งค่าการรับเงิน, สร้างสินค้าแรก, เปิดร้านค้า
-- **ขั้นตอนไม่บังคับ (2 ขั้น):** ปรับแต่งร้านค้า (ข้ามได้), ตั้งค่าอีเมลแจ้งเตือน (ข้ามได้)
+- **ขั้นตอนบังคับ (6 ขั้น):** ตั้งค่าโปรไฟล์, เพิ่มช่องทางติดต่อ, ตั้งค่าการรับเงิน, สร้างสินค้าแรก, เพิ่มสินค้าในร้านค้า (บังคับ), เปิดร้านค้า
+- **ขั้นตอนไม่บังคับ (1 ขั้น):** ตั้งค่าอีเมลแจ้งเตือน (ข้ามได้)
 - Progress bar แสดงความคืบหน้า
 - ยุบ/ขยายได้, auto-refresh ทุก 15 วินาที + เมื่อเปลี่ยนหน้า
 - คลิกขั้นตอนจะนำไปหน้าที่เกี่ยวข้อง (ใช้ `router.push` + sync tab)
 - **บังคับช่องทางติดต่อก่อนเปิดร้าน** (server-side enforcement)
+- **Auto-fill notification email** - user ใหม่ได้ notification_email จาก signup email อัตโนมัติ (DB trigger + backfill)
 
 ---
 
@@ -262,7 +270,7 @@ new/
 | # | Task | Status | Description |
 |---|------|--------|-------------|
 | M1 | Stripe Live Mode Setup | ✅ Done | เปลี่ยนจาก test key เป็น live key + webhook |
-| M2 | Resend Domain Verification | ⬜ Pending | Verify domain เพื่อส่ง email จริง (ไม่ใช่ sandbox) |
+| M2 | Resend Domain Verification | ✅ Done | Domain verified, noreply@trysellio.com + DMARC record |
 | M3 | Product Limit Enforcement | ✅ Done | Free plan จำกัด 2 สินค้า, Pro ไม่จำกัด |
 | M4 | Pro Plan Subscription | ✅ Done | Stripe Subscription สำหรับ Pro plan 99 บาท/เดือน |
 | M5 | Feature Gating by Plan | ✅ Done | จำกัด feature ตาม plan (export, review management, branding) |
@@ -333,7 +341,31 @@ new/
 
 ## Recent Changes Log
 
-### Session 12 (Feb 11, 2026) - Current Session
+### Session 13 (Feb 12, 2026) - Current Session
+
+| # | Change | Files Modified |
+|---|--------|----------------|
+| 1 | **Slip Verify Failure UI (Dashboard)** - แสดงเหตุผลสลิปไม่ผ่านใน order detail modal (warning banner แดง) + badge "สลิปไม่ผ่าน" ใน order list | `orders/order-detail-modal.tsx`, `orders/orders-list.tsx`, `messages/*.json` |
+| 2 | **Slip Verify Failed Email** - email แจ้ง creator เปลี่ยนสีเป็นแดงเมื่อสลิปไม่ผ่าน + แสดงเหตุผลเป็น Thai/English | `lib/email.ts`, `actions/orders.ts`, `messages/*.json` |
+| 3 | **Fix: Slip2GO 200501 Retry Bug** - แก้ retry logic ที่ทำให้สลิปปลอม/ซ้ำผ่าน verification ได้ (200501 ไม่ retry อีกต่อไป) | `lib/slip2go.ts` |
+| 4 | **Landing Page Headline** - เปลี่ยนเป็น "ขายโคตรเร็ว แค่ผ่านลิงก์เดียว" / "Sell crazy fast with just one link" | `messages/*.json`, `app/layout.tsx` |
+| 5 | **Onboarding: Add Products Step** - เปลี่ยนขั้นตอน "ปรับแต่งร้านค้า" → "เพิ่มสินค้าในร้านค้า" (บังคับ) — ต้องมีสินค้าใน store จริง | `onboarding-checklist.tsx`, `actions/onboarding.ts`, `messages/*.json` |
+| 6 | **Feature Box: Auto Slip Verify** - เปลี่ยนข้อความ "ส่งมอบไฟล์ปลอดภัย" → "ตรวจสลิปอัตโนมัติ" บน landing page | `messages/*.json` |
+| 7 | **Slip QR Guide** - เพิ่มข้อความแนะนำบนหน้าชำระเงินให้อัปโหลดสลิปที่ QR ชัด | `payment-page.tsx`, `messages/*.json` |
+| 8 | **Settings/Product Page Width** - ขยาย max-w จาก `2xl` เป็น `4xl` ในหน้าตั้งค่าและตั้งค่าสินค้า | `settings/page.tsx`, `products/new/page.tsx` |
+| 9 | **Product Edit Two-Column Layout** - Desktop: ซ้าย (scrollable settings) + ขวา (sticky image+info), Mobile: single-column | `products/[productId]/edit/page.tsx` |
+| 10 | **Booking Location Settings Component** - แยกตั้งค่าสถานที่จอง (Online/Offline, platform, link, location) ออกจาก ProductForm เป็น component อิสระ เซฟแยก | `booking-location-settings.tsx`, `actions/products.ts`, `product-form.tsx` |
+| 11 | **Meeting Link Required** - ลบ "(ไม่บังคับ)" ออก + เปลี่ยน hint เป็น "ต้องเพิ่มก่อนวางขาย" | `messages/*.json` |
+| 12 | **Auto-fill Notification Email** - user ใหม่ได้ notification_email จาก signup email อัตโนมัติ + backfill existing | `supabase/migrations/018_default_notification_email.sql`, `supabase/schema.sql` |
+| 13 | **Calendar UI for Booking** - เปลี่ยน slot selection จาก list เป็น calendar grid (Thai month/weekday, Buddhist era year) | `app/u/[username]/[productId]/product-detail.tsx` |
+| 14 | **Max Bookings Per Customer** - creator กำหนด max จองต่อคนได้ + enforce server-side (ilike email) + แสดงข้อมูลบนหน้าสินค้า | `booking-settings.tsx`, `actions/orders.ts`, `actions/products.ts`, `product-detail.tsx`, `edit/page.tsx`, `messages/*.json` |
+| 15 | **Calendar Full Dates Red** - วันที่ slot เต็มแสดงเป็นสีแดง (ยังกดดู slot ได้) + จุดใต้วันที่เป็นสีแดงด้วย | `product-detail.tsx` |
+| 16 | **Calendar Circle Hover/Selected** - เปลี่ยน hover/selected จากสี่เหลี่ยมเป็นวงกลม + today ring | `product-detail.tsx` |
+| 17 | **Calendar Dot Position** - ขยับจุดบอก slot ขึ้นชิดตัวเลขเพื่อไม่ทับ today ring | `product-detail.tsx` |
+| 18 | **Fix: Calendar Today Ring SSR** - แก้ bug ring แสดง 2 วัน (UTC vs UTC+7) ด้วย isMounted flag | `product-detail.tsx` |
+| 19 | **Fix: updateProduct Overwrite Bug** - แก้ bug ที่บันทึกชื่อ/ราคาสินค้าจะเขียนทับ meeting link/location ที่เซฟแยกไว้ | `actions/products.ts` |
+
+### Session 12 (Feb 11, 2026) - Previous Session
 
 | # | Change | Files Modified |
 |---|--------|----------------|
@@ -351,7 +383,7 @@ new/
 | 12 | **Web Analytics** - ติดตั้ง `@vercel/analytics` ใน root layout | `app/layout.tsx`, `package.json` |
 | 13 | **Footer Anchor Links** - แก้ `#cookies` → id="cookies" ในหน้า Privacy, `#refund` → id="refund" ในหน้า Terms | `app/privacy/page.tsx`, `app/terms/page.tsx` |
 
-### Session 11 (Feb 11, 2026) - Previous Session
+### Session 11 (Feb 11, 2026)
 
 | # | Change | Files Modified |
 |---|--------|----------------|
@@ -501,13 +533,31 @@ Run in order via Supabase SQL Editor:
 5. `015_notification_email.sql` - Replace LINE Notify → Email Notifications
 6. `016_store_language.sql` - Store language preference (th/en)
 7. `017_slip_verification.sql` - Slip2GO auto-verification columns
+8. `018_default_notification_email.sql` - Auto-set notification_email from signup email + backfill existing
 
-**Latest migration (017):**
+**Latest migration (018):**
 ```sql
-ALTER TABLE payments ADD COLUMN IF NOT EXISTS slip_verified BOOLEAN DEFAULT NULL;
-ALTER TABLE payments ADD COLUMN IF NOT EXISTS slip_verified_at TIMESTAMPTZ DEFAULT NULL;
-ALTER TABLE payments ADD COLUMN IF NOT EXISTS slip_verify_ref TEXT DEFAULT NULL;
-ALTER TABLE payments ADD COLUMN IF NOT EXISTS slip_verify_message TEXT DEFAULT NULL;
+-- Update trigger to auto-set notification_email for new users
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO creators (user_id, username, display_name, notification_email)
+  VALUES (
+    NEW.id,
+    LOWER(REPLACE(COALESCE(NEW.raw_user_meta_data->>'username', SPLIT_PART(NEW.email, '@', 1)), ' ', '')),
+    COALESCE(NEW.raw_user_meta_data->>'display_name', SPLIT_PART(NEW.email, '@', 1)),
+    NEW.email
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Backfill existing creators
+UPDATE public.creators
+SET notification_email = auth.users.email
+FROM auth.users
+WHERE creators.user_id = auth.users.id
+  AND (creators.notification_email IS NULL OR creators.notification_email = '');
 ```
 
 ---
@@ -519,9 +569,10 @@ ALTER TABLE payments ADD COLUMN IF NOT EXISTS slip_verify_message TEXT DEFAULT N
 | สินค้า | 2 ชิ้น | ไม่จำกัด |
 | หน้าร้านสวย | ✅ | ✅ |
 | PromptPay QR | ✅ | ✅ |
-| Bank Transfer | ✅ | ✅ |
+| ตรวจสลิปอัตโนมัติ | ✅ | ✅ |
 | คูปอง | ✅ | ✅ |
-| ปฏิทินนัดหมาย | ✅ | ✅ |
+| ปฏิทินนัดหมาย (Calendar UI) | ✅ | ✅ |
+| จำกัดจองต่อคน | ✅ | ✅ |
 | Export ข้อมูล | ❌ | ✅ |
 | จัดการรีวิว | ❌ | ✅ |
 | ลบ Branding | ❌ | ✅ |
@@ -554,6 +605,8 @@ ALTER TABLE payments ADD COLUMN IF NOT EXISTS slip_verify_message TEXT DEFAULT N
 ### Timezone
 - All date handling for Thai users uses UTC+7
 - Coupon start/end dates converted with `+07:00` offset
+- Calendar UI: ใช้ `isMounted` flag เพื่อป้องกัน SSR timezone mismatch (Vercel=UTC, Client=UTC+7)
+- **Minor issue:** `getAvailableSlotsForReschedule` parse date ไม่มี `+07:00` offset ซึ่งอาจทำให้ advance hour calculation เพี้ยนเล็กน้อย (ไม่ critical สำหรับ MVP)
 
 ### Backward Compatibility
 - Product type "live" ยังรองรับในฐานข้อมูลเก่า
@@ -563,8 +616,9 @@ ALTER TABLE payments ADD COLUMN IF NOT EXISTS slip_verify_message TEXT DEFAULT N
 - ลูกค้าชำระผ่าน PromptPay QR เท่านั้น (ลบ Bank Transfer + Upload QR แล้วเพื่อความปลอดภัย)
 - อัพโหลดสลิป → **ระบบตรวจ QR อัตโนมัติผ่าน Slip2GO**
   - ✅ สลิปถูกต้อง (`200200`) → Auto-confirm ทันที ไปหน้า success (ทุกประเภทสินค้ารวม booking)
-  - ❌ สลิปไม่ผ่าน → แจ้งเตือนลูกค้า + รอ Creator ตรวจสอบ manual
-  - 🔄 Retry: ถ้า `200404` หรือ `200501` → retry สูงสุด 2 ครั้ง (delay 5 วินาที, disable checkDuplicate ใน retry)
+  - ❌ สลิปไม่ผ่าน → แจ้งเตือนลูกค้า + แจ้ง creator พร้อมเหตุผล (email + dashboard badge) + รอ Creator ตรวจสอบ manual
+  - 🔄 Retry: ถ้า `200404` (Not found) → retry สูงสุด 2 ครั้ง (delay 5 วินาที, disable checkDuplicate ใน retry)
+  - 🚫 `200501` (Duplicate slip) → hard fail ทันที ไม่ retry (ป้องกันสลิปปลอมผ่าน)
 - Stripe Card ถูกลบแล้ว (เงินเข้า platform ไม่ใช่ creator, รอ Stripe Connect)
 
 ### Storage Buckets
@@ -614,6 +668,9 @@ SLIP2GO_SECRET_KEY=<your-secret-key>
 | Quick Reply | `components/dashboard/quick-reply.tsx` |
 | Stripe | `lib/stripe.ts`, `app/api/stripe/*` |
 | Settings | `app/dashboard/settings/settings-form.tsx` (tabbed: profile/payments/store/SEO/notifications/billing) |
+| Booking Location Settings | `app/dashboard/products/[productId]/edit/booking-location-settings.tsx` + `actions/products.ts` (`updateProductLocationSettings`) |
+| Booking Time Settings | `app/dashboard/products/[productId]/edit/booking-settings.tsx` + `actions/products.ts` (`updateProductBookingSettings`) |
+| Calendar Booking UI | `app/u/[username]/[productId]/product-detail.tsx` (calendar grid, slot selection) |
 | Billing/Subscription | `settings-form.tsx` (BillingTab), `api/stripe/cancel-subscription/route.ts` |
 | Upgrade Page | `app/dashboard/upgrade/page.tsx`, `upgrade-client.tsx` |
 | Payment Page | `app/checkout/[orderId]/payment-page.tsx` |
@@ -676,14 +733,14 @@ npm run dev
 | **RichTextEditor** | **~25** | **Rich text editor UI** |
 | **Spinner** | **1** | **Loading spinner** |
 | LanguageSwitcher | 2 | Language switcher component |
-| **Total** | **~1,100+** | **ทั้ง platform** |
+| **Total** | **~1,200+** | **ทั้ง platform** |
 
 (Bold = เพิ่มใน Session 9)
 
 ---
 
 ## Last Updated
-February 11, 2026 (Session 11)
+February 12, 2026 (Session 13)
 
 ---
 
