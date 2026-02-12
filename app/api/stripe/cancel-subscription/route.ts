@@ -94,9 +94,8 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: unknown) {
     console.error(`Cancel subscription error at [${step}]:`, error);
-    const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: `[${step}] ${msg}` },
+      { error: 'Failed to cancel subscription. Please try again.' },
       { status: 500 }
     );
   }

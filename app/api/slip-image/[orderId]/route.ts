@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 
 // Proxy endpoint to serve slip images through our domain
 // Slip2GO requires image URLs from recognized domains
+// AUTH: Only the order's creator can view the slip image
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
@@ -16,7 +18,27 @@ export async function GET(
   }
 
   try {
+    // Auth check: verify user is the creator of this order
+    const userSupabase = await createClient();
+    const { data: { user } } = await userSupabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = createAdminClient();
+
+    // Verify the order belongs to this creator
+    const { data: order } = await supabase
+      .from('orders')
+      .select('creator_id, creator:creators(user_id)')
+      .eq('id', orderId)
+      .single();
+
+    const orderCreator = order?.creator as { user_id?: string } | { user_id?: string }[] | null;
+    const creatorUserId = Array.isArray(orderCreator) ? orderCreator[0]?.user_id : orderCreator?.user_id;
+    if (!order || creatorUserId !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     // Get payment record to find slip URL
     const { data: payment } = await supabase

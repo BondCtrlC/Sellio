@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     if (orderError || !order) {
       console.error('Order fetch error:', orderError);
       return NextResponse.json(
-        { error: 'Order not found', details: orderError?.message },
+        { error: 'Order not found' },
         { status: 404 }
       );
     }

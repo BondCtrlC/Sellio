@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { generateBookingICS } from './ics';
 import { getTranslations } from 'next-intl/server';
+import { escapeHtml, sanitizeUrl } from './utils';
 
 // Initialize Resend with API key from environment
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -86,8 +87,8 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
         ? `
           <div style="background: #f0f9ff; border-radius: 8px; padding: 15px; margin-top: 15px;">
             <p style="margin: 0 0 5px; color: #0369a1; font-weight: bold;">${t('onlineMeeting')}</p>
-            ${data.booking.meetingPlatform ? `<p style="margin: 0 0 5px; color: #374151;">${t('platformLabel', { platform: data.booking.meetingPlatform })}</p>` : ''}
-            <a href="${data.booking.meetingUrl}" style="display: inline-block; background: #0ea5e9; color: white; text-decoration: none; padding: 8px 16px; border-radius: 6px; margin-top: 10px; font-size: 14px;">${t('joinMeeting')}</a>
+            ${data.booking.meetingPlatform ? `<p style="margin: 0 0 5px; color: #374151;">${t('platformLabel', { platform: escapeHtml(data.booking.meetingPlatform) })}</p>` : ''}
+            <a href="${sanitizeUrl(data.booking.meetingUrl || '#')}" style="display: inline-block; background: #0ea5e9; color: white; text-decoration: none; padding: 8px 16px; border-radius: 6px; margin-top: 10px; font-size: 14px;">${t('joinMeeting')}</a>
           </div>
         `
         : data.booking.location
@@ -170,7 +171,7 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
               <!-- Order Details -->
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                 <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">${t('orderDetails')}</p>
-                <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${data.productTitle}</p>
+                <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${escapeHtml(data.productTitle)}</p>
                 <p style="margin: 0; color: #6b7280;">${t('orderNumber', { id: data.orderId.slice(0, 8).toUpperCase() })}</p>
                 <p style="margin: 10px 0 0; font-size: 24px; font-weight: bold; color: ${isBooking ? '#7c3aed' : '#22c55e'};">฿${data.amount.toLocaleString()}</p>
               </div>
@@ -282,12 +283,12 @@ export async function sendPaymentRejectionEmail(
               <!-- Order Details -->
               <div style="background: #fef2f2; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                 <p style="margin: 0 0 10px; color: #991b1b; font-weight: bold;">${t('rejectionReason')}</p>
-                <p style="margin: 0; color: #374151;">${data.reason}</p>
+                <p style="margin: 0; color: #374151;">${escapeHtml(data.reason || '')}</p>
               </div>
               
               <!-- Order Info -->
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${data.productTitle}</p>
+                <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${escapeHtml(data.productTitle)}</p>
                 <p style="margin: 0; color: #6b7280;">${t('orderNumber', { id: data.orderId.slice(0, 8).toUpperCase() })}</p>
               </div>
               
@@ -371,7 +372,7 @@ export async function sendRefundNotificationEmail(
               <!-- Refund Details -->
               <div style="background: #eff6ff; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #bfdbfe;">
                 <p style="margin: 0 0 10px; color: #1e40af; font-weight: bold;">${t('refundDetails')}</p>
-                <p style="margin: 0 0 5px; color: #374151;"><strong>${t('refundProduct')}</strong> ${data.productTitle}</p>
+                <p style="margin: 0 0 5px; color: #374151;"><strong>${t('refundProduct')}</strong> ${escapeHtml(data.productTitle)}</p>
                 <p style="margin: 0 0 5px; color: #374151;"><strong>${t('refundOrderNumber')}</strong> #${data.orderId.slice(0, 8).toUpperCase()}</p>
                 <p style="margin: 10px 0 0; font-size: 24px; font-weight: bold; color: #2563eb;">฿${data.refundAmount.toLocaleString()}</p>
               </div>
@@ -379,7 +380,7 @@ export async function sendRefundNotificationEmail(
               ${data.refundNote ? `
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                 <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">${t('refundSellerNote')}</p>
-                <p style="margin: 0; color: #374151;">${data.refundNote}</p>
+                <p style="margin: 0; color: #374151;">${escapeHtml(data.refundNote || '')}</p>
               </div>
               ` : ''}
               
@@ -465,7 +466,7 @@ export async function sendNewOrderNotificationEmail(
             <!-- Content -->
             <div style="padding: 30px;">
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${data.productTitle}</p>
+                <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${escapeHtml(data.productTitle)}</p>
                 <p style="margin: 0 0 10px; color: #6b7280;">${t('buyer', { name: data.buyerName })}</p>
                 <p style="margin: 0; font-size: 24px; font-weight: bold; color: #6366f1;">฿${data.amount.toLocaleString()}</p>
               </div>
@@ -584,7 +585,7 @@ export async function sendSlipUploadedNotificationEmail(
             <!-- Content -->
             <div style="padding: 30px;">
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${data.productTitle}</p>
+                <p style="margin: 0 0 5px; font-weight: bold; color: #111827;">${escapeHtml(data.productTitle)}</p>
                 <p style="margin: 0 0 10px; color: #6b7280;">${t('buyer', { name: data.buyerName })}</p>
                 <p style="margin: 0; font-size: 24px; font-weight: bold; color: ${data.verifyFailed ? '#ef4444' : '#f59e0b'};">฿${data.amount.toLocaleString()}</p>
               </div>
@@ -672,8 +673,8 @@ export async function sendBookingReminderEmail(data: {
       ? `
         <div style="background: #f0f9ff; border-radius: 8px; padding: 15px; margin-top: 15px;">
           <p style="margin: 0 0 5px; color: #0369a1; font-weight: bold;">${t('onlineMeeting')}</p>
-          ${data.meetingPlatform ? `<p style="margin: 0 0 5px; color: #374151;">${t('platformLabel', { platform: data.meetingPlatform })}</p>` : ''}
-          <a href="${data.meetingUrl}" style="display: inline-block; background: #0ea5e9; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; margin-top: 10px; font-size: 14px; font-weight: bold;">${t('joinMeeting')}</a>
+          ${data.meetingPlatform ? `<p style="margin: 0 0 5px; color: #374151;">${t('platformLabel', { platform: escapeHtml(data.meetingPlatform) })}</p>` : ''}
+          <a href="${sanitizeUrl(data.meetingUrl || '#')}" style="display: inline-block; background: #0ea5e9; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; margin-top: 10px; font-size: 14px; font-weight: bold;">${t('joinMeeting')}</a>
         </div>
       `
       : data.location
@@ -714,7 +715,7 @@ export async function sendBookingReminderEmail(data: {
               
               <!-- Booking Details -->
               <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #fcd34d;">
-                <p style="margin: 0 0 15px; color: #92400e; font-weight: bold; font-size: 16px;">📅 ${data.productTitle}</p>
+                <p style="margin: 0 0 15px; color: #92400e; font-weight: bold; font-size: 16px;">📅 ${escapeHtml(data.productTitle)}</p>
                 <p style="margin: 0 0 5px; color: #78350f;">${t('reminderWith', { name: data.creatorName })}</p>
                 
                 <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #fcd34d;">
@@ -821,7 +822,7 @@ export async function sendBookingCancellationEmail(data: {
               </p>
               
               <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <p style="margin: 0 0 10px; font-weight: bold; color: #991b1b;">📦 ${data.productTitle}</p>
+                <p style="margin: 0 0 10px; font-weight: bold; color: #991b1b;">📦 ${escapeHtml(data.productTitle)}</p>
                 <p style="margin: 0 0 5px; color: #7f1d1d;">📆 ${formattedDate}</p>
                 <p style="margin: 0 0 5px; color: #7f1d1d;">⏰ ${formattedTime} น.</p>
               </div>
@@ -910,7 +911,7 @@ export async function sendBookingCancellationToBuyerEmail(data: {
               
               <!-- Cancelled Booking Details -->
               <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <p style="margin: 0 0 10px; font-weight: bold; color: #991b1b;">📦 ${data.productTitle}</p>
+                <p style="margin: 0 0 10px; font-weight: bold; color: #991b1b;">📦 ${escapeHtml(data.productTitle)}</p>
                 <p style="margin: 0 0 5px; color: #7f1d1d;">📆 ${formattedDate}</p>
                 <p style="margin: 0 0 5px; color: #7f1d1d;">⏰ ${formattedTime} น.</p>
                 <p style="margin: 10px 0 0; color: #6b7280; font-size: 14px;">${t('orderNumber', { id: data.orderId.slice(0, 8).toUpperCase() })}</p>
@@ -919,7 +920,7 @@ export async function sendBookingCancellationToBuyerEmail(data: {
               ${data.reason ? `
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                 <p style="margin: 0 0 5px; font-weight: bold; color: #374151;">${t('cancellationReasonLabel')}</p>
-                <p style="margin: 0; color: #6b7280;">${data.reason}</p>
+                <p style="margin: 0; color: #6b7280;">${escapeHtml(data.reason)}</p>
               </div>
               ` : ''}
               
@@ -1006,7 +1007,7 @@ export async function sendBookingRescheduleEmail(data: {
                 ${t('rescheduleBody')}
               </p>
               
-              <p style="font-weight: bold; color: #374151; margin: 0 0 10px;">📦 ${data.productTitle}</p>
+              <p style="font-weight: bold; color: #374151; margin: 0 0 10px;">📦 ${escapeHtml(data.productTitle)}</p>
               
               <!-- Old Time -->
               <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 15px; margin-bottom: 10px;">

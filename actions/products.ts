@@ -409,6 +409,13 @@ export async function uploadProductImage(productId: string, formData: FormData):
       return { success: false, error: t('fileTooLarge', { size: sizeMB }) };
     }
 
+    // Validate magic bytes to prevent disguised files
+    const { isValidImageMagicBytes } = await import('@/lib/utils');
+    const headerBytes = await file.slice(0, 12).arrayBuffer();
+    if (!isValidImageMagicBytes(headerBytes)) {
+      return { success: false, error: t('pleaseSelectImageFile') };
+    }
+
     const creatorId = await getCreatorId();
     console.log('Creator ID:', creatorId);
     

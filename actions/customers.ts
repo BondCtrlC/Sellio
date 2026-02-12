@@ -268,7 +268,7 @@ export async function exportCustomers() {
 
   const csv = [
     headers.join(','),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+    ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')),
   ].join('\n');
 
   return { success: true, csv };

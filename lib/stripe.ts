@@ -1,15 +1,19 @@
 import Stripe from 'stripe';
 
 // Server-side Stripe instance
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeKey) {
+  console.error('STRIPE_SECRET_KEY is not configured');
+}
+export const stripe = new Stripe(stripeKey || '', {
   apiVersion: '2026-01-28.clover',
   typescript: true,
 });
 
 // Helper to format price for Stripe (convert to smallest currency unit)
 export function formatAmountForStripe(amount: number, currency: string = 'thb'): number {
-  // THB doesn't have decimal places in Stripe (1 THB = 100 satang, but Stripe uses THB directly)
-  // For THB, Stripe expects the amount in the smallest unit (satang), so multiply by 100
+  // THB uses satang as the smallest unit (1 THB = 100 satang)
+  // Stripe expects amount in satang, so multiply by 100
   const currenciesWithoutDecimals = ['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf'];
   
   if (currenciesWithoutDecimals.includes(currency.toLowerCase())) {

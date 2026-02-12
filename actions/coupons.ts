@@ -33,11 +33,11 @@ export interface Coupon {
 // Validation Schema
 // ============================================
 const couponSchema = z.object({
-  code: z.string().min(3, 'รหัสต้องมีอย่างน้อย 3 ตัวอักษร').max(50),
+  code: z.string().min(3).max(50),
   name: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   discount_type: z.enum(['percentage', 'fixed']),
-  discount_value: z.number().positive('ส่วนลดต้องมากกว่า 0'),
+  discount_value: z.number().positive(),
   min_purchase: z.number().min(0).optional().nullable(),
   max_discount: z.number().positive().optional().nullable(),
   usage_limit: z.number().int().positive().optional().nullable(),
@@ -170,6 +170,14 @@ export async function createCoupon(input: CouponInput) {
 export async function updateCoupon(couponId: string, input: Partial<CouponInput>) {
   const t = await getTranslations('ServerActions');
   const supabase = await createClient();
+
+  // Validate input with partial schema
+  const partialSchema = couponSchema.partial();
+  const parsed = partialSchema.safeParse(input);
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues?.[0];
+    return { success: false, error: firstIssue?.message || t('invalidData') };
+  }
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -321,7 +329,8 @@ export async function toggleCouponActive(couponId: string) {
       is_active: !coupon.is_active,
       updated_at: new Date().toISOString()
     })
-    .eq('id', couponId);
+    .eq('id', couponId)
+    .eq('creator_id', creator.id);
 
   if (error) {
     console.error('Toggle coupon error:', error);

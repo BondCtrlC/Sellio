@@ -36,6 +36,11 @@ export async function GET(
       return NextResponse.json({ error: 'Not a booking order' }, { status: 400 });
     }
 
+    // Verify order is confirmed (comment said this but wasn't enforced)
+    if (order.status !== 'confirmed') {
+      return NextResponse.json({ error: 'Order is not confirmed' }, { status: 400 });
+    }
+
     if (!order.booking_date || !order.booking_time) {
       return NextResponse.json({ error: 'Booking details not found' }, { status: 400 });
     }

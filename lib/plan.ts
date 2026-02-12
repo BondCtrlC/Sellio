@@ -27,7 +27,7 @@ export const PLAN_CONFIG = {
     name: 'Pro',
     price: 99, // THB/month
     limits: {
-      max_products: Infinity,
+      max_products: 999999, // Effectively unlimited (avoids JSON.stringify(Infinity) → null)
     },
     features: {
       store_page: true,
@@ -81,6 +81,6 @@ export function canCreateProduct(plan: PlanType, currentProductCount: number): b
  */
 export function getRemainingProductSlots(plan: PlanType, currentProductCount: number): number {
   const limits = getPlanLimits(plan);
-  if (limits.max_products === Infinity) return Infinity;
+  if (limits.max_products >= 999999) return 999999;
   return Math.max(0, limits.max_products - currentProductCount);
 }

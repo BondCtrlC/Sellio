@@ -51,8 +51,13 @@ export async function createReview(
   const t = await getTranslations('ServerActions');
 
   // Validate rating
-  if (rating < 1 || rating > 5) {
+  if (rating < 1 || rating > 5 || !Number.isInteger(rating)) {
     return { success: false, error: t('ratingBetween1And5') };
+  }
+
+  // Validate comment length
+  if (comment && comment.length > 2000) {
+    return { success: false, error: t('commentTooLong') };
   }
 
   // Get order details
@@ -227,7 +232,8 @@ export async function toggleReviewPublished(reviewId: string) {
       is_published: !review.is_published,
       updated_at: new Date().toISOString()
     })
-    .eq('id', reviewId);
+    .eq('id', reviewId)
+    .eq('creator_id', creator.id);
 
   if (error) {
     console.error('Toggle review error:', error);
@@ -277,7 +283,8 @@ export async function toggleReviewFeatured(reviewId: string) {
       is_featured: !review.is_featured,
       updated_at: new Date().toISOString()
     })
-    .eq('id', reviewId);
+    .eq('id', reviewId)
+    .eq('creator_id', creator.id);
 
   if (error) {
     return { success: false, error: t('cannotToggleStatus') };

@@ -21,11 +21,17 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event;
 
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error('STRIPE_WEBHOOK_SECRET is not configured');
+    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+  }
+
   try {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      webhookSecret
     );
   } catch (err) {
     console.error('Webhook signature verification failed:', err);
@@ -63,7 +69,8 @@ export async function POST(request: NextRequest) {
     }
     case 'payment_intent.succeeded': {
       // Additional handling if needed
-      console.log('Payment succeeded:', event.data.object);
+      const pi = event.data.object as Stripe.PaymentIntent;
+      console.log('Payment succeeded:', pi.id);
       break;
     }
     case 'payment_intent.payment_failed': {
@@ -287,9 +294,7 @@ async function handleSubscriptionCheckout(session: Stripe.Checkout.Session) {
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sub = subscription as any;
-  const creatorId = sub.metadata?.creator_id;
+  const creatorId = subscription.metadata?.creator_id;
   if (!creatorId) {
     console.error('No creator_id in subscription metadata');
     return;
@@ -315,9 +320,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }
 
   // Check if subscription is active or past_due
-  const isActive = ['active', 'trialing'].includes(sub.status);
+  const isActive = ['active', 'trialing'].includes(subscription.status);
   // Note: Since Stripe API 2025-03-31 (basil), current_period_end is on item level
-  const subFirstItem = sub.items?.data?.[0] as unknown as Record<string, unknown> | undefined;
+  const subFirstItem = subscription.items?.data?.[0] as unknown as Record<string, unknown> | undefined;
   const periodEnd = subFirstItem?.current_period_end as number | undefined;
   
   const { error } = await supabase
@@ -337,9 +342,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sub = subscription as any;
-  const creatorId = sub.metadata?.creator_id;
+  const creatorId = subscription.metadata?.creator_id;
   if (!creatorId) {
     console.error('No creator_id in deleted subscription metadata');
     return;

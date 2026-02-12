@@ -30,7 +30,8 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (creatorError) {
-      return NextResponse.json({ error: `Creator query failed: ${creatorError.message}` }, { status: 500 });
+      console.error('Creator query failed:', creatorError.message);
+      return NextResponse.json({ error: 'Failed to load account data' }, { status: 500 });
     }
 
     if (!creator) {
@@ -116,9 +117,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: session.url });
   } catch (error: unknown) {
     console.error(`Subscription error at step [${step}]:`, error);
-    const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: `[${step}] ${msg}` },
+      { error: 'Failed to create subscription. Please try again.' },
       { status: 500 }
     );
   }

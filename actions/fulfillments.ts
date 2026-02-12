@@ -58,9 +58,32 @@ export async function createFulfillment(
   orderId: string,
   type: 'download' | 'booking_details' | 'live_access',
   content: FulfillmentContent
-): Promise<{ success: boolean; error?: string; fulfillment?: Fulfillment }> {
+): Promise<{ success: boolean; error?: string; errorCode?: string; fulfillment?: Fulfillment }> {
   const supabase = await createClient();
   const t = await getTranslations('ServerActions');
+
+  // Auth check: verify user is the creator of this order
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: t('pleaseLogin'), errorCode: 'AUTH_REQUIRED' };
+  }
+
+  // Verify order belongs to this creator
+  const { data: order } = await supabase
+    .from('orders')
+    .select('id, creator_id, creator:creators(user_id)')
+    .eq('id', orderId)
+    .single();
+
+  if (!order) {
+    return { success: false, error: t('orderNotFound') };
+  }
+
+  const orderCreator = order.creator as { user_id?: string } | { user_id?: string }[] | null;
+  const creatorUserId = Array.isArray(orderCreator) ? orderCreator[0]?.user_id : orderCreator?.user_id;
+  if (creatorUserId !== user.id) {
+    return { success: false, error: t('noPermission') };
+  }
 
   // Check if fulfillment already exists
   const { data: existing } = await supabase
@@ -70,7 +93,7 @@ export async function createFulfillment(
     .single();
 
   if (existing) {
-    return { success: false, error: 'Fulfillment already exists for this order' };
+    return { success: false, error: t('fulfillmentAlreadyExists') };
   }
 
   const { data, error } = await supabase
@@ -343,12 +366,18 @@ export async function getRedirectUrl(token: string): Promise<{ success: boolean;
 
   const { data: fulfillment, error: fetchError } = await supabase
     .from('fulfillments')
-    .select('*')
+    .select('*, order:orders(status)')
     .eq('access_token', token)
     .eq('type', 'download')
     .single();
 
   if (fetchError || !fulfillment) {
+    return { success: false, error: t('linkNotFound') };
+  }
+
+  // Verify order is confirmed before allowing access
+  const orderStatus = (fulfillment as Record<string, unknown>).order as { status?: string } | null;
+  if (orderStatus && orderStatus.status !== 'confirmed') {
     return { success: false, error: t('linkNotFound') };
   }
 

@@ -1278,22 +1278,27 @@ export async function rejectPayment(
     console.error('Update payment error:', updatePaymentError);
   }
 
-  // Send rejection email to buyer
+  // Send rejection email to buyer (non-blocking — order is already rejected in DB)
   const product = order.product as { title?: string } | { title?: string }[] | null;
   const productTitle = Array.isArray(product) ? product[0]?.title : product?.title;
-  await sendPaymentRejectionEmail({
-    orderId: order.id,
-    buyerName: order.buyer_name,
-    buyerEmail: order.buyer_email,
-    productTitle: productTitle || t('productDefault'),
-    amount: order.total,
-    creatorName: creator.display_name || t('sellerDefault'),
-    creatorContact: {
-      line: creator.contact_line || undefined,
-      ig: creator.contact_ig || undefined,
-    },
-    reason,
-  });
+  try {
+    await sendPaymentRejectionEmail({
+      orderId: order.id,
+      buyerName: order.buyer_name,
+      buyerEmail: order.buyer_email,
+      productTitle: productTitle || t('productDefault'),
+      amount: order.total,
+      creatorName: creator.display_name || t('sellerDefault'),
+      creatorContact: {
+        line: creator.contact_line || undefined,
+        ig: creator.contact_ig || undefined,
+      },
+      reason,
+    });
+  } catch (emailError) {
+    console.error('Failed to send rejection email:', emailError);
+    // Don't fail the operation — order is already rejected
+  }
 
   revalidatePath('/dashboard/orders');
   return { success: true };
@@ -1487,24 +1492,29 @@ export async function refundOrder(
     console.error('Update payment error:', updatePaymentError);
   }
 
-  // Send refund notification email to buyer with slip
+  // Send refund notification email to buyer with slip (non-blocking — refund is already processed in DB)
   const productRefund = order.product as { title?: string } | { title?: string }[] | null;
   const productTitle = Array.isArray(productRefund) ? productRefund[0]?.title : productRefund?.title;
-  await sendRefundNotificationEmail({
-    orderId: order.id,
-    buyerName: order.buyer_name,
-    buyerEmail: order.buyer_email,
-    productTitle: productTitle || t('productDefault'),
-    amount: order.total,
-    refundAmount: order.total,
-    refundNote: refundNote || undefined,
-    refundSlipUrl: publicUrl,
-    creatorName: creator.display_name || t('sellerDefault'),
-    creatorContact: {
-      line: creator.contact_line || undefined,
-      ig: creator.contact_ig || undefined,
-    },
-  });
+  try {
+    await sendRefundNotificationEmail({
+      orderId: order.id,
+      buyerName: order.buyer_name,
+      buyerEmail: order.buyer_email,
+      productTitle: productTitle || t('productDefault'),
+      amount: order.total,
+      refundAmount: order.total,
+      refundNote: refundNote || undefined,
+      refundSlipUrl: publicUrl,
+      creatorName: creator.display_name || t('sellerDefault'),
+      creatorContact: {
+        line: creator.contact_line || undefined,
+        ig: creator.contact_ig || undefined,
+      },
+    });
+  } catch (emailError) {
+    console.error('Failed to send refund notification email:', emailError);
+    // Don't fail the operation — refund is already processed
+  }
 
   revalidatePath('/dashboard/orders');
   return { success: true };

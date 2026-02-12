@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const url = searchParams.get('url');
-  const filename = searchParams.get('filename') || 'qrcode.png';
+  // Sanitize filename to prevent header injection
+  const rawFilename = searchParams.get('filename') || 'qrcode.png';
+  const filename = rawFilename.replace(/[^a-zA-Z0-9_\-\.]/g, '_').slice(0, 100);
 
   if (!url) {
     return NextResponse.json({ error: 'URL is required' }, { status: 400 });

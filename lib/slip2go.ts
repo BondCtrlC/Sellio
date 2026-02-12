@@ -1,8 +1,8 @@
 // ============================================
 // Slip2GO - Verify Slip via QR Code
 // https://slip2go.com
-// QR extraction is done on the CLIENT side (browser Canvas + jsQR)
-// This file only handles the API call to Slip2GO
+// QR extraction is done on the client side (browser Canvas + jsQR in payment-page.tsx)
+// This file handles the API call to Slip2GO to verify the extracted QR code text
 // ============================================
 
 const SLIP2GO_API_URL = process.env.SLIP2GO_API_URL || 'https://connect.slip2go.com';
@@ -77,15 +77,15 @@ export async function verifySlipByQrCode(
         checkCondition.checkReceiver = [
           { accountType: '02001', accountNumber: cleanId },
         ];
-        console.log('[Slip2GO] Adding checkReceiver: PromptPay phone', cleanId);
+        console.log('[Slip2GO] Adding checkReceiver: PromptPay phone', cleanId.slice(0, 3) + '***' + cleanId.slice(-2));
       } else if (/^\d{13}$/.test(cleanId)) {
         // 13-digit national ID → just accountNumber (no specific type code known)
         checkCondition.checkReceiver = [
           { accountNumber: cleanId },
         ];
-        console.log('[Slip2GO] Adding checkReceiver: National ID', cleanId);
+        console.log('[Slip2GO] Adding checkReceiver: National ID', cleanId.slice(0, 3) + '***' + cleanId.slice(-2));
       } else {
-        console.log('[Slip2GO] Unknown PromptPay ID format, skipping checkReceiver:', cleanId);
+        console.log('[Slip2GO] Unknown PromptPay ID format, skipping checkReceiver');
       }
     }
 
