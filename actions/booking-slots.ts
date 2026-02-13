@@ -474,9 +474,9 @@ export async function createRecurringSlots(input: RecurringSlotInput): Promise<S
   let endDate: Date;
 
   if (isDateRange && input.rangeStartDate && input.rangeEndDate) {
-    // Date range mode: use exact start/end dates
+    // Date range mode: use exact start/end dates (inclusive)
     iterStartDate = new Date(input.rangeStartDate + 'T00:00:00');
-    endDate = new Date(input.rangeEndDate + 'T00:00:00');
+    endDate = new Date(input.rangeEndDate + 'T23:59:59');
   } else {
     // Weeks mode: from tomorrow to N weeks ahead
     const today = new Date();
