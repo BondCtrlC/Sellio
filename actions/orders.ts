@@ -68,6 +68,91 @@ interface UploadSlipResult {
   verifyMessage?: string;
 }
 
+// ============================================
+// BOOKING SLOT HELPERS
+// ============================================
+
+/**
+ * Release a booking slot (decrement current_bookings).
+ * Used when slip verification fails — the slot should be freed for other customers.
+ */
+async function _releaseBookingSlot(
+  supabase: Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient>,
+  productId: string,
+  bookingDate: string,
+  bookingTime: string,
+): Promise<void> {
+  const { data: slot } = await supabase
+    .from('booking_slots')
+    .select('id, current_bookings, max_bookings')
+    .eq('product_id', productId)
+    .eq('slot_date', bookingDate)
+    .eq('start_time', bookingTime)
+    .single();
+
+  if (slot) {
+    const newCount = Math.max(0, (slot.current_bookings || 1) - 1);
+    await supabase
+      .from('booking_slots')
+      .update({
+        current_bookings: newCount,
+        is_booked: newCount >= (slot.max_bookings || 1),
+      })
+      .eq('id', slot.id);
+    console.log(`[BookingSlot] Released slot ${slot.id}: ${newCount}/${slot.max_bookings}`);
+  }
+}
+
+/**
+ * Re-reserve a booking slot (increment current_bookings with optimistic lock).
+ * Used when creator manually confirms a booking order whose slot was released.
+ * Returns true if successful, false if slot is now full.
+ */
+async function _reReserveBookingSlot(
+  supabase: Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient>,
+  productId: string,
+  bookingDate: string,
+  bookingTime: string,
+): Promise<boolean> {
+  const { data: slot } = await supabase
+    .from('booking_slots')
+    .select('id, current_bookings, max_bookings')
+    .eq('product_id', productId)
+    .eq('slot_date', bookingDate)
+    .eq('start_time', bookingTime)
+    .single();
+
+  if (!slot) return false;
+
+  const currentCount = slot.current_bookings || 0;
+  const maxCount = slot.max_bookings || 1;
+  
+  if (currentCount >= maxCount) {
+    console.log(`[BookingSlot] Cannot re-reserve slot ${slot.id}: full (${currentCount}/${maxCount})`);
+    return false;
+  }
+
+  const newCount = currentCount + 1;
+  const { data: updated } = await supabase
+    .from('booking_slots')
+    .update({
+      current_bookings: newCount,
+      is_booked: newCount >= maxCount,
+    })
+    .eq('id', slot.id)
+    .eq('current_bookings', currentCount) // Optimistic lock
+    .select('id')
+    .maybeSingle();
+
+  if (!updated) {
+    console.log(`[BookingSlot] Race condition on re-reserve slot ${slot.id}`);
+    return false;
+  }
+
+  console.log(`[BookingSlot] Re-reserved slot ${slot.id}: ${newCount}/${maxCount}`);
+  return true;
+}
+
 export interface OrderDetails {
   id: string;
   status: string;
@@ -799,6 +884,19 @@ export async function uploadSlip(
       .update({ status: 'pending_confirmation' })
       .eq('id', orderId);
 
+    // === BOOKING: Release slot when slip verification fails ===
+    // The slot was reserved at order creation. If the slip failed verification,
+    // release it so other customers can book. The slot will be re-reserved
+    // when the creator manually confirms or the customer uploads a valid slip.
+    if (verifyFailed && orderInfo?.booking_date && orderInfo?.booking_time) {
+      const product = Array.isArray(orderInfo.product) ? orderInfo.product[0] : orderInfo.product;
+      const productData = product as { id: string; type: string } | null;
+      if (productData && (productData.type === 'booking' || productData.type === 'live')) {
+        await _releaseBookingSlot(supabase, productData.id, orderInfo.booking_date, orderInfo.booking_time);
+        console.log('[UploadSlip] Booking slot released due to failed slip verification for order:', orderId);
+      }
+    }
+
     // Send email notification to creator about slip upload
     try {
       if (orderInfo) {
@@ -854,6 +952,27 @@ async function _autoConfirmOrder(
     // Booking/live products: auto-confirm is allowed because we enforce
     // meeting link/location at product setup (before it can be added to store).
     // The fulfillment record was already created at order time with pre-filled details.
+
+    // === BOOKING: Re-reserve slot if it was released by a previous failed verification ===
+    if (productData && (productData.type === 'booking' || productData.type === 'live') 
+        && orderInfo.booking_date && orderInfo.booking_time) {
+      // Check if there was a previous failed verification that released the slot
+      const { data: payment } = await supabase
+        .from('payments')
+        .select('slip_verified')
+        .eq('order_id', orderId)
+        .single();
+
+      if (payment?.slip_verified === false) {
+        // Slot was released, need to re-reserve
+        const reserved = await _reReserveBookingSlot(supabase, productData.id, orderInfo.booking_date, orderInfo.booking_time);
+        if (!reserved) {
+          console.error('[AutoConfirm] Cannot re-reserve booking slot — slot is full');
+          return false;
+        }
+        console.log('[AutoConfirm] Booking slot re-reserved for order:', orderId);
+      }
+    }
 
     // Update order status to confirmed
     const { error: updateOrderError } = await supabase
@@ -1073,6 +1192,26 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
     return { success: false, error: t('orderCannotConfirm') };
   }
 
+  // === BOOKING: Re-reserve slot if it was released due to failed slip verification ===
+  const product = Array.isArray(order.product) ? order.product[0] : order.product;
+  if (product && (product.type === 'booking' || product.type === 'live') && order.booking_date && order.booking_time) {
+    // Check if the slot was released (slip_verified === false means verification failed → slot was released)
+    const { data: payment } = await supabase
+      .from('payments')
+      .select('slip_verified')
+      .eq('order_id', orderId)
+      .single();
+
+    if (payment?.slip_verified === false) {
+      // Slot was released, need to re-reserve
+      const reserved = await _reReserveBookingSlot(supabase, product.id, order.booking_date, order.booking_time);
+      if (!reserved) {
+        return { success: false, error: t('slotFull') };
+      }
+      console.log('[ConfirmPayment] Booking slot re-reserved for order:', orderId);
+    }
+  }
+
   // Update order status
   const { error: updateOrderError } = await supabase
     .from('orders')
@@ -1098,7 +1237,6 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
   }
 
   // Handle fulfillment based on product type
-  const product = Array.isArray(order.product) ? order.product[0] : order.product;
   if (product) {
     const typeConfig = (product.type_config as Record<string, unknown>) || {};
 
@@ -1242,7 +1380,7 @@ export async function rejectPayment(
   // Verify order belongs to this creator
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('id, status, total, buyer_email, buyer_name, product:products(title)')
+    .select('id, status, total, buyer_email, buyer_name, booking_date, booking_time, product:products(id, title, type)')
     .eq('id', orderId)
     .eq('creator_id', creator.id)
     .single();
@@ -1253,6 +1391,27 @@ export async function rejectPayment(
 
   if (order.status !== 'pending_confirmation') {
     return { success: false, error: t('orderCannotReject') };
+  }
+
+  // === BOOKING: Release slot if it hasn't been released yet ===
+  const rejectProduct = Array.isArray(order.product) ? order.product[0] : order.product;
+  if (rejectProduct && (rejectProduct.type === 'booking' || rejectProduct.type === 'live') 
+      && order.booking_date && order.booking_time) {
+    // Check if slot was already released by failed slip verification
+    const { data: payment } = await supabase
+      .from('payments')
+      .select('slip_verified')
+      .eq('order_id', orderId)
+      .single();
+
+    // Only release if slip_verified is NOT false (meaning slot hasn't been released yet)
+    // slip_verified === null → never verified, slot still reserved
+    // slip_verified === true → auto-confirmed (shouldn't reach rejectPayment normally)
+    // slip_verified === false → already released by uploadSlip
+    if (payment?.slip_verified !== false) {
+      await _releaseBookingSlot(supabase, rejectProduct.id, order.booking_date, order.booking_time);
+      console.log('[RejectPayment] Booking slot released for order:', orderId);
+    }
   }
 
   // Update order status

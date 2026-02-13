@@ -364,6 +364,8 @@ new/
 | 17 | **Calendar Dot Position** - ขยับจุดบอก slot ขึ้นชิดตัวเลขเพื่อไม่ทับ today ring | `product-detail.tsx` |
 | 18 | **Fix: Calendar Today Ring SSR** - แก้ bug ring แสดง 2 วัน (UTC vs UTC+7) ด้วย isMounted flag | `product-detail.tsx` |
 | 19 | **Fix: updateProduct Overwrite Bug** - แก้ bug ที่บันทึกชื่อ/ราคาสินค้าจะเขียนทับ meeting link/location ที่เซฟแยกไว้ | `actions/products.ts` |
+| 20 | **Security & Bug Fixes (22 issues)** - แก้ auth bypass, XSS in email, PII logging, body size limit, missing validation, etc. | 21 files |
+| 21 | **Booking Slot Release on Failed Slip** - สลิปไม่ผ่าน → ปล่อย slot ให้คนอื่นจอง, creator confirm → จอง slot กลับ, reject → ปล่อย slot | `actions/orders.ts` |
 
 ### Session 12 (Feb 11, 2026) - Previous Session
 
