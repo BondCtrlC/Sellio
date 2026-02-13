@@ -502,7 +502,15 @@
     "dayWedFull": "Wednesday",
     "dayThuFull": "Thursday",
     "dayFriFull": "Friday",
-    "daySatFull": "Saturday"
+    "daySatFull": "Saturday",
+    "rangeSettingLabel": "Slot generation range",
+    "weeksMode": "Number of weeks",
+    "dateRangeMode": "Date range",
+    "rangeStartDate": "Start date",
+    "rangeEndDate": "End date",
+    "selectDateRange": "Please select start and end dates",
+    "recurringDateRangeDesc": "Every {days} from {start} to {end}",
+    "recurringDateRangeSuccess": "Created {count} slots from {start} to {end}"
   },
   "Orders": {
     "title": "Orders",
@@ -1394,7 +1402,10 @@
     "deleteError": "Error deleting",
     "deletePartialSuccess": "Deleted {deleted} slots (skipped {skipped} slots with bookings)",
     "pleaseSelectDays": "Please select at least 1 day",
-    "weeksBetween1And12": "Number of weeks must be between 1-12",
+    "weeksBetween1And12": "Number of weeks must be between 1-52",
+    "pleaseSelectDateRange": "Please select start and end dates",
+    "endDateAfterStart": "End date must be after start date",
+    "dateRangeMax365": "Date range cannot exceed 1 year",
     "productNotSupportSlot": "Product not found or does not support slot booking",
     "cannotCreateCheckSlots": "Cannot create slots. Please check dates and times",
     "partialSlotCreation": "Created some slots ({count} slots) with errors",

@@ -59,6 +59,9 @@ export function BookingSlotsManager({
   // Recurring form state
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [numberOfWeeks, setNumberOfWeeks] = useState(4);
+  const [recurringRangeMode, setRecurringRangeMode] = useState<'weeks' | 'dateRange'>('weeks');
+  const [rangeStartDate, setRangeStartDate] = useState('');
+  const [rangeEndDate, setRangeEndDate] = useState('');
 
   // Multi-select state
   const [selectedSlotIds, setSelectedSlotIds] = useState<Set<string>>(new Set());
@@ -189,6 +192,11 @@ export function BookingSlotsManager({
       return;
     }
 
+    if (recurringRangeMode === 'dateRange' && (!rangeStartDate || !rangeEndDate)) {
+      setError(t('selectDateRange'));
+      return;
+    }
+
     setIsAdding(true);
     setError(null);
     setSuccessMessage(null);
@@ -201,12 +209,18 @@ export function BookingSlotsManager({
       slotDuration: durationMinutes,
       numberOfWeeks,
       maxBookings,
+      rangeMode: recurringRangeMode,
+      rangeStartDate: recurringRangeMode === 'dateRange' ? rangeStartDate : undefined,
+      rangeEndDate: recurringRangeMode === 'dateRange' ? rangeEndDate : undefined,
     });
 
     if (!result.success) {
       setError(result.error || t('error'));
     } else {
-      setSuccessMessage(t('recurringSuccess', { count: result.slotsCreated ?? 0, weeks: numberOfWeeks }));
+      const desc = recurringRangeMode === 'dateRange'
+        ? t('recurringDateRangeSuccess', { count: result.slotsCreated ?? 0, start: rangeStartDate, end: rangeEndDate })
+        : t('recurringSuccess', { count: result.slotsCreated ?? 0, weeks: numberOfWeeks });
+      setSuccessMessage(desc);
       window.location.reload();
     }
 
@@ -685,20 +699,87 @@ export function BookingSlotsManager({
                   </select>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="num-weeks">{t('weeksAhead')}</Label>
-                <div className="flex items-center gap-2">
-                  <Input id="num-weeks" type="number" min="1" max="12" value={numberOfWeeks} onChange={(e) => setNumberOfWeeks(Math.max(1, Math.min(12, parseInt(e.target.value) || 1)))} className="w-20" />
-                  <span className="text-sm text-muted-foreground">{t('weeks')}</span>
-                </div>
-                <div className="flex gap-2">
-                  {[2, 4, 8, 12].map((w) => (
-                    <button key={w} type="button" onClick={() => setNumberOfWeeks(w)} className={`px-3 py-1 text-xs rounded-full border transition-colors ${numberOfWeeks === w ? 'bg-primary text-white border-primary' : 'hover:border-primary'}`}>
-                      {w} {t('weeks')}
-                    </button>
-                  ))}
+              {/* Range mode toggle */}
+              <div className="sm:col-span-2 space-y-3">
+                <Label>{t('rangeSettingLabel')}</Label>
+                <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setRecurringRangeMode('weeks')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm rounded-md transition-colors ${
+                      recurringRangeMode === 'weeks'
+                        ? 'bg-background shadow-sm font-medium'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Repeat className="h-3.5 w-3.5" />
+                    {t('weeksMode')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRecurringRangeMode('dateRange')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm rounded-md transition-colors ${
+                      recurringRangeMode === 'dateRange'
+                        ? 'bg-background shadow-sm font-medium'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    {t('dateRangeMode')}
+                  </button>
                 </div>
               </div>
+
+              {/* Weeks mode */}
+              {recurringRangeMode === 'weeks' && (
+                <div className="space-y-2">
+                  <Label htmlFor="num-weeks">{t('weeksAhead')}</Label>
+                  <div className="flex items-center gap-2">
+                    <Input id="num-weeks" type="number" min="1" max="52" value={numberOfWeeks} onChange={(e) => setNumberOfWeeks(Math.max(1, Math.min(52, parseInt(e.target.value) || 1)))} className="w-20" />
+                    <span className="text-sm text-muted-foreground">{t('weeks')}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    {[2, 4, 8, 12].map((w) => (
+                      <button key={w} type="button" onClick={() => setNumberOfWeeks(w)} className={`px-3 py-1 text-xs rounded-full border transition-colors ${numberOfWeeks === w ? 'bg-primary text-white border-primary' : 'hover:border-primary'}`}>
+                        {w} {t('weeks')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Date range mode */}
+              {recurringRangeMode === 'dateRange' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="range-start-date">{t('rangeStartDate')}</Label>
+                    <Input
+                      id="range-start-date"
+                      type="date"
+                      min={today}
+                      value={rangeStartDate}
+                      onChange={(e) => {
+                        setRangeStartDate(e.target.value);
+                        // Auto-adjust end date if it's before start date
+                        if (rangeEndDate && e.target.value > rangeEndDate) {
+                          setRangeEndDate(e.target.value);
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="range-end-date">{t('rangeEndDate')}</Label>
+                    <Input
+                      id="range-end-date"
+                      type="date"
+                      min={rangeStartDate || today}
+                      value={rangeEndDate}
+                      onChange={(e) => setRangeEndDate(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="max-bookings-recurring">{t('seats')}</Label>
                 <Input id="max-bookings-recurring" type="number" min="1" max="100" value={maxBookings} onChange={(e) => setMaxBookings(Math.max(1, parseInt(e.target.value) || 1))} className="w-24" />
@@ -708,7 +789,11 @@ export function BookingSlotsManager({
 
             <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
               <p>{t('batchDesc', { duration: durationMinutes, start: startTime, end: endTime })}</p>
-              <p>{t('recurringDesc', { days: selectedDays.map((d) => dayNames[d].fullLabel).join(', '), weeks: numberOfWeeks })}</p>
+              {recurringRangeMode === 'weeks' ? (
+                <p>{t('recurringDesc', { days: selectedDays.map((d) => dayNames[d].fullLabel).join(', '), weeks: numberOfWeeks })}</p>
+              ) : (
+                <p>{t('recurringDateRangeDesc', { days: selectedDays.map((d) => dayNames[d].fullLabel).join(', '), start: rangeStartDate || '...', end: rangeEndDate || '...' })}</p>
+              )}
             </div>
           </div>
         )}

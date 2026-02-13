@@ -502,7 +502,15 @@
     "dayWedFull": "พุธ",
     "dayThuFull": "พฤหัสบดี",
     "dayFriFull": "ศุกร์",
-    "daySatFull": "เสาร์"
+    "daySatFull": "เสาร์",
+    "rangeSettingLabel": "ช่วงเวลาที่สร้าง Slot",
+    "weeksMode": "จำนวนสัปดาห์",
+    "dateRangeMode": "ช่วงวันที่",
+    "rangeStartDate": "วันที่เริ่มต้น",
+    "rangeEndDate": "วันที่สิ้นสุด",
+    "selectDateRange": "กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด",
+    "recurringDateRangeDesc": "ทุกวัน{days} ตั้งแต่ {start} ถึง {end}",
+    "recurringDateRangeSuccess": "สร้าง {count} slots สำเร็จ ตั้งแต่ {start} ถึง {end}"
   },
   "Orders": {
     "title": "คำสั่งซื้อ",
@@ -1394,7 +1402,10 @@
     "deleteError": "เกิดข้อผิดพลาดในการลบ",
     "deletePartialSuccess": "ลบสำเร็จ {deleted} slot (ข้าม {skipped} slot ที่มีจองแล้ว)",
     "pleaseSelectDays": "กรุณาเลือกวันอย่างน้อย 1 วัน",
-    "weeksBetween1And12": "จำนวนสัปดาห์ต้องอยู่ระหว่าง 1-12",
+    "weeksBetween1And12": "จำนวนสัปดาห์ต้องอยู่ระหว่าง 1-52",
+    "pleaseSelectDateRange": "กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด",
+    "endDateAfterStart": "วันที่สิ้นสุดต้องมากกว่าวันที่เริ่มต้น",
+    "dateRangeMax365": "ช่วงวันที่ต้องไม่เกิน 1 ปี",
     "productNotSupportSlot": "ไม่พบสินค้าหรือไม่รองรับการจอง Slot",
     "cannotCreateCheckSlots": "ไม่สามารถสร้าง slot ได้ ตรวจสอบวันและเวลาอีกครั้ง",
     "partialSlotCreation": "สร้าง slot ได้บางส่วน ({count} slots) เกิดข้อผิดพลาด",

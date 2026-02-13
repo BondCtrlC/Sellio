@@ -411,8 +411,12 @@ export interface RecurringSlotInput {
   startTime: string; // HH:MM - start of availability window
   endTime: string; // HH:MM - end of availability window
   slotDuration: number; // minutes per slot
-  numberOfWeeks: number; // how many weeks ahead to generate
+  numberOfWeeks: number; // how many weeks ahead to generate (used when rangeMode is 'weeks')
   maxBookings?: number;
+  // Date range mode: if provided, use startDate/endDate instead of numberOfWeeks
+  rangeMode?: 'weeks' | 'dateRange';
+  rangeStartDate?: string; // YYYY-MM-DD
+  rangeEndDate?: string; // YYYY-MM-DD
 }
 
 export async function createRecurringSlots(input: RecurringSlotInput): Promise<SlotResult & { slotsCreated?: number }> {
@@ -426,8 +430,25 @@ export async function createRecurringSlots(input: RecurringSlotInput): Promise<S
     return { success: false, error: t('pleaseSelectDays') };
   }
 
-  if (input.numberOfWeeks < 1 || input.numberOfWeeks > 12) {
-    return { success: false, error: t('weeksBetween1And12') };
+  const isDateRange = input.rangeMode === 'dateRange';
+
+  if (!isDateRange) {
+    if (input.numberOfWeeks < 1 || input.numberOfWeeks > 52) {
+      return { success: false, error: t('weeksBetween1And12') };
+    }
+  } else {
+    if (!input.rangeStartDate || !input.rangeEndDate) {
+      return { success: false, error: t('pleaseSelectDateRange') };
+    }
+    if (input.rangeEndDate < input.rangeStartDate) {
+      return { success: false, error: t('endDateAfterStart') };
+    }
+    // Max 1 year range
+    const diffMs = new Date(input.rangeEndDate).getTime() - new Date(input.rangeStartDate).getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    if (diffDays > 365) {
+      return { success: false, error: t('dateRangeMax365') };
+    }
   }
 
   if (input.endTime <= input.startTime) {
@@ -448,11 +469,23 @@ export async function createRecurringSlots(input: RecurringSlotInput): Promise<S
     return { success: false, error: t('productNotSupportSlot') };
   }
 
-  // Generate all dates for selected days of the week
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const endDate = new Date(today);
-  endDate.setDate(endDate.getDate() + input.numberOfWeeks * 7);
+  // Generate date range based on mode
+  let iterStartDate: Date;
+  let endDate: Date;
+
+  if (isDateRange && input.rangeStartDate && input.rangeEndDate) {
+    // Date range mode: use exact start/end dates
+    iterStartDate = new Date(input.rangeStartDate + 'T00:00:00');
+    endDate = new Date(input.rangeEndDate + 'T00:00:00');
+  } else {
+    // Weeks mode: from tomorrow to N weeks ahead
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    iterStartDate = new Date(today);
+    iterStartDate.setDate(iterStartDate.getDate() + 1); // Start from tomorrow
+    endDate = new Date(today);
+    endDate.setDate(endDate.getDate() + input.numberOfWeeks * 7);
+  }
 
   const allSlots: Array<{
     product_id: string;
@@ -464,9 +497,8 @@ export async function createRecurringSlots(input: RecurringSlotInput): Promise<S
     current_bookings: number;
   }> = [];
 
-  // Iterate through each day from today to endDate
-  const currentDate = new Date(today);
-  currentDate.setDate(currentDate.getDate() + 1); // Start from tomorrow
+  // Iterate through each day in the date range
+  const currentDate = new Date(iterStartDate);
 
   while (currentDate <= endDate) {
     const dayOfWeek = currentDate.getDay(); // 0=Sunday, 1=Monday, etc.
