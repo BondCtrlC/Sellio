@@ -54,6 +54,10 @@ export const metadata: Metadata = {
   keywords: ["ขายของออนไลน์", "content creator", "สินค้าดิจิทัล", "ขายผ่านลิงก์", "Sellio", "stan store ไทย", "creator store"],
   authors: [{ name: "Sellio" }],
   creator: "Sellio",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://trysellio.com"),
   openGraph: {
     type: "website",
