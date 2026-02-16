@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import posthog from 'posthog-js';
+import { usePostHog } from 'posthog-js/react';
 import { createClient } from '@/lib/supabase/client';
 
 export function PostHogIdentifier() {
+  const posthog = usePostHog();
   const identified = useRef(false);
 
   useEffect(() => {
-    if (identified.current) return;
+    if (identified.current || !posthog) return;
 
     const identify = async () => {
       const supabase = createClient();
@@ -32,7 +33,7 @@ export function PostHogIdentifier() {
     };
 
     identify();
-  }, []);
+  }, [posthog]);
 
   return null;
 }

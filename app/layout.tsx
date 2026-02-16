@@ -3,6 +3,7 @@ import { Inter, Sarabun, Prompt, Noto_Sans_Thai, IBM_Plex_Sans_Thai, Pridi } fro
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { Analytics } from '@vercel/analytics/react';
+import { PostHogProvider } from '@/components/posthog-provider';
 import "./globals.css";
 
 const inter = Inter({
@@ -97,9 +98,11 @@ export default async function RootLayout({
         className={`${inter.variable} ${sarabun.variable} ${prompt.variable} ${notoSansThai.variable} ${ibmPlexSansThai.variable} ${pridi.variable} font-sans antialiased bg-white text-black`}
         suppressHydrationWarning
       >
-        <NextIntlClientProvider messages={messages} locale={locale}>
-          {children}
-        </NextIntlClientProvider>
+        <PostHogProvider>
+          <NextIntlClientProvider messages={messages} locale={locale}>
+            {children}
+          </NextIntlClientProvider>
+        </PostHogProvider>
         <Analytics />
       </body>
     </html>
