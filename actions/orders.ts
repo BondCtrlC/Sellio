@@ -8,6 +8,7 @@ import { checkoutSchema, type CheckoutInput } from '@/lib/validations/checkout';
 import { verifySlipByQrCode } from '@/lib/slip2go';
 import { extractQrFromImage } from '@/lib/qr-extract';
 import { validateCoupon } from '@/actions/coupons';
+import { trackServerEvent } from '@/lib/posthog-server';
 import { 
   sendOrderConfirmationEmail, 
   sendPaymentRejectionEmail,
@@ -517,6 +518,13 @@ export async function createOrder(
   } catch (e) {
     console.error('Notification email lookup error:', e);
   }
+
+  trackServerEvent(creatorId, 'order_created', {
+    order_id: order.id,
+    product_id: productId,
+    amount: finalTotal,
+    has_coupon: !!parsed.data.coupon_code,
+  });
 
   return { success: true, order_id: order.id };
 }
@@ -1345,6 +1353,10 @@ export async function confirmPayment(orderId: string): Promise<{ success: boolea
   } catch (emailError) {
     console.error('confirmOrder - email failed:', emailError);
   }
+
+  trackServerEvent(creator.id, 'payment_confirmed', {
+    order_id: orderId,
+  });
 
   revalidatePath('/dashboard/orders');
   return { success: true };

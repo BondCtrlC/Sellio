@@ -5,6 +5,7 @@ import { loginSchema, signupSchema, type LoginInput, type SignupInput } from '@/
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
+import { trackServerEvent } from '@/lib/posthog-server';
 
 export type AuthResult = {
   success: boolean;
@@ -80,6 +81,10 @@ export async function signup(data: SignupInput): Promise<AuthResult> {
     }
     return { success: false, error: error.message };
   }
+
+  trackServerEvent(parsed.data.email, 'user_signed_up', {
+    username: parsed.data.username.toLowerCase(),
+  });
 
   revalidatePath('/', 'layout');
   redirect('/dashboard');

@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import type { PlanType } from '@/types';
+import { trackServerEvent } from '@/lib/posthog-server';
 
 export type ProductResult = {
   success: boolean;
@@ -122,6 +123,14 @@ export async function createProduct(data: ProductInput): Promise<ProductResult> 
   }
 
   revalidatePath('/dashboard/products');
+
+  trackServerEvent(creatorId, 'product_created', {
+    product_id: product.id,
+    product_type: parsed.data.type,
+    price: parsed.data.price,
+    plan,
+  });
+
   return { success: true, productId: product.id };
 }
 

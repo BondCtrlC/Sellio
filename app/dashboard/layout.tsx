@@ -7,6 +7,7 @@ import { OnboardingOverlay } from '@/components/dashboard/onboarding-checklist';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { PostHogIdentifier } from '@/components/posthog-identifier';
 
 export default function DashboardLayout({
   children,
@@ -47,6 +48,7 @@ export default function DashboardLayout({
 
       {/* Onboarding overlay - shows on all dashboard pages */}
       <OnboardingOverlay />
+      <PostHogIdentifier />
     </div>
   );
 }
