@@ -705,6 +705,7 @@
     "avatarUploading": "Uploading...",
     "avatarChange": "Change Profile Picture",
     "avatarFormats": "JPG, PNG or GIF up to 5MB",
+    "avatarUploadFailed": "Failed to upload image. Please try again.",
     "storeLanguage": "Store Language",
     "storeLanguageDesc": "Choose the primary language for your dashboard and store",
     "languageThai": "🇹🇭 Thai",

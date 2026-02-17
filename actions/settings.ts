@@ -156,15 +156,17 @@ export async function updateAvatar(formData: FormData): Promise<SettingsResult> 
     return { success: false, error: t('cannotUploadImage') };
   }
 
-  // Get public URL
+  // Get public URL with cache-busting timestamp
   const { data: { publicUrl } } = supabase.storage
     .from('avatars')
     .getPublicUrl(fileName);
 
+  const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
+
   // Update creator profile with avatar URL
   const { error: updateError } = await supabase
     .from('creators')
-    .update({ avatar_url: publicUrl })
+    .update({ avatar_url: cacheBustedUrl })
     .eq('user_id', user.id);
 
   if (updateError) {

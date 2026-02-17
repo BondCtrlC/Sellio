@@ -6,13 +6,13 @@
 **URL:** trysellio.com  
 **Pricing:** Free + Pro (99 THB/เดือน)  
 **Deployment:** Vercel  
-**Status:** MVP Ready | ✅ i18n Complete | ✅ Yearly Subscription | ✅ Auto Slip Verification (Slip2GO) | ✅ Production Ready | ✅ Calendar Booking UI | ✅ Max Bookings Per Customer  
-**Last Updated:** February 12, 2026 (Session 13)
+**Status:** MVP Ready | ✅ i18n Complete | ✅ Yearly Subscription | ✅ Auto Slip Verification (Slip2GO) | ✅ Production Ready | ✅ Calendar Booking UI | ✅ Max Bookings Per Customer | ✅ PostHog Analytics  
+**Last Updated:** February 16, 2026 (Session 14)
 
 ---
 
 ## Tech Stack
-- **Framework:** Next.js 14+ (App Router)
+- **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
 - **Database:** Supabase (PostgreSQL)
 - **Auth:** Supabase Auth
@@ -26,6 +26,8 @@
 - **Payments:** PromptPay QR เท่านั้น (Bank Transfer + Upload QR ถูกลบเพื่อความปลอดภัย, Stripe card ถูกลบรอ Stripe Connect)
 - **Slip Verification:** Slip2GO API (QR Code scanning) + jsQR (client-side QR extraction)
 - **Deployment:** Vercel (Hobby plan)
+- **Analytics:** PostHog (product analytics, session replay, heatmaps)
+- **Web Analytics:** Vercel Analytics
 
 ---
 
@@ -54,10 +56,13 @@ new/
 │   ├── ui/                  # Base UI components
 │   ├── dashboard/           # Dashboard components
 │   ├── landing/             # Landing page components
-│   └── shared/              # Shared components
+│   ├── shared/              # Shared components
+│   ├── posthog-provider.tsx # PostHog init + pageview tracking
+│   └── posthog-identifier.tsx # PostHog user identification
 ├── lib/
 │   ├── supabase/            # Supabase client
 │   ├── validations/         # Zod schemas
+│   ├── posthog-server.ts    # PostHog server-side helper
 │   └── utils.ts             # Utility functions
 ├── types/                   # TypeScript types
 └── supabase/migrations/     # SQL migrations
@@ -85,7 +90,7 @@ new/
 
 ### 4. Booking System
 - **Slot Management** - สร้าง slot วัน/เวลาได้ (single, batch, recurring)
-- **Recurring Slots** - สร้าง slot ซ้ำรายสัปดาห์ (เลือกวัน, จำนวนสัปดาห์)
+- **Recurring Slots** - สร้าง slot ซ้ำรายสัปดาห์ (เลือกวัน, จำนวนสัปดาห์ หรือ ช่วงวันที่เริ่ม-สิ้นสุด)
 - **Max Bookings** - กำหนดจำนวนที่นั่งต่อ slot
 - **Max Bookings Per Customer** - จำกัดจำนวนการจองต่อคนต่อสินค้า (ตรวจสอบจาก buyer_email, case-insensitive)
 - **Auto-block** - เมื่อเต็มจะ block อัตโนมัติ
@@ -163,6 +168,23 @@ new/
 - **checkReceiver:** ตรวจสอบผู้รับเงินตรง creator PromptPay ID
 - **Verify Failed UI (Creator Dashboard):** แสดงเหตุผลสลิปไม่ผ่านใน order detail modal + badge "สลิปไม่ผ่าน" ใน order list + email แจ้ง creator พร้อมเหตุผล
 - **Slip QR Guide:** แนะนำลูกค้าให้อัปโหลดสลิปที่มี QR Code ชัดเจนบนหน้าชำระเงิน
+
+### 25. PostHog Analytics ✅
+- **Product Analytics** — track user behavior, pageviews, custom events ทั้งฝั่ง client และ server
+- **Client-side Provider** — `PostHogProvider` component ครอบ app ใน root layout, init เมื่อ window load
+- **Pageview Tracking** — ใช้ `PostHogPageView` component จับ `$pageview` event ทุกครั้งที่เปลี่ยนหน้า (pathname + searchParams)
+- **User Identification** — `PostHogIdentifier` component ใน dashboard layout ดึง user data จาก Supabase แล้ว `posthog.identify()` พร้อม properties (username, email, plan)
+- **Server-side Events** — `trackServerEvent()` helper ใน `lib/posthog-server.ts` ใช้ `posthog-node` SDK
+- **Tracked Events:**
+  - `user_signed_up` — เมื่อสมัครสมาชิกสำเร็จ (properties: username)
+  - `product_created` — เมื่อสร้างสินค้าสำเร็จ (properties: product_id, product_type, price, plan)
+  - `order_created` — เมื่อสร้าง order สำเร็จ (properties: order_id, product_id, amount, payment_method, has_coupon)
+  - `payment_confirmed` — เมื่อยืนยันชำระเงินสำเร็จ (properties: order_id, product_type)
+- **Session Replay** — บันทึก session ลูกค้าเพื่อดูพฤติกรรมการใช้งานจริง
+- **Heatmaps** — แสดงจุดที่ผู้ใช้คลิก/สนใจมากที่สุดบนหน้าเว็บ
+- **Web Vitals** — ติดตาม performance metrics (LCP, CLS, INP)
+- **Autocapture** — จับ click, form submission, page leave events อัตโนมัติ
+- **Environment:** `NEXT_PUBLIC_POSTHOG_KEY` + `NEXT_PUBLIC_POSTHOG_HOST` (us.i.posthog.com)
 
 ### 11. Social Sharing
 - Share buttons (Facebook, X, Line, Copy link)
@@ -336,12 +358,26 @@ new/
 | F7 | Remove Debug UI | ✅ Done — ลบ `[DEBUG]` text จากหน้าชำระเงิน + ลบ `/api/test-slip2go` endpoint |
 | F8 | Slip2GO Receiver Check | ✅ Done — `checkReceiver` ตรวจสอบผู้รับเงินตรง creator PromptPay ID (format ใช้ array ของ object) |
 | F9 | M2: Resend Domain Verification | ✅ Done — Domain verified, ส่งอีเมลจาก noreply@trysellio.com + DMARC record เพิ่มแล้ว |
+| F10 | PostHog Feature Flags | ใช้ PostHog feature flags สำหรับ gradual rollout ฟีเจอร์ใหม่ |
+| F11 | PostHog A/B Testing | A/B test pricing, landing page CTA, onboarding flow |
+| F12 | PostHog Funnels & Retention | สร้าง funnel: signup → create product → open store → first sale + retention analysis |
 
 ---
 
 ## Recent Changes Log
 
-### Session 13 (Feb 12, 2026) - Current Session
+### Session 14 (Feb 16, 2026) - Current Session
+
+| # | Change | Files Modified |
+|---|--------|----------------|
+| 1 | **Recurring Slot Date Range** - เพิ่มตัวเลือกให้ creator เลือกได้ระหว่าง "จำนวนสัปดาห์" กับ "ช่วงวันที่เริ่ม-สิ้นสุด" สำหรับสร้าง slot ซ้ำทุกสัปดาห์ | `actions/booking-slots.ts`, `booking-slots-manager.tsx`, `messages/*.json` |
+| 2 | **Fix: Date Range Off-by-One** - แก้ bug วันสิ้นสุดไม่ถูกนับรวมเมื่อสร้าง slot ด้วยช่วงวันที่ (เปลี่ยน endDate เป็น T23:59:59) | `actions/booking-slots.ts` |
+| 3 | **Favicon / Domain Logo** - เพิ่ม favicon Sellio logo แทน default Vercel triangle (`app/favicon.ico` + `public/favicon.png`) | `app/favicon.ico`, `public/favicon.png`, `app/layout.tsx` |
+| 4 | **PostHog Analytics Integration** - ติดตั้ง PostHog product analytics ครบ: client-side pageview tracking, user identification, server-side event tracking | `components/posthog-provider.tsx`, `components/posthog-identifier.tsx`, `lib/posthog-server.ts`, `app/layout.tsx`, `app/dashboard/layout.tsx` |
+| 5 | **PostHog Event Tracking** - track key events: `user_signed_up`, `product_created`, `order_created`, `payment_confirmed` | `actions/auth.ts`, `actions/products.ts`, `actions/orders.ts` |
+| 6 | **PostHog Configuration** - Autocapture frontend interactions, heatmaps, web vitals enabled | PostHog dashboard settings |
+
+### Session 13 (Feb 12, 2026) - Previous Session
 
 | # | Change | Files Modified |
 |---|--------|----------------|
@@ -367,7 +403,7 @@ new/
 | 20 | **Security & Bug Fixes (22 issues)** - แก้ auth bypass, XSS in email, PII logging, body size limit, missing validation, etc. | 21 files |
 | 21 | **Booking Slot Release on Failed Slip** - สลิปไม่ผ่าน → ปล่อย slot ให้คนอื่นจอง, creator confirm → จอง slot กลับ, reject → ปล่อย slot | `actions/orders.ts` |
 
-### Session 12 (Feb 11, 2026) - Previous Session
+### Session 12 (Feb 11, 2026)
 
 | # | Change | Files Modified |
 |---|--------|----------------|
@@ -648,6 +684,10 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 # Slip2GO (Auto Slip Verification)
 SLIP2GO_API_URL=https://connect.slip2go.com
 SLIP2GO_SECRET_KEY=<your-secret-key>
+
+# PostHog Analytics
+NEXT_PUBLIC_POSTHOG_KEY=phc_...
+NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 ```
 
 ---
@@ -686,6 +726,9 @@ SLIP2GO_SECRET_KEY=<your-secret-key>
 | Language Switcher | `components/shared/language-switcher.tsx` (ใช้ใน navbar, dashboard header, store page) |
 | My Store Components | `components/my-store/*.tsx` (store-editor, design-editor, modals, draggables, preview) |
 | Store Design | `components/my-store/design-editor.tsx` (templates, colors, fonts) |
+| PostHog (Client) | `components/posthog-provider.tsx` (init + pageview), `components/posthog-identifier.tsx` (user identify) |
+| PostHog (Server) | `lib/posthog-server.ts` (`getPostHogServer`, `trackServerEvent`) |
+| Favicon | `app/favicon.ico`, `public/favicon.png`, `app/layout.tsx` (metadata.icons) |
 
 ---
 
@@ -713,7 +756,7 @@ npm run dev
 | Sidebar, Header | ~20 | Dashboard navigation |
 | Analytics, DateFilter | ~30 | Analytics page |
 | Products, ProductForm, ProductNew, ProductEdit | ~60 | Product management |
-| BookingSettings, BookingSlots | ~40 | Booking system |
+| BookingSettings, BookingSlots | ~50 | Booking system (incl. date range mode) |
 | Orders, Fulfillment | ~30 | Order management |
 | Customers | ~15 | Customer list |
 | Reviews | ~20 | Review management |
@@ -742,7 +785,7 @@ npm run dev
 ---
 
 ## Last Updated
-February 12, 2026 (Session 13)
+February 16, 2026 (Session 14)
 
 ---
 

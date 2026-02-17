@@ -33,17 +33,24 @@ export function AvatarUpload({ currentAvatarUrl, displayName }: AvatarUploadProp
     setIsUploading(true);
     setError(null);
 
-    const formData = new FormData();
-    formData.append('avatar', file);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
 
-    const result = await updateAvatar(formData);
+      const result = await updateAvatar(formData);
 
-    if (!result.success && result.error) {
-      setError(result.error);
-      setPreviewUrl(currentAvatarUrl); // Reset preview
+      if (!result.success && result.error) {
+        setError(result.error);
+        setPreviewUrl(currentAvatarUrl);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    } catch {
+      setError(t('avatarUploadFailed'));
+      setPreviewUrl(currentAvatarUrl);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } finally {
+      setIsUploading(false);
     }
-
-    setIsUploading(false);
   };
 
   return (
