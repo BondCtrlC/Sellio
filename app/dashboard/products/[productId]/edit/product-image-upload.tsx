@@ -7,6 +7,8 @@ import { Camera, Package } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_DIMENSION = 2048;
+const COMPRESS_QUALITY = 0.85;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 interface ProductImageUploadProps {
@@ -28,6 +30,66 @@ export function ProductImageUpload({ productId, currentImageUrl, productTitle }:
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      if (file.type === 'image/gif') {
+        resolve(file);
+        return;
+      }
+
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+
+        let { width, height } = img;
+
+        if (width <= MAX_DIMENSION && height <= MAX_DIMENSION && file.size <= 2 * 1024 * 1024) {
+          resolve(file);
+          return;
+        }
+
+        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+          const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(file); return; }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        const ext = outputType === 'image/png' ? 'png' : 'jpg';
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { resolve(file); return; }
+            const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, `.${ext}`), {
+              type: outputType,
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          outputType,
+          outputType === 'image/png' ? undefined : COMPRESS_QUALITY
+        );
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load image'));
+      };
+
+      img.src = url;
+    });
+  };
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -41,25 +103,27 @@ export function ProductImageUpload({ productId, currentImageUrl, productTitle }:
       return;
     }
 
-    // Validate file size
+    // Validate file size (before compression)
     if (file.size > MAX_FILE_SIZE) {
       setError(t('fileTooLarge', { size: formatFileSize(file.size) }));
       return;
     }
 
-    // Preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreviewUrl(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-
     // Upload
     setIsUploading(true);
 
     try {
+      const compressed = await compressImage(file);
+
+      // Preview compressed version
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewUrl(e.target?.result as string);
+      };
+      reader.readAsDataURL(compressed);
+
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('image', compressed);
 
       const result = await uploadProductImage(productId, formData);
 
@@ -73,7 +137,6 @@ export function ProductImageUpload({ productId, currentImageUrl, productTitle }:
       setPreviewUrl(currentImageUrl);
     } finally {
       setIsUploading(false);
-      // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }

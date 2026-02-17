@@ -6,6 +6,9 @@ import { updateAvatar } from '@/actions/settings';
 import { Camera, User } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+const MAX_AVATAR_DIMENSION = 512;
+const COMPRESS_QUALITY = 0.85;
+
 interface AvatarUploadProps {
   currentAvatarUrl: string | null;
   displayName: string;
@@ -18,24 +21,82 @@ export function AvatarUpload({ currentAvatarUrl, displayName }: AvatarUploadProp
   const fileInputRef = useRef<HTMLInputElement>(null);
   const t = useTranslations('Settings');
 
+  const compressAvatar = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      if (file.type === 'image/gif') {
+        resolve(file);
+        return;
+      }
+
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+
+        let { width, height } = img;
+
+        if (width <= MAX_AVATAR_DIMENSION && height <= MAX_AVATAR_DIMENSION && file.size <= 500 * 1024) {
+          resolve(file);
+          return;
+        }
+
+        if (width > MAX_AVATAR_DIMENSION || height > MAX_AVATAR_DIMENSION) {
+          const ratio = Math.min(MAX_AVATAR_DIMENSION / width, MAX_AVATAR_DIMENSION / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(file); return; }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { resolve(file); return; }
+            const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          COMPRESS_QUALITY
+        );
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load image'));
+      };
+
+      img.src = url;
+    });
+  };
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreviewUrl(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-
-    // Upload
     setIsUploading(true);
     setError(null);
 
     try {
+      const compressed = await compressAvatar(file);
+
+      // Preview compressed version
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewUrl(e.target?.result as string);
+      };
+      reader.readAsDataURL(compressed);
+
       const formData = new FormData();
-      formData.append('avatar', file);
+      formData.append('avatar', compressed);
 
       const result = await updateAvatar(formData);
 
